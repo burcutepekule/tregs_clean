@@ -172,95 +172,6 @@ plot_faceted_8 = function(data, variables, title) {
   
   return(p)
 }
-plot_grid_commensals = function() {
-  
-  # Create full grid background (invisible or white)
-  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
-  
-  # --- Convert DAMP matrix to long format ---
-  damps_df = as.data.frame(C_field)
-  colnames(damps_df) = paste0("x", 1:ncol(damps_df))
-  damps_df = damps_df %>%
-    mutate(y = nrow(damps_df):1) %>%
-    pivot_longer(cols = starts_with("x"), names_to = "x", values_to = "value") %>%
-    mutate(x = as.integer(gsub("x", "", x)))
-  
-  # --- Epithelial layer: blue/orange by health ---
-  epithelial_df = epithelium %>%
-    mutate(
-      type = ifelse(level_injury == 0, "epithelial_healthy",
-                    paste0("epithelial_inj_", level_injury)),
-      fill = agent_colors[type],
-      y = grid_size+ 1 - y
-    ) %>%
-    dplyr::select(x, y, fill)
-  
-  # --- Plot ---
-  p_damps = ggplot() +
-    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
-    # DAMP heatmap with colorbar
-    geom_tile(data = damps_df, aes(x = x, y = y, fill = value)) +
-    scale_fill_gradient(low = "white", high = "turquoise2", name = "Commensal Density", limits = c(0, max_microbe_concentration)) +
-    
-    # Epithelium on top with inline fill colors (no legend)
-    geom_tile(data = epithelial_df, aes(x = x, y = y), fill = epithelial_df$fill, width = 1, height = 1) +
-    
-    coord_fixed() +
-    # labs(title = "DAMP Heatmap with Epithelium (No Legend for Epithelium)") +
-    theme_minimal() +
-    theme(
-      panel.grid = element_blank(),
-      axis.title = element_blank(),
-      axis.text = element_blank()
-    )
-  return(p_damps)
-  
-}
-
-plot_grid_pathogens = function() {
-  
-  # Create full grid background (invisible or white)
-  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
-  
-  # --- Convert DAMP matrix to long format ---
-  damps_df = as.data.frame(P_field)
-  colnames(damps_df) = paste0("x", 1:ncol(damps_df))
-  damps_df = damps_df %>%
-    mutate(y = nrow(damps_df):1) %>%
-    pivot_longer(cols = starts_with("x"), names_to = "x", values_to = "value") %>%
-    mutate(x = as.integer(gsub("x", "", x)))
-  
-  # --- Epithelial layer: blue/orange by health ---
-  epithelial_df = epithelium %>%
-    mutate(
-      type = ifelse(level_injury == 0, "epithelial_healthy",
-                    paste0("epithelial_inj_", level_injury)),
-      fill = agent_colors[type],
-      y = grid_size+ 1 - y
-    ) %>%
-    dplyr::select(x, y, fill)
-  
-  # --- Plot ---
-  p_damps = ggplot() +
-    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
-    # DAMP heatmap with colorbar
-    geom_tile(data = damps_df, aes(x = x, y = y, fill = value)) +
-    scale_fill_gradient(low = "white", high = "firebrick1", name = "Pathogen Density", limits = c(0, max_microbe_concentration)) +
-    
-    # Epithelium on top with inline fill colors (no legend)
-    geom_tile(data = epithelial_df, aes(x = x, y = y), fill = epithelial_df$fill, width = 1, height = 1) +
-    
-    coord_fixed() +
-    # labs(title = "DAMP Heatmap with Epithelium (No Legend for Epithelium)") +
-    theme_minimal() +
-    theme(
-      panel.grid = element_blank(),
-      axis.title = element_blank(),
-      axis.text = element_blank()
-    )
-  return(p_damps)
-  
-}
 
 plot_grid_DAMPs = function() {
   
@@ -473,7 +384,7 @@ plot_grid_phagocyte_M1 = function() {
   phagocytes_plot = phagocytes_plot %>% filter(type=="phagocyte_M1")
   # Create full grid background (invisible or white)
   full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
-  
+
   # Combine all agents into one dataframe with their type
   agent_plot_df = bind_rows(
     epithelial_layer %>% dplyr::select(x, y, type),
@@ -546,11 +457,8 @@ plot_grid_mat = function(mat, grid_size, lim_mat){
 
 plot_microbes_nomem = function() {
   # Count microbes
-  # num_pat = nrow(pathogens_lp)
-  # num_com = nrow(commensals_lp)
-  
-  num_pat = sum(P_field)
-  num_com = sum(C_field)
+  num_pat = nrow(pathogens_lp)
+  num_com = nrow(commensals_lp)
   
   # Create a new row of data
   new_data = data.frame(
@@ -665,7 +573,152 @@ plot_cumdeath_nomem = function() {
   return(p)
 }
 
+plot_grid_pathogens = function() {
+  
+  # Create a base dataframe for the grid
+  grid = expand.grid(x = 1:grid_size, y = 0:grid_size)
+  
+  # 1. Epithelial cell state (y = 0 only)
+  # 1. Epithelial cell state (y = 0 only)
+  epithelial_layer = epithelium %>%
+    mutate(type = ifelse(level_injury == 0, "epithelial_healthy",
+                         paste0("epithelial_inj_", level_injury)))
+  
+  # Create full grid background (invisible or white)
+  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
+  
+  # 2. Combine all agents into one dataframe with their type
+  all_types = c(
+    "epithelial_healthy", "epithelial_inj_1","epithelial_inj_2","epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
+    "pathogen"
+  )
+  
+  pathogen_density = pathogens_lp %>%
+    dplyr::group_by(x, y) %>%
+    dplyr::summarise(count = n(), .groups = "drop") %>%
+    mutate(
+      type = "pathogen"
+    )
+  
+  # Check if there is variation in counts
+  if (nrow(pathogen_density) > 0) {
+    if (length(unique(pathogen_density$count)) == 1) {
+      # All counts are the same: use fixed alpha
+      pathogen_density$alpha_val = 0.8
+    } else {
+      # Vary alpha by density
+      pathogen_density$alpha_val = pmin(1, pathogen_density$count / max(pathogen_density$count))
+    }
+  }
+  
+  epithelial_layer_plot = epithelial_layer %>%
+    dplyr::select(x, y, type) %>%
+    mutate(alpha_val = 1)
+  
+  agent_plot_df = bind_rows(
+    epithelial_layer_plot,
+    pathogen_density
+  ) %>%
+    mutate(type = factor(type, levels = all_types))
+  
+  
+  p_mic = ggplot() +
+    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
+    geom_tile(data = agent_plot_df,
+              aes(x = x, y = y, fill = type, alpha = alpha_val),
+              width = 1, height = 1) +
+    scale_fill_manual(
+      values = agent_colors,
+      name = "Cell Type",
+      drop = FALSE
+    ) +
+    scale_alpha_continuous(range = c(0.5, 1), guide = FALSE) +
+    coord_fixed(ratio = 1) +
+    scale_x_continuous(expand = c(0, 0), limits = c(0, grid_size + 1)) +
+    scale_y_reverse(expand = c(0, 0)) +
+    theme_minimal() +
+    theme(
+      panel.grid = element_blank(),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      legend.position = "right"
+    )
+  
+  return(p_mic)
+}
 
+plot_grid_commensals = function() {
+  
+  # Create a base dataframe for the grid
+  grid = expand.grid(x = 1:grid_size, y = 0:grid_size)
+  
+  # 1. Epithelial cell state (y = 0 only)
+  epithelial_layer = epithelium %>%
+    mutate(type = ifelse(level_injury == 0, "epithelial_healthy",
+                         paste0("epithelial_inj_", level_injury)))
+  
+  # Create full grid background (invisible or white)
+  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
+  
+  # 2. Combine all agents into one dataframe with their type
+  all_types = c(
+    "epithelial_healthy", "epithelial_inj_1","epithelial_inj_2","epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
+    "commensal"
+  )
+  
+  commensal_density = commensals_lp %>%
+    dplyr::group_by(x, y) %>%
+    dplyr::summarise(count = n(), .groups = "drop") %>%
+    mutate(
+      type = "commensal"
+    )
+  
+  # Check if there is variation in counts
+  if (nrow(commensal_density) > 0) {
+    if (length(unique(commensal_density$count)) == 1) {
+      # All counts are the same: use fixed alpha
+      commensal_density$alpha_val = 0.8
+    } else {
+      # Vary alpha by density
+      commensal_density$alpha_val = pmin(1, commensal_density$count / max(commensal_density$count))
+    }
+  }
+  
+  epithelial_layer_plot = epithelial_layer %>%
+    dplyr::select(x, y, type) %>%
+    mutate(alpha_val = 1)
+  
+  agent_plot_df = bind_rows(
+    epithelial_layer_plot,
+    commensal_density
+  ) %>%
+    mutate(type = factor(type, levels = all_types))
+  
+  
+  p_mic = ggplot() +
+    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
+    geom_tile(data = agent_plot_df,
+              aes(x = x, y = y, fill = type, alpha = alpha_val),
+              width = 1, height = 1) +
+    scale_fill_manual(
+      values = agent_colors,
+      name = "Cell Type",
+      drop = FALSE
+    ) +
+    scale_alpha_continuous(range = c(0.5, 1), guide = FALSE) +
+    coord_fixed(ratio = 1) +
+    scale_x_continuous(expand = c(0, 0), limits = c(0, grid_size + 1)) +
+    scale_y_reverse(expand = c(0, 0)) +
+    theme_minimal() +
+    theme(
+      panel.grid = element_blank(),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      legend.position = "right"
+    )
+  
+  return(p_mic)
+}
 
 plot_grid_resting = function() {
   

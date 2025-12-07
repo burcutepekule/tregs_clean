@@ -7,8 +7,8 @@ library(av)
 library(ggplot2)
 
 setwd('~/Dropbox/tregs_clean')
-source("./MISC/FAST_FUNCTIONS_CPP_ONELEVEL_ABM.R")
-source("./MISC/PLOT_FUNCTIONS_ABM.R")
+source("./MISC/FAST_FUNCTIONS_CPP.R")
+source("./MISC/PLOT_FUNCTIONS_HYBRID.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_ubelix_merged.csv", stringsAsFactors = FALSE)
@@ -113,7 +113,7 @@ for(param_set_id_use in loop_over){
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
 
-    source("./MISC/RUN_REPS_HYBRID_PDE_ABM.R")
+    source("./MISC/RUN_REPS_CPP_HYBRID.R")
     
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))

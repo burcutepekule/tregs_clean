@@ -21,20 +21,3 @@ tregs=data.frame(
   activity_SAMPs_binary = treg_activity_SAMPs_binary
 )
 
-# if(nrow(pathogen_coords) == 0) {
-#   pathogens_lp = data.frame(x = numeric(0), y = numeric(0), id = numeric(0))
-# }else{
-#   pathogens_lp =   data.frame(
-#     x = pathogen_coords[, "x"],
-#     y = pathogen_coords[, "y"]
-#   )
-# }
-# 
-# if(nrow(commensal_coords) == 0) {
-#   commensals_lp = data.frame(x = numeric(0), y = numeric(0), id = numeric(0))
-# }else{
-#   commensals_lp =   data.frame(
-#     x = commensal_coords[, "x"],
-#     y = commensal_coords[, "y"]
-#   )
-# }

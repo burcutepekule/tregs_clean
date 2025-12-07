@@ -11,7 +11,7 @@ for (reps_in in 0:(num_reps-1)){
   # Initialize fields
   DAMPs = matrix(0, grid_size, grid_size)
   SAMPs = matrix(0, grid_size, grid_size)
-  ROS = matrix(0, grid_size, grid_size)
+  ROS   = matrix(0, grid_size, grid_size)
   
   # Initialize epithelium
   epithelium = data.frame(
@@ -24,7 +24,7 @@ for (reps_in in 0:(num_reps-1)){
   
   # Initialize phagocytes
   phagocyte_x = sample(1:grid_size, n_phagocytes, TRUE)
-  phagocyte_y = sample(2:grid_size, n_phagocytes, TRUE)
+  phagocyte_y = sample(1:grid_size, n_phagocytes, TRUE)
   phagocyte_pathogens_engulfed = rep(0, n_phagocytes)
   phagocyte_commensals_engulfed = rep(0, n_phagocytes)
   phagocyte_num_times_activated = rep(0, n_phagocytes)
@@ -32,11 +32,11 @@ for (reps_in in 0:(num_reps-1)){
   phagocyte_activity_ROS = rep(activity_ROS_M0_baseline, n_phagocytes)
   phagocyte_activity_engulf = rep(activity_engulf_M0_baseline, n_phagocytes)
   phagocyte_active_age = rep(0, n_phagocytes)
-  phagocyte_bacteria_registry = matrix(0, nrow = n_phagocytes, ncol = cc_phagocyte)
+  # phagocyte_bacteria_registry = matrix(0, nrow = n_phagocytes, ncol = cc_phagocyte)
   
   # Initialize tregs
   treg_x = sample(1:grid_size, n_tregs, TRUE)
-  treg_y = sample(2:grid_size, n_tregs, TRUE)
+  treg_y = sample(1:grid_size, n_tregs, TRUE)
   treg_active_age = rep(0, n_tregs)
   treg_phenotype = rep(0, n_tregs)  # 0=resting, 1=activated
   treg_activity_SAMPs_binary = rep(0, n_tregs)
@@ -72,10 +72,10 @@ for (reps_in in 0:(num_reps-1)){
   commensals_killed_by_Mac = rep(0, 3)
   
   # Longitudinal tracking
-  epithelium_longitudinal = matrix(0, nrow = t_max, ncol = (max_level_injury + 1))
-  macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 1 + 2 * (cc_phagocyte + 1))
-  microbes_longitudinal = matrix(0, nrow = t_max, ncol = 2)
-  tregs_longitudinal = matrix(0, nrow = t_max, ncol = 2)
+  epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = (max_level_injury + 1))
+  macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3) #onelevel
+  microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
+  tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
   microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2 * 4)
   
   # ============================================================================
@@ -183,13 +183,13 @@ for (reps_in in 0:(num_reps-1)){
     # C++ ACCELERATION: Matrix diffusion operations
     # ========================================================================
     # C++ version (5-10x faster)
-    DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs)
-    SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs)
-    ROS = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS)
+    DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top=FALSE)
+    SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs, reflect_top=FALSE)
+    ROS = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top=FALSE)
     
     DAMPs = DAMPs - DAMPs_decay * DAMPs
     SAMPs = SAMPs - SAMPs_decay * SAMPs
-    ROS = ROS - ros_decay * ROS
+    ROS   = ROS - ros_decay * ROS
     
     # ========================================================================
     # MOVE PHAGOCYTES AND TREGS
@@ -300,8 +300,7 @@ for (reps_in in 0:(num_reps-1)){
     # PLOTTING
     # ========================================================================
     if (plot_on == 1 & (t %% plot_every == 0 | t == 1)) {
-      # source('/storage/homefs/bt25p365/tregs/MISC/CONVERT_TO_DATAFRAME.R')
-      source('./MISC/CONVERT_TO_DATAFRAME.R')
+      source('./MISC/CONVERT_TO_DATAFRAME_ABM.R')
       p = plot_simtime_simple()
       ggsave(
         paste0(dir_name_frames, "/frame_param_",param_set_id_use,"_rep_", reps_in, "_STERILE_", sterile, "_TREGS_",
@@ -322,42 +321,41 @@ for (reps_in in 0:(num_reps-1)){
     M1_indices = which(phagocyte_phenotype == 1)
     M2_indices = which(phagocyte_phenotype == 2)
     
-    # Registry shifting every digestion_time steps
-    if (t %% digestion_time == 0) {
-      phagocyte_bacteria_registry = cbind(
-        matrix(0, nrow = nrow(phagocyte_bacteria_registry), ncol = 1),
-        phagocyte_bacteria_registry[, -ncol(phagocyte_bacteria_registry)]
-      )
-    }
+    # # Registry shifting every digestion_time steps
+    # if (t %% digestion_time == 0) {
+    #   phagocyte_bacteria_registry = cbind(
+    #     matrix(0, nrow = nrow(phagocyte_bacteria_registry), ncol = 1),
+    #     phagocyte_bacteria_registry[, -ncol(phagocyte_bacteria_registry)]
+    #   )
+    # }
     
     # Process M0 phagocytes (candidates for activation)
     if (length(M0_indices) > 0) {
       # C++ ACCELERATION: Calculate all signals at once
       signals = calculate_phagocyte_signals_cpp(
-        M0_indices, phagocyte_x, phagocyte_y, phagocyte_bacteria_registry,
+        M0_indices, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
         act_radius_DAMPs, act_radius_SAMPs, DAMPs, SAMPs, grid_size
       )
       avg_DAMPs_vec = signals$avg_DAMPs
       avg_SAMPs_vec = signals$avg_SAMPs
-      bacteria_count_vec = signals$bacteria_counts
+      # bacteria_count_vec = signals$bacteria_counts
       
       for (idx in seq_along(M0_indices)) {
         i = M0_indices[idx]
         avg_DAMPs = avg_DAMPs_vec[idx]
         avg_SAMPs = avg_SAMPs_vec[idx]
-        bacteria_count = bacteria_count_vec[idx]
-        bacteria_count = 0
+        # bacteria_count = bacteria_count_vec[idx]
         
         if (avg_DAMPs >= activation_threshold_DAMPs && avg_DAMPs > avg_SAMPs) {
           phagocyte_phenotype[i] = 1
           phagocyte_active_age[i] = 1
-          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline + activity_ROS_M1_step * bacteria_count
-          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline + activity_engulf_M1_step * bacteria_count
+          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
+          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
         } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > avg_DAMPs) {
           phagocyte_phenotype[i] = 2
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline + activity_engulf_M2_step * bacteria_count
+          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
         }
       }
     }
@@ -372,35 +370,83 @@ for (reps_in in 0:(num_reps-1)){
       if (length(candidates) > 0) {
         # C++ ACCELERATION: Calculate all signals at once
         signals = calculate_phagocyte_signals_cpp(
-          candidates, phagocyte_x, phagocyte_y, phagocyte_bacteria_registry,
+          candidates, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
           act_radius_DAMPs, act_radius_SAMPs, DAMPs, SAMPs, grid_size
         )
         avg_DAMPs_vec = signals$avg_DAMPs
         avg_SAMPs_vec = signals$avg_SAMPs
-        bacteria_count_vec = signals$bacteria_counts
+        # bacteria_count_vec = signals$bacteria_counts # WILL ALWAYS RETURN 0
         
         for (idx in seq_along(candidates)) {
           i = candidates[idx]
           avg_DAMPs = avg_DAMPs_vec[idx]
           avg_SAMPs = avg_SAMPs_vec[idx]
-          bacteria_count = bacteria_count_vec[idx]
-          bacteria_count = 0
+          # bacteria_count = bacteria_count_vec[idx]
           
-          if (avg_DAMPs >= activation_threshold_DAMPs && avg_DAMPs > avg_SAMPs) {
-            phagocyte_phenotype[i] = 1
-            phagocyte_active_age[i] = 1
-            phagocyte_activity_ROS[i] = activity_ROS_M1_baseline + activity_ROS_M1_step * bacteria_count
-            phagocyte_activity_engulf[i] = activity_engulf_M1_baseline + activity_engulf_M1_step * bacteria_count
-          } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > avg_DAMPs) {
-            phagocyte_phenotype[i] = 2
-            phagocyte_active_age[i] = 1
-            phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-            phagocyte_activity_engulf[i] = activity_engulf_M2_baseline + activity_engulf_M2_step * bacteria_count
-          } else if (avg_SAMPs < activation_threshold_SAMPs && avg_DAMPs < activation_threshold_DAMPs) {
-            phagocyte_phenotype[i] = 0
-            phagocyte_active_age[i] = 0
-            phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
-            phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
+          if(macspec_on==1){ # perfect macrophage
+            # Calculate engulfment pattern with discrimination
+            num_pat_engulfed = phagocyte_pathogens_engulfed[i]
+            num_com_engulfed = phagocyte_commensals_engulfed[i]
+            
+            # Determine environmental signal dominance
+            DAMPs_dominant = (avg_DAMPs >= activation_threshold_DAMPs && avg_DAMPs > avg_SAMPs)
+            SAMPs_dominant = (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > avg_DAMPs)
+            
+            # Determine engulfment pattern dominance (with discrimination)
+            pathogen_engulfment_dominant  = FALSE
+            commensal_engulfment_dominant = FALSE
+            
+            if ((num_pat_engulfed + num_com_engulfed) > 0) {
+              # ALWAYS calculate and sample (to maintain stream synchronization)
+              rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
+              alpha = (1 - mac_discrimination_efficiency) * 1 +
+                mac_discrimination_efficiency * (rat_com_pat_real * precision_mac)
+              beta = (1 - mac_discrimination_efficiency) * 1 +
+                mac_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_mac)
+              
+              rat_com_pat = sample_rbeta(alpha, beta)
+              
+              pathogen_engulfment_dominant  = rat_com_pat <= (1 - mac_rat_com_pat_threshold)
+              commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
+            }
+            
+            # POLARIZATION LOGIC: Danger dominates, M2 only with concordant safety
+            if (DAMPs_dominant || pathogen_engulfment_dominant) {
+              # M1: Either environmental danger OR pathogen engulfment
+              phagocyte_phenotype[i] = 1
+              phagocyte_active_age[i] = 1
+              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
+            } else if (SAMPs_dominant && commensal_engulfment_dominant) {
+              # M2: Both environmental safety AND commensal engulfment required
+              phagocyte_phenotype[i] = 2
+              phagocyte_active_age[i] = 1
+              phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
+            } else if (avg_SAMPs < activation_threshold_SAMPs && avg_DAMPs < activation_threshold_DAMPs) {
+              # Revert to M0 if both signals are low
+              phagocyte_phenotype[i] = 0
+              phagocyte_active_age[i] = 0
+              phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
+              phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
+            }
+          }else{ # vanilla 
+            if (avg_DAMPs >= activation_threshold_DAMPs && avg_DAMPs > avg_SAMPs) {
+              phagocyte_phenotype[i] = 1
+              phagocyte_active_age[i] = 1
+              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
+            } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > avg_DAMPs) {
+              phagocyte_phenotype[i] = 2
+              phagocyte_active_age[i] = 1
+              phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
+            } else if (avg_SAMPs < activation_threshold_SAMPs && avg_DAMPs < activation_threshold_DAMPs) {
+              phagocyte_phenotype[i] = 0
+              phagocyte_active_age[i] = 0
+              phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
+              phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
+            }
           }
         }
       }
@@ -445,15 +491,16 @@ for (reps_in in 0:(num_reps-1)){
           
           if (length(indices_to_engulf) > 0) {
             phagocyte_pathogens_engulfed[i] = phagocyte_pathogens_engulfed[i] + length(indices_to_engulf)
+            ### NOT INFINITE, NEEDS MEMORY!
             phagocyte_pathogens_engulfed[i] = max(0, phagocyte_pathogens_engulfed[i]-1*(t%%3==0)) # every 3 timesteps decreases 1!
             
             pathogen_coords = pathogen_coords[-indices_to_engulf, , drop = FALSE]
             
-            # C++ ACCELERATION: shift_insert
-            phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
-              phagocyte_bacteria_registry[i, ],
-              rep(1, length(indices_to_engulf))
-            )
+            # # C++ ACCELERATION: shift_insert
+            # phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
+            #   phagocyte_bacteria_registry[i, ],
+            #   rep(1, length(indices_to_engulf))
+            # )
             
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             pathogens_killed_by_Mac[phagocyte_phenotype_index] =
@@ -473,15 +520,16 @@ for (reps_in in 0:(num_reps-1)){
           
           if (length(indices_to_engulf) > 0) {
             phagocyte_commensals_engulfed[i] = phagocyte_commensals_engulfed[i] + length(indices_to_engulf)
+            ### NOT INFINITE, NEEDS MEMORY!
             phagocyte_commensals_engulfed[i] = max(0, phagocyte_commensals_engulfed[i]-1*(t%%3==0)) # every 3 timesteps decreases 1!
             
             commensal_coords = commensal_coords[-indices_to_engulf, , drop = FALSE]
             
-            # C++ ACCELERATION: shift_insert
-            phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
-              phagocyte_bacteria_registry[i, ],
-              rep(1, length(indices_to_engulf))
-            )
+            # # C++ ACCELERATION: shift_insert
+            # phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
+            #   phagocyte_bacteria_registry[i, ],
+            #   rep(1, length(indices_to_engulf))
+            # )
             
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             commensals_killed_by_Mac[phagocyte_phenotype_index] =
@@ -518,9 +566,9 @@ for (reps_in in 0:(num_reps-1)){
             # ALWAYS calculate and sample (to maintain stream synchronization)
             rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)
             alpha = (1 - treg_discrimination_efficiency) * 1 +
-              treg_discrimination_efficiency * (rat_com_pat_real * precision)
+              treg_discrimination_efficiency * (rat_com_pat_real * precision_treg)
             beta = (1 - treg_discrimination_efficiency) * 1 +
-              treg_discrimination_efficiency * ((1 - rat_com_pat_real) * precision)
+              treg_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_treg)
             
             # ALWAYS consume from random stream (both Tregs ON and OFF)
             rat_com_pat = sample_rbeta(alpha, beta)
@@ -591,10 +639,17 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     epithelium_longitudinal[t, ] = as.numeric(table(factor(epithelium$level_injury, levels = 0:5)))
     
+    # this might be wrong 
+    # phagocyte_counts = c(
+    #   sum(phagocyte_phenotype == 0),
+    #   tabulate(phagocyte_active_age[phagocyte_phenotype == 1] + 1, cc_phagocyte + 1),
+    #   tabulate(phagocyte_active_age[phagocyte_phenotype == 2] + 1, cc_phagocyte + 1)
+    # )
+    
     phagocyte_counts = c(
       sum(phagocyte_phenotype == 0),
-      tabulate(phagocyte_active_age[phagocyte_phenotype == 1] + 1, cc_phagocyte + 1),
-      tabulate(phagocyte_active_age[phagocyte_phenotype == 2] + 1, cc_phagocyte + 1)
+      sum(phagocyte_phenotype == 1),
+      sum(phagocyte_phenotype == 2)
     )
     macrophages_longitudinal[t, ] = phagocyte_counts
     
@@ -620,7 +675,9 @@ for (reps_in in 0:(num_reps-1)){
   colnames(longitudinal_df) = colnames_insert
   
   longitudinal_df$t = 1:t_max
+  longitudinal_df$control = control
   longitudinal_df$sterile = sterile
+  longitudinal_df$macspec_on = macspec_on
   longitudinal_df$tregs_on = allow_tregs
   longitudinal_df$randomize_tregs = randomize_tregs
   longitudinal_df$param_set_id = param_set_use$param_set_id
@@ -636,12 +693,12 @@ for (reps_in in 0:(num_reps-1)){
   
   longitudinal_df$time_ss = steady_state_idx(longitudinal_df$epithelial_score)
   
-  
-  
   longitudinal_df = longitudinal_df %>%
     dplyr::select(t, 
+                  control, 
                   sterile, 
                   tregs_on,
+                  macspec_on,
                   randomize_tregs, 
                   param_set_id, 
                   rep_id, 

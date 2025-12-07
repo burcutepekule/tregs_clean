@@ -6,9 +6,9 @@ library(cowplot)
 library(av)
 library(ggplot2)
 
-setwd('~/Dropbox/tregs_ubelix')
-source("./MISC/FAST_FUNCTIONS_CPP_ONELEVEL.R")
-source("./MISC/PLOT_FUNCTIONS.R")
+setwd('~/Dropbox/tregs_clean')
+source("./MISC/FAST_FUNCTIONS_CPP.R")
+source("./MISC/PLOT_FUNCTIONS_HYBRID.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_ubelix_merged.csv", stringsAsFactors = FALSE)
@@ -29,8 +29,9 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 10
+t_max      = 100
 plot_on    = 1
+plot_every = 10
 if(plot_on==1){
   dir_name_data = '/Users/burcutepekule/Desktop/gif_out_ABM'
   dir.create(dir_name_data, showWarnings = FALSE)
@@ -38,7 +39,6 @@ if(plot_on==1){
   dir_name_frames = paste0(dir_name_data,'/frames')
   dir.create(dir_name_frames, showWarnings = FALSE)
 }
-plot_every = 1
 grid_size  = 25
 # n_phagocytes = round(grid_size * grid_size * 0.05)
 # n_tregs = round(grid_size * grid_size * 0.05)
@@ -94,6 +94,9 @@ for(param_set_id_use in loop_over){
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
     
+    mac_discrimination_efficiency = 1
+    macspec_on                    = 0
+    control                       = 0
     source("./MISC/ASSIGN_PARAMETERS.R")
     
     cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
@@ -107,11 +110,12 @@ for(param_set_id_use in loop_over){
     # ========================================================================
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
-    source("./MISC/RUN_REPS_CPP_ONELEVEL.R")
+    source("./MISC/RUN_REPS_CPP_ABM.R")
 
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
-
+    cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
+    
     results = rbind(results, longitudinal_df_keep)
   }
 }
@@ -130,3 +134,18 @@ p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
   labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
 
 print(p)
+
+# variables = c("pathogen")
+# 
+# data_long = results %>%
+#   dplyr::select(t, sterile, tregs_on, randomize_tregs, rep_id, all_of(variables)) %>%
+#   pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+# 
+# p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+#   geom_line(alpha = 0.2, linewidth = 1) +
+#   facet_grid(randomize_tregs ~ sterile + tregs_on , labeller = label_both) +
+#   scale_color_manual(values = agent_colors) +
+#   theme_minimal() +
+#   labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
+# 
+# print(p)

@@ -133,7 +133,6 @@ List calculate_phagocyte_signals_cpp(
     IntegerVector phagocyte_indices,
     IntegerVector phagocyte_x,
     IntegerVector phagocyte_y,
-    NumericMatrix phagocyte_bacteria_registry,
     int act_radius_DAMPs,
     int act_radius_SAMPs,
     NumericMatrix DAMPs,
@@ -143,7 +142,8 @@ List calculate_phagocyte_signals_cpp(
   int n = phagocyte_indices.size();
   NumericVector avg_DAMPs(n);
   NumericVector avg_SAMPs(n);
-  IntegerVector bacteria_counts(n);
+  // IntegerVector bacteria_counts(n);
+  int bacteria_counts = 0;
 
   for (int i = 0; i < n; i++)
   {
@@ -158,12 +158,11 @@ List calculate_phagocyte_signals_cpp(
     avg_SAMPs[i] = get_8n_avg_signal_cpp(x, y, act_radius_SAMPs, SAMPs, grid_size);
 
     // Count bacteria
-    int bacteria_count = 0;
-    for (int j = 0; j < phagocyte_bacteria_registry.ncol(); j++)
-    {
-      bacteria_count += phagocyte_bacteria_registry(idx, j);
-    }
-    bacteria_counts[i] = bacteria_count;
+    // int bacteria_count = 0;
+    // for (int j = 0; j < phagocyte_bacteria_registry.ncol(); j++) {
+    //   bacteria_count += phagocyte_bacteria_registry(idx, j);
+    // }
+    // bacteria_counts[i] = bacteria_count;
   }
 
   return List::create(
@@ -275,7 +274,8 @@ NumericVector calculate_epithelial_ros_cpp(
 NumericMatrix diffuse_matrix_cpp(
     NumericMatrix mat,
     double D,
-    double max_cell_value)
+    double max_cell_value,
+    bool reflect_top = false)
 {
   int nr = mat.nrow();
   int nc = mat.ncol();
@@ -287,6 +287,15 @@ NumericMatrix diffuse_matrix_cpp(
     for (int j = 0; j < nc; j++)
     {
       padded(i + 1, j + 1) = mat(i, j);
+    }
+  }
+
+  // REFLECTIVE boundary at TOP (y=0, epithelium boundary)
+  if (reflect_top)
+  {
+    for (int j = 0; j < nc; j++)
+    {
+      padded(0, j + 1) = mat(0, j); // Reflect epithelium
     }
   }
 
