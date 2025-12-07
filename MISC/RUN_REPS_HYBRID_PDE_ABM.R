@@ -52,19 +52,19 @@ for (reps_in in 0:(num_reps-1)){
   treg_activity_SAMPs_binary = rep(0, n_tregs)
 
   # Initialize microbe fields with starting populations
-  # Pathogens at injury sites
+  # Pathogens at injury sites (start at y=2, not epithelium layer)
   n_pathogens_lp = round(rate_leak_pathogen_injury * length(injury_site))
   if (n_pathogens_lp > 0) {
     for (i in 1:n_pathogens_lp) {
       x_start = sample(injury_site, 1)
-      P_field[1, x_start] = P_field[1, x_start] + 1
+      P_field[2, x_start] = P_field[2, x_start] + 1
     }
   }
 
-  # Commensals distributed
+  # Commensals distributed (start at y=2, not epithelium layer)
   for (i in 1:n_commensals_lp) {
     x_start = sample(1:grid_size, 1)
-    y_start = sample(1:grid_size, 1)
+    y_start = sample(2:grid_size, 1)
     C_field[y_start, x_start] = C_field[y_start, x_start] + 1
   }
 
@@ -109,29 +109,29 @@ for (reps_in in 0:(num_reps-1)){
       ROS[coords] = ROS[coords] + phagocyte_activity_ROS[M1_phagocytes] * add_ROS
     }
 
-    # 1.3 DAMP production (from epithelial injury)
-    DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury * add_DAMPs
+    # 1.3 DAMP production (from epithelial injury, released at y=2)
+    DAMPs[2, ] = DAMPs[2, ] + epithelium$level_injury * add_DAMPs
 
-    # 1.4 DAMP production (from microbe contact at epithelium)
-    microbe_load_epithelium = P_field[1, ] + C_field[1, ]
-    DAMPs[1, ] = DAMPs[1, ] + logistic_scaled_0_to_5_quantized(microbe_load_epithelium) * add_DAMPs
+    # 1.4 DAMP production (from microbe contact near epithelium, released at y=2)
+    microbe_load_epithelium = P_field[2, ] + C_field[2, ]
+    DAMPs[2, ] = DAMPs[2, ] + logistic_scaled_0_to_5_quantized(microbe_load_epithelium) * add_DAMPs
 
     # ========================================================================
     # STEP 2: PDE EVOLUTION
     # ========================================================================
 
-    # 2.1 Microbe entry from epithelium
+    # 2.1 Microbe entry from epithelium (enter at y=2, just below epithelium)
     for (k in 1:nrow(epithelium)) {
       x = epithelium$x[k]
       inj = epithelium$level_injury[k]
 
       # Pathogen leakage
       n_new_pathogens = rate_leak_pathogen_injury*inj
-      P_field[1, x] = P_field[1, x] + n_new_pathogens
+      P_field[2, x] = P_field[2, x] + n_new_pathogens
 
       # Commensal leakage
       n_new_commensals = rate_leak_commensal_baseline + rate_leak_commensal_injury * inj
-      C_field[1, x] = C_field[1, x] + n_new_commensals
+      C_field[2, x] = C_field[2, x] + n_new_commensals
     }
 
     # 2.2 Diffusion for all fields
@@ -473,10 +473,10 @@ for (reps_in in 0:(num_reps-1)){
       epithelium_x, act_radius_ROS, ROS, grid_size
     )
 
-    # 8.2 Injury from pathogens at epithelium
+    # 8.2 Injury from pathogens near epithelium (check y=2)
     for (k in 1:nrow(epithelium)) {
       x = epithelium$x[k]
-      pathogen_load = P_field[1, x]
+      pathogen_load = P_field[2, x]
       epithelium$level_injury[k] = epithelium$level_injury[k] +
         logistic_scaled_0_to_5_quantized(pathogen_load)
     }
