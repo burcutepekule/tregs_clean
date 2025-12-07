@@ -225,8 +225,8 @@ for (reps_in in 0:(num_reps-1)){
     # 4.1 Decay macrophage memory
     # phagocyte_pathogen_memory  = phagocyte_pathogen_memory + max(rep(0,length(phagocyte_pathogen_memory)), phagocyte_pathogen_memory-1*(t%%3==0))
     # phagocyte_commensal_memory = phagocyte_commensal_memory + max(rep(0,length(phagocyte_commensal_memory)), phagocyte_commensal_memory-1*(t%%3==0))
-    phagocyte_pathogen_memory  = phagocyte_pathogen_memory*0.5
-    phagocyte_commensal_memory = phagocyte_commensal_memory*0.5
+    phagocyte_pathogen_memory  = phagocyte_pathogen_memory*memory_decay_coeff
+    phagocyte_commensal_memory = phagocyte_commensal_memory*memory_decay_coeff
     
     # 4.2 Macrophage engulfment (samples from PDE, removes from PDE)
     for (i in 1:n_phagocytes) {

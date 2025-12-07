@@ -28,9 +28,10 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-num_reps   = 1
-t_max      = 10
-plot_on    = 1
+num_reps   = 10
+t_max      = 1000
+plot_on    = 0
+plot_every = 10
 if(plot_on==1){
   dir_name_data = '/Users/burcutepekule/Desktop/gif_out_HYB'
   dir.create(dir_name_data, showWarnings = FALSE)
@@ -38,7 +39,6 @@ if(plot_on==1){
   dir_name_frames = paste0(dir_name_data,'/frames')
   dir.create(dir_name_frames, showWarnings = FALSE)
 }
-plot_every = 1
 grid_size  = 25
 # n_phagocytes = round(grid_size * grid_size * 0.05)
 # n_tregs = round(grid_size * grid_size * 0.05)
@@ -86,6 +86,7 @@ cat("Total simulations:", length(loop_over) * nrow(scenarios_df) * num_reps, "\n
 # ============================================================================
 
 results = c()
+scenario_elapsed_total = 0
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
 
@@ -94,7 +95,8 @@ for(param_set_id_use in loop_over){
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
     
-    D_microbe                     = 0.125 #max 0.12
+    memory_decay_coeff            = 0.01
+    D_microbe                     = 0.001 #max 0.12
     max_microbe_concentration     = 5
     mac_discrimination_efficiency = 1
     macspec_on                    = 0
@@ -117,22 +119,34 @@ for(param_set_id_use in loop_over){
     
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
-
+    scenario_elapsed_total = scenario_elapsed_total + scenario_elapsed
+    cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
+    
     results = rbind(results, longitudinal_df_keep)
   }
 }
+cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 
-# variables = c("epithelial_score")
-# 
-# data_long = results %>%
-#   dplyr::select(t, sterile, tregs_on, randomize_tregs, rep_id, all_of(variables)) %>%
-#   pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-# 
-# p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
-#   geom_line(alpha = 0.2, linewidth = 1) +
-#   facet_grid(randomize_tregs ~ sterile + tregs_on , labeller = label_both) +
-#   scale_color_manual(values = agent_colors) +
-#   theme_minimal() +
-#   labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
-# 
-# print(p)
+variables = c("epithelial_score")
+
+data_long = results %>%
+  dplyr::select(t, sterile, tregs_on, randomize_tregs, rep_id, all_of(variables)) %>%
+  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+
+p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+  geom_line(alpha = 0.2, linewidth = 1) +
+  facet_grid(randomize_tregs ~ sterile + tregs_on , labeller = label_both) +
+  scale_color_manual(values = agent_colors) +
+  theme_minimal() +
+  labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
+
+print(p)
+
+ggsave(
+  paste0("./epithelium_HYBRID.png"),
+  plot = p,
+  width = 12,
+  height = 6,
+  dpi = 600,
+  bg = "white"
+)
