@@ -43,7 +43,7 @@ activity_ROS_M0_baseline = 0
 activity_ROS_M2_baseline = 0
 
 # Leak rates
-rate_leak_commensal_injury = param_set_use$rate_leak_commensal_injury
+rate_leak_commensal_injury   = param_set_use$rate_leak_commensal_injury
 rate_leak_commensal_baseline = param_set_use$rate_leak_commensal_baseline
 rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, param_set_use$rate_leak_pathogen_injury)
 
@@ -58,8 +58,8 @@ treg_discrimination_efficiency = param_set_use$treg_discrimination_efficiency
 # allow_tregs_to_suppress_cognate = FALSE
 
 # Macrophage specificity parameters
-mac_discrimination_efficiency = param_set_use$mac_discrimination_efficiency
-mac_rat_com_pat_threshold = param_set_use$mac_rat_com_pat_threshold
+mac_discrimination_efficiency = 1 # PERFECT DISCRIMINATION
+mac_rat_com_pat_threshold     = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
 
 # ============================================================================
 # INITIALIZE SIMULATION
