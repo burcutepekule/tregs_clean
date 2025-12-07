@@ -300,20 +300,19 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # PLOTTING
     # ========================================================================
-    # if (plot_on == 1 & (t %% plot_every == 0 | t == 1)) {
-    #   # source('/storage/homefs/bt25p365/tregs/MISC/CONVERT_TO_DATAFRAME.R')
-    #   source('./MISC/CONVERT_TO_DATAFRAME.R')
-    #   p = plot_simtime_simple()
-    #   ggsave(
-    #     paste0(dir_name_frames, "/frame_param_",param_set_id_use,"_rep_", reps_in, "_STERILE_", sterile, "_TREGS_",
-    #            allow_tregs, "_trnd_", randomize_tregs, "_", t, ".png"),
-    #     plot = p,
-    #     width = 12,
-    #     height = 10,
-    #     dpi = 600,
-    #     bg = "white"
-    #   )
-    # }
+    if (plot_on == 1 & (t %% plot_every == 0 | t == 1)) {
+      source('./MISC/CONVERT_TO_DATAFRAME.R')
+      p = plot_simtime_simple()
+      ggsave(
+        paste0(dir_name_frames, "/frame_param_",param_set_id_use,"_rep_", reps_in, "_STERILE_", sterile, "_TREGS_",
+               allow_tregs, "_trnd_", randomize_tregs, "_", t, ".png"),
+        plot = p,
+        width = 12,
+        height = 10,
+        dpi = 600,
+        bg = "white"
+      )
+    }
     
     # ========================================================================
     # UPDATE PHAGOCYTE PHENOTYPES

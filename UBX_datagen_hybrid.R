@@ -32,7 +32,7 @@ num_reps   = 1
 t_max      = 10
 plot_on    = 1
 if(plot_on==1){
-  dir_name_data = '/Users/burcutepekule/Desktop/gif_out_ABM'
+  dir_name_data = '/Users/burcutepekule/Desktop/gif_out_HYB'
   dir.create(dir_name_data, showWarnings = FALSE)
   cat("Output directory:", dir_name_data, "\n\n")
   dir_name_frames = paste0(dir_name_data,'/frames')

@@ -29,9 +29,16 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 1000
-plot_on    = 0
-plot_every = NA
+t_max      = 10
+plot_on    = 1
+if(plot_on==1){
+  dir_name_data = '/Users/burcutepekule/Desktop/gif_out_ABM'
+  dir.create(dir_name_data, showWarnings = FALSE)
+  cat("Output directory:", dir_name_data, "\n\n")
+  dir_name_frames = paste0(dir_name_data,'/frames')
+  dir.create(dir_name_frames, showWarnings = FALSE)
+}
+plot_every = 1
 grid_size  = 25
 # n_phagocytes = round(grid_size * grid_size * 0.05)
 # n_tregs = round(grid_size * grid_size * 0.05)

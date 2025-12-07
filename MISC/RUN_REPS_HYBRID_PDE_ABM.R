@@ -57,14 +57,14 @@ for (reps_in in 0:(num_reps-1)){
   if (n_pathogens_lp > 0) {
     for (i in 1:n_pathogens_lp) {
       x_start = sample(injury_site, 1)
-      P_field[1, x_start] = P_field[1, x_start] + 1
+      P_field[2, x_start] = P_field[2, x_start] + 1
     }
   }
 
   # Commensals distributed
   for (i in 1:n_commensals_lp) {
     x_start = sample(1:grid_size, 1)
-    y_start = sample(1:grid_size, 1)
+    y_start = sample(2:grid_size, 1)
     C_field[y_start, x_start] = C_field[y_start, x_start] + 1
   }
 
@@ -110,11 +110,11 @@ for (reps_in in 0:(num_reps-1)){
     }
 
     # 1.3 DAMP production (from epithelial injury)
-    DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury * add_DAMPs
+    DAMPs[2, ] = DAMPs[2, ] + epithelium$level_injury * add_DAMPs
 
     # 1.4 DAMP production (from microbe contact at epithelium)
-    microbe_load_epithelium = P_field[1, ] + C_field[1, ]
-    DAMPs[1, ] = DAMPs[1, ] + logistic_scaled_0_to_5_quantized(microbe_load_epithelium) * add_DAMPs
+    microbe_load_epithelium = P_field[2, ] + C_field[2, ]
+    DAMPs[2, ] = DAMPs[2, ] + logistic_scaled_0_to_5_quantized(microbe_load_epithelium) * add_DAMPs
 
     # ========================================================================
     # STEP 2: PDE EVOLUTION
@@ -127,11 +127,11 @@ for (reps_in in 0:(num_reps-1)){
 
       # Pathogen leakage
       n_new_pathogens = rate_leak_pathogen_injury*inj
-      P_field[1, x] = P_field[1, x] + n_new_pathogens
+      P_field[2, x] = P_field[2, x] + n_new_pathogens
 
       # Commensal leakage
       n_new_commensals = rate_leak_commensal_baseline + rate_leak_commensal_injury * inj
-      C_field[1, x] = C_field[1, x] + n_new_commensals
+      C_field[2, x] = C_field[2, x] + n_new_commensals
     }
 
     # 2.2 Diffusion for all fields
@@ -160,7 +160,8 @@ for (reps_in in 0:(num_reps-1)){
         x = treg_x[i]
         y = treg_y[i]
         x_range = max(1, x - 1):min(grid_size, x + 1)
-        y_range = max(1, y - 1):min(grid_size, y + 1)
+        y_range = max(2, y - 1):min(grid_size, y + 1)
+        
         neighbors_x = rep(x_range, each = length(y_range))
         neighbors_y = rep(y_range, times = length(x_range))
         neighbor_densities = density_matrix_tregs[cbind(neighbors_y, neighbors_x)]
@@ -175,12 +176,13 @@ for (reps_in in 0:(num_reps-1)){
         treg_y[i] = neighbors_y[chosen_idx]
       }
     } else {
-      dy_treg = ifelse(treg_y == 1,
-                       sample(c(1), size = length(treg_y), replace = TRUE),
+      dy_treg = ifelse(treg_y == 2, 
+                       sample(c(0, 1), size = length(treg_y), replace = TRUE),
                        sample(c(-1, 0, 1), size = length(treg_y), replace = TRUE))
+      
       dx_treg = iszero_coordinates(dy_treg)
       treg_x = pmin(pmax(treg_x + dx_treg, 1), grid_size)
-      treg_y = pmin(pmax(treg_y + dy_treg, 1), grid_size)
+      treg_y = pmin(pmax(treg_y + dy_treg, 2), grid_size)
     }
 
     # 3.2 Macrophage movement
@@ -192,7 +194,7 @@ for (reps_in in 0:(num_reps-1)){
         x = phagocyte_x[i]
         y = phagocyte_y[i]
         x_range = max(1, x - 1):min(grid_size, x + 1)
-        y_range = max(1, y - 1):min(grid_size, y + 1)
+        y_range = max(2, y - 1):min(grid_size, y + 1)
         neighbors_x = rep(x_range, each = length(y_range))
         neighbors_y = rep(y_range, times = length(x_range))
         neighbor_densities = density_matrix_phagocytes[cbind(neighbors_y, neighbors_x)]
@@ -207,12 +209,13 @@ for (reps_in in 0:(num_reps-1)){
         phagocyte_y[i] = neighbors_y[chosen_idx]
       }
     } else {
-      dy_phagocyte = ifelse(phagocyte_y == 1,
-                            sample(c(1), size = length(phagocyte_y), replace = TRUE),
+      dy_phagocyte = ifelse(phagocyte_y == 2,
+                            sample(c(0, 1), size = length(phagocyte_y), replace = TRUE),
                             sample(c(-1, 0, 1), size = length(phagocyte_y), replace = TRUE))
       dx_phagocyte = iszero_coordinates(dy_phagocyte)
       phagocyte_x = pmin(pmax(phagocyte_x + dx_phagocyte, 1), grid_size)
-      phagocyte_y = pmin(pmax(phagocyte_y + dy_phagocyte, 1), grid_size)
+      phagocyte_y = pmin(pmax(phagocyte_y + dy_phagocyte, 2), grid_size)
+      
     }
 
     # ========================================================================
@@ -476,9 +479,8 @@ for (reps_in in 0:(num_reps-1)){
     # 8.2 Injury from pathogens at epithelium
     for (k in 1:nrow(epithelium)) {
       x = epithelium$x[k]
-      pathogen_load = P_field[1, x]
-      epithelium$level_injury[k] = epithelium$level_injury[k] +
-        logistic_scaled_0_to_5_quantized(pathogen_load)
+      pathogen_load = P_field[2, x]
+      epithelium$level_injury[k] = epithelium$level_injury[k] + logistic_scaled_0_to_5_quantized(pathogen_load)
     }
 
     # 8.3 Injury from ROS

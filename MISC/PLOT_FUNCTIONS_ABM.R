@@ -91,12 +91,14 @@ agent_colors = c(
   phagocyte_M1_L_1   = "#F397D6",
   phagocyte_M1_L_2   = "#E754C4",
   phagocyte_M1_L_3   = "#D12CA0",
+  phagocyte_M1       = "#D12CA0",
   phagocyte_M1_L_4   = "#A5177A",
   phagocyte_M1_L_5   = "#6B0C4F",
   phagocyte_M2_L_0   = "#CDEFE3", 
   phagocyte_M2_L_1   = "#97D6BC",  
   phagocyte_M2_L_2   = "#61BD96",  
   phagocyte_M2_L_3   = "#3BA578",  
+  phagocyte_M2       = "#3BA578",
   phagocyte_M2_L_4   = "#2E8B57",  
   phagocyte_M2_L_5   = "#1F5C3B",  
   phagocyte_M0   = "grey70",
@@ -472,12 +474,6 @@ plot_grid_phagocyte_M1 = function() {
   # Create full grid background (invisible or white)
   full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
   
-  phagocytes_plot$level = sapply(phagocytes_plot$bacteria_registry, sum)
-  
-  if(dim(phagocytes_plot)[1]>0){
-    phagocytes_plot$type = paste0("phagocyte_M1_L_", phagocytes_plot$level)
-  }
-  
   # Combine all agents into one dataframe with their type
   agent_plot_df = bind_rows(
     epithelial_layer %>% dplyr::select(x, y, type),
@@ -489,8 +485,9 @@ plot_grid_phagocyte_M1 = function() {
   #   "epithelial_healthy", "epithelial_unhealthy","phagocyte_M1")
   
   all_types = c(
-    "epithelial_healthy", "epithelial_inj_1","epithelial_inj_2","epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
-    "phagocyte_M1_L_0","phagocyte_M1_L_1","phagocyte_M1_L_2","phagocyte_M1_L_3","phagocyte_M1_L_4","phagocyte_M1_L_5")
+    "epithelial_healthy", "epithelial_inj_1","epithelial_inj_2",
+    "epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
+    "phagocyte_M1")
   
   agent_plot_df = bind_rows(
     epithelial_layer %>% dplyr::select(x, y, type),
