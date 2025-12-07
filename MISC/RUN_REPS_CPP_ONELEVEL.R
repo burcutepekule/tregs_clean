@@ -41,23 +41,23 @@ for (reps_in in 0:(num_reps-1)){
   treg_phenotype = rep(0, n_tregs)  # 0=resting, 1=activated
   treg_activity_SAMPs_binary = rep(0, n_tregs)
   
-  # Initialize pathogens
+  # Initialize pathogens (start at y=2, not at epithelium y=0 or y=1)
   if (n_pathogens_lp == 0) {
     pathogen_coords = matrix(numeric(0), ncol = 3)
     colnames(pathogen_coords) = c("x", "y", "id")
   } else {
     pathogen_coords = matrix(c(
       sample(injury_site, n_pathogens_lp, TRUE),
-      rep(1, n_pathogens_lp),
+      rep(2, n_pathogens_lp),
       seq(1, n_pathogens_lp)
     ), ncol = 3)
     colnames(pathogen_coords) = c("x", "y", "id")
   }
   
-  # Initialize commensals
+  # Initialize commensals (start at y=2, not at epithelium y=0 or y=1)
   commensal_coords = matrix(c(
     sample(1:grid_size, n_commensals_lp, TRUE),
-    sample(1:grid_size, n_commensals_lp, TRUE),
+    sample(2:grid_size, n_commensals_lp, TRUE),
     seq(1, n_commensals_lp)
   ), ncol = 3)
   colnames(commensal_coords) = c("x", "y", "id")
@@ -113,37 +113,37 @@ for (reps_in in 0:(num_reps-1)){
     # MOVE MICROBES (UPDATED ORDER: before DAMP calculation)
     # ========================================================================
     if (nrow(pathogen_coords) > 0) {
-      dy = ifelse(pathogen_coords[, "y"] == 1,
-                  sample(c(1), size = nrow(pathogen_coords), replace = TRUE),
+      dy = ifelse(pathogen_coords[, "y"] == 2,
+                  sample(c(0, 1), size = nrow(pathogen_coords), replace = TRUE),
                   sample(c(-1, 0, 1), size = nrow(pathogen_coords), replace = TRUE))
       dx = iszero_coordinates(dy)
       pathogen_coords[, "x"] = pmin(pmax(pathogen_coords[, "x"] + dx, 1), grid_size)
-      pathogen_coords[, "y"] = pmin(pmax(pathogen_coords[, "y"] + dy, 1), grid_size)
+      pathogen_coords[, "y"] = pmin(pmax(pathogen_coords[, "y"] + dy, 2), grid_size)
     }
     
     if (nrow(commensal_coords) > 0) {
-      dy = ifelse(commensal_coords[, "y"] == 1,
-                  sample(c(1), size = nrow(commensal_coords), replace = TRUE),
+      dy = ifelse(commensal_coords[, "y"] == 2,
+                  sample(c(0, 1), size = nrow(commensal_coords), replace = TRUE),
                   sample(c(-1, 0, 1), size = nrow(commensal_coords), replace = TRUE))
       dx = iszero_coordinates(dy)
       commensal_coords[, "x"] = pmin(pmax(commensal_coords[, "x"] + dx, 1), grid_size)
-      commensal_coords[, "y"] = pmin(pmax(commensal_coords[, "y"] + dy, 1), grid_size)
+      commensal_coords[, "y"] = pmin(pmax(commensal_coords[, "y"] + dy, 2), grid_size)
     }
     
     # ========================================================================
-    # PRE-CALCULATE MICROBE COUNTS AT EPITHELIUM (y=1)
+    # PRE-CALCULATE MICROBE COUNTS NEAR EPITHELIUM (y=2, just below epithelium)
     # ========================================================================
     pathogen_epithelium_counts = rep(0, grid_size)
     if (nrow(pathogen_coords) > 0) {
-      epithelium_pathogens = pathogen_coords[pathogen_coords[, "y"] == 1, , drop = FALSE]
+      epithelium_pathogens = pathogen_coords[pathogen_coords[, "y"] == 2, , drop = FALSE]
       if (nrow(epithelium_pathogens) > 0) {
         pathogen_epithelium_counts = tabulate(epithelium_pathogens[, "x"], nbins = grid_size)
       }
     }
-    
+
     commensal_epithelium_counts = rep(0, grid_size)
     if (nrow(commensal_coords) > 0) {
-      epithelium_commensals = commensal_coords[commensal_coords[, "y"] == 1, , drop = FALSE]
+      epithelium_commensals = commensal_coords[commensal_coords[, "y"] == 2, , drop = FALSE]
       if (nrow(epithelium_commensals) > 0) {
         commensal_epithelium_counts = tabulate(epithelium_commensals[, "x"], nbins = grid_size)
       }
@@ -152,11 +152,11 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # UPDATE DAMPs (UPDATED: includes epithelium + microbe counts)
     # ========================================================================
-    # DAMPs from epithelial injury
-    DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury * add_DAMPs
-    
-    # DAMPs from microbes touching epithelium
-    DAMPs[1, ] = DAMPs[1, ] + 1 * logistic_scaled_0_to_5_quantized(
+    # DAMPs from epithelial injury (released at y=2, just below epithelium)
+    DAMPs[2, ] = DAMPs[2, ] + epithelium$level_injury * add_DAMPs
+
+    # DAMPs from microbes near epithelium (at y=2)
+    DAMPs[2, ] = DAMPs[2, ] + 1 * logistic_scaled_0_to_5_quantized(
       pathogen_epithelium_counts + commensal_epithelium_counts
     ) * add_DAMPs
     
@@ -207,7 +207,7 @@ for (reps_in in 0:(num_reps-1)){
         x = treg_x[i]
         y = treg_y[i]
         x_range = max(1, x - 1):min(grid_size, x + 1)
-        y_range = max(1, y - 1):min(grid_size, y + 1)
+        y_range = max(2, y - 1):min(grid_size, y + 1)
         neighbors_x = rep(x_range, each = length(y_range))
         neighbors_y = rep(y_range, times = length(x_range))
         neighbor_densities = density_matrix_tregs[cbind(neighbors_y, neighbors_x)]
@@ -222,12 +222,12 @@ for (reps_in in 0:(num_reps-1)){
         treg_y[i] = neighbors_y[chosen_idx]
       }
     } else {
-      dy_treg = ifelse(treg_y == 1,
-                       sample(c(1), size = length(treg_y), replace = TRUE),
+      dy_treg = ifelse(treg_y == 2,
+                       sample(c(0, 1), size = length(treg_y), replace = TRUE),
                        sample(c(-1, 0, 1), size = length(treg_y), replace = TRUE))
       dx_treg = iszero_coordinates(dy_treg)
       treg_x = pmin(pmax(treg_x + dx_treg, 1), grid_size)
-      treg_y = pmin(pmax(treg_y + dy_treg, 1), grid_size)
+      treg_y = pmin(pmax(treg_y + dy_treg, 2), grid_size)
     }
     
     # Move phagocytes
@@ -236,7 +236,7 @@ for (reps_in in 0:(num_reps-1)){
         x = phagocyte_x[i]
         y = phagocyte_y[i]
         x_range = max(1, x - 1):min(grid_size, x + 1)
-        y_range = max(1, y - 1):min(grid_size, y + 1)
+        y_range = max(2, y - 1):min(grid_size, y + 1)
         neighbors_x = rep(x_range, each = length(y_range))
         neighbors_y = rep(y_range, times = length(x_range))
         neighbor_densities = density_matrix_phagocytes[cbind(neighbors_y, neighbors_x)]
@@ -251,12 +251,12 @@ for (reps_in in 0:(num_reps-1)){
         phagocyte_y[i] = neighbors_y[chosen_idx]
       }
     } else {
-      dy_phagocyte = ifelse(phagocyte_y == 1,
-                            sample(c(1), size = length(phagocyte_y), replace = TRUE),
+      dy_phagocyte = ifelse(phagocyte_y == 2,
+                            sample(c(0, 1), size = length(phagocyte_y), replace = TRUE),
                             sample(c(-1, 0, 1), size = length(phagocyte_y), replace = TRUE))
       dx_phagocyte = iszero_coordinates(dy_phagocyte)
       phagocyte_x = pmin(pmax(phagocyte_x + dx_phagocyte, 1), grid_size)
-      phagocyte_y = pmin(pmax(phagocyte_y + dy_phagocyte, 1), grid_size)
+      phagocyte_y = pmin(pmax(phagocyte_y + dy_phagocyte, 2), grid_size)
     }
     
     # ========================================================================
@@ -267,7 +267,7 @@ for (reps_in in 0:(num_reps-1)){
     if (n_pathogens_lp_new > 0) {
       new_pathogen_coords = matrix(c(
         sample(1:grid_size, n_pathogens_lp_new, replace = TRUE, prob = epithelium$level_injury),
-        rep(1, n_pathogens_lp_new),
+        rep(2, n_pathogens_lp_new),
         last_id_pathogen + seq(1, n_pathogens_lp_new)
       ), ncol = 3)
       colnames(new_pathogen_coords) = c("x", "y", "id")
@@ -289,7 +289,7 @@ for (reps_in in 0:(num_reps-1)){
       }
       new_commensal_coords = matrix(c(
         c(baseline_x, injury_x),
-        rep(1, total_new_commensals),
+        rep(2, total_new_commensals),
         last_id_commensal + seq(1, total_new_commensals)
       ), ncol = 3)
       colnames(new_commensal_coords) = c("x", "y", "id")
