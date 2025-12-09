@@ -148,13 +148,13 @@ if(length(inds2read)>0){
       scores_1_0_0_0_0_keep = c()  # control_1_sterile_0_macspec_0_tregs_0_trnd_0
       scores_1_1_0_0_0_keep = c()  # control_1_sterile_1_macspec_0_tregs_0_trnd_0
       
-      # Sterile inflammation (sterile_0) test files
+      # Pathogenic (sterile_0) test files
       scores_0_0_0_0_0_keep = c()  # control_0_sterile_0_macspec_0_tregs_0_trnd_0
       scores_0_0_0_1_0_keep = c()  # control_0_sterile_0_macspec_0_tregs_1_trnd_0
       scores_0_0_0_1_1_keep = c()  # control_0_sterile_0_macspec_0_tregs_1_trnd_1
       scores_0_0_1_0_0_keep = c()  # control_0_sterile_0_macspec_1_tregs_0_trnd_0
       
-      # Pathogenic (sterile_1) test files
+      # Sterile (sterile_1) test files
       scores_0_1_0_0_0_keep = c()  # control_0_sterile_1_macspec_0_tregs_0_trnd_0
       scores_0_1_0_1_0_keep = c()  # control_0_sterile_1_macspec_0_tregs_1_trnd_0
       scores_0_1_0_1_1_keep = c()  # control_0_sterile_1_macspec_0_tregs_1_trnd_1
@@ -170,7 +170,7 @@ if(length(inds2read)>0){
         # sterile_1 (with pathogen)
         full_data_comparison_scores_1_1_0_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==1 & sterile==1 & macspec_on==0 & tregs_on==0 & randomize_tregs==0)
         
-        #### STERILE INFLAMMATION (sterile_0) - Test with ROS
+        #### Pathogenic (sterile_0) - Test with ROS
         # tregs OFF
         full_data_comparison_scores_0_0_0_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & randomize_tregs==0)
         # tregs ON
@@ -180,7 +180,7 @@ if(length(inds2read)>0){
         # perfect macrophage, tregs OFF
         full_data_comparison_scores_0_0_1_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==1 & tregs_on==0 & randomize_tregs==0)
         
-        #### PATHOGENIC (sterile_1) - Test with ROS
+        #### Sterile (sterile_1) - Test with ROS
         # tregs OFF
         full_data_comparison_scores_0_1_0_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==1 & macspec_on==0 & tregs_on==0 & randomize_tregs==0)
         # tregs ON
@@ -218,13 +218,13 @@ if(length(inds2read)>0){
           scores_1_0_0_0_0 = full_data_comparison_scores_1_0_0_0_0$epithelial_score[time_ss_1_0_0_0_0:t_max_ind]
           scores_1_1_0_0_0 = full_data_comparison_scores_1_1_0_0_0$epithelial_score[time_ss_1_1_0_0_0:t_max_ind]
           
-          # Sterile inflammation (sterile_0)
+          # Pathogenic (sterile_0)
           scores_0_0_0_0_0 = full_data_comparison_scores_0_0_0_0_0$epithelial_score[time_ss_0_0_0_0_0:t_max_ind]
           scores_0_0_0_1_0 = full_data_comparison_scores_0_0_0_1_0$epithelial_score[time_ss_0_0_0_1_0:t_max_ind]
           scores_0_0_0_1_1 = full_data_comparison_scores_0_0_0_1_1$epithelial_score[time_ss_0_0_0_1_1:t_max_ind]
           scores_0_0_1_0_0 = full_data_comparison_scores_0_0_1_0_0$epithelial_score[time_ss_0_0_1_0_0:t_max_ind]
           
-          # Pathogenic (sterile_1)
+          # Sterile (sterile_1)
           scores_0_1_0_0_0 = full_data_comparison_scores_0_1_0_0_0$epithelial_score[time_ss_0_1_0_0_0:t_max_ind]
           scores_0_1_0_1_0 = full_data_comparison_scores_0_1_0_1_0$epithelial_score[time_ss_0_1_0_1_0:t_max_ind]
           scores_0_1_0_1_1 = full_data_comparison_scores_0_1_0_1_1$epithelial_score[time_ss_0_1_0_1_1:t_max_ind]
