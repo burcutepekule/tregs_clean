@@ -397,7 +397,6 @@ for (reps_in in 0:(num_reps-1)){
             commensal_engulfment_dominant = FALSE
             
             if ((num_pat_engulfed + num_com_engulfed) > 0) {
-              # ALWAYS calculate and sample (to maintain stream synchronization)
               rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
               alpha = (1 - mac_discrimination_efficiency) * 1 +
                 mac_discrimination_efficiency * (rat_com_pat_real * precision_mac)

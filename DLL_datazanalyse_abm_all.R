@@ -17,14 +17,14 @@ source('./MISC/LOAD_PARAM_VECTOR.R') #M1_M2_diff adjusts params as well
 
 inj_type= 'sterile'
 inj_type= 'pathogenic'
-inj_type= 'pooled'
+# inj_type= 'pooled'
 
 if(inj_type!='pooled'){
   df_plot = df_plot %>% dplyr::filter(injury_type==inj_type)
 }
 df_lda  = df_plot %>% dplyr::select(all_of(param_names), tregs_better_cohens)
 classes = unique(df_lda$tregs_better_cohens)
-
+ 
 # Choose confidence levels for visualization
 level_plus1  = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
 level_minus1 = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
