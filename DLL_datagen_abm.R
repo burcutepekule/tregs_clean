@@ -47,16 +47,17 @@ dir.create(dir_name_data, showWarnings = FALSE)
 
 cat("Output directory:", dir_name_data, "\n\n")
 
-colnames_insert_1level = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
-                           'epithelial_inj_3','epithelial_inj_4','epithelial_inj_5',
-                           'phagocyte_M0','phagocyte_M1','phagocyte_M2',
-                           'commensal','pathogen','treg_resting','treg_active',
-                           'C_ROS','C_M0','C_M1','C_M2','P_ROS','P_M0','P_M1','P_M2')
+colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
+                    'epithelial_inj_3','epithelial_inj_4','epithelial_inj_5',
+                    'phagocyte_M0','phagocyte_M1','phagocyte_M2',
+                    'commensal','pathogen','treg_resting','treg_active',
+                    'C_ROS','C_M0','C_M1','C_M2','P_ROS','P_M0','P_M1','P_M2')
 
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 plot_on    = 0
+plot_every = 0
 t_max      = 5000
 grid_size  = 25
 num_reps   = 10
