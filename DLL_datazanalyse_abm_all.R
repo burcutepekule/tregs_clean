@@ -3,8 +3,8 @@ sd_tol_in   = Inf
 jsd_th      = 0.3
 tol_in      = 125*0.2
 M1_M2_diff  = 1
-
-source('./DLL_datazanalyse_abm_regions.R')
+filter_control = 0
+source('./DLL_datazanalyse_abm_regions_tregs_on_vs_tregs_off.R')
 
 df_params           = read_csv('./lhs_parameters_della.csv', show_col_types = FALSE)
 df_results_keep     = readRDS('./data_cpp_read_abm.rds')

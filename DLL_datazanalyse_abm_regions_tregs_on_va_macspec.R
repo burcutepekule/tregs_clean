@@ -47,32 +47,22 @@ df_comparisons = distinct(df_results %>% dplyr::select(
   mean_tregs_off_sterile_p, mean_tregs_off_pathogen_p,
   mean_tregs_on_sterile_p, mean_tregs_on_pathogen_p,
   mean_tregs_rnd_sterile_p, mean_tregs_rnd_pathogen_p,
-  mean_macspec_sterile_p, mean_macspec_pathogen_p,
-  # SD scores
-  sd_ctrl_sterile_e, sd_ctrl_pathogen_e,
-  sd_tregs_off_sterile_e, sd_tregs_off_pathogen_e,
-  sd_tregs_on_sterile_e, sd_tregs_on_pathogen_e,
-  sd_tregs_rnd_sterile_e, sd_tregs_rnd_pathogen_e,
-  sd_macspec_sterile_e, sd_macspec_pathogen_e, 
-  sd_ctrl_sterile_p, sd_ctrl_pathogen_p,
-  sd_tregs_off_sterile_p, sd_tregs_off_pathogen_p,
-  sd_tregs_on_sterile_p, sd_tregs_on_pathogen_p,
-  sd_tregs_rnd_sterile_p, sd_tregs_rnd_pathogen_p,
-  sd_macspec_sterile_p, sd_macspec_pathogen_p
+  mean_macspec_sterile_p, mean_macspec_pathogen_p
 ))
 df_comparisons_keep = df_comparisons
 
 # ============= FILTER BASED ON CONTROL
-df_comparisons_ctrl_test = df_comparisons_keep %>%
-  dplyr::mutate(diff_ctrl_test = mean_ctrl_pathogen_p-mean_tregs_off_pathogen_p)
-
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id','diff_ctrl_test')]
-df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, distinct(df_results[c('param_set_id','d_ctrl_vs_test_pathogen_p')]), by='param_set_id')
-ids_matter_df = df_comparisons_ctrl_test_simple %>% dplyr::filter(abs(d_ctrl_vs_test_pathogen_p)>=jsd_th & diff_ctrl_test>tol_in)
-ids_matter    = unique(ids_matter_df %>% dplyr::pull(param_set_id))
-length(ids_matter)
-df_comparisons = df_comparisons %>% dplyr::filter(param_set_id %in% ids_matter)
-
+if(filter_control==1){
+  df_comparisons_ctrl_test = df_comparisons_keep %>%
+    dplyr::mutate(diff_ctrl_test = mean_ctrl_pathogen_p-mean_tregs_off_pathogen_p)
+  
+  df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id','diff_ctrl_test')]
+  df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, distinct(df_results[c('param_set_id','d_ctrl_vs_test_pathogen_p')]), by='param_set_id')
+  ids_matter_df = df_comparisons_ctrl_test_simple %>% dplyr::filter(abs(d_ctrl_vs_test_pathogen_p)>=jsd_th & diff_ctrl_test>tol_in)
+  ids_matter    = unique(ids_matter_df %>% dplyr::pull(param_set_id))
+  length(ids_matter)
+  df_comparisons = df_comparisons %>% dplyr::filter(param_set_id %in% ids_matter)
+}
 # ============= FILTER BASED ON CONTROL
 
 df_results_pick_p = df_results %>% dplyr::filter(injury_type=='pathogenic' & d_macspec_vs_tregs_on_pathogen_e>0.3)
@@ -135,10 +125,10 @@ saveRDS(df_comparisons_plot,'./df_comparisons_plot_macspec.rds')
 cohens_th = jsd_th # example threshold for x
 e_th      = tol_in # example threshold for y
 
-source('./MISC/REGIONS_macspec.R')
+source('./MISC/REGIONS.R')
 
 ggsave(
-  filename = paste0("./ABM_JSD_MACSPEC.png"),
+  filename = paste0("./ABM_JSD_TREGS_ON_vs_MACSPEC.png"),
   plot = p,
   width = 9,
   height = 6,

@@ -47,32 +47,22 @@ df_comparisons = distinct(df_results %>% dplyr::select(
   mean_tregs_off_sterile_p, mean_tregs_off_pathogen_p,
   mean_tregs_on_sterile_p, mean_tregs_on_pathogen_p,
   mean_tregs_rnd_sterile_p, mean_tregs_rnd_pathogen_p,
-  mean_macspec_sterile_p, mean_macspec_pathogen_p,
-  # SD scores
-  sd_ctrl_sterile_e, sd_ctrl_pathogen_e,
-  sd_tregs_off_sterile_e, sd_tregs_off_pathogen_e,
-  sd_tregs_on_sterile_e, sd_tregs_on_pathogen_e,
-  sd_tregs_rnd_sterile_e, sd_tregs_rnd_pathogen_e,
-  sd_macspec_sterile_e, sd_macspec_pathogen_e, 
-  sd_ctrl_sterile_p, sd_ctrl_pathogen_p,
-  sd_tregs_off_sterile_p, sd_tregs_off_pathogen_p,
-  sd_tregs_on_sterile_p, sd_tregs_on_pathogen_p,
-  sd_tregs_rnd_sterile_p, sd_tregs_rnd_pathogen_p,
-  sd_macspec_sterile_p, sd_macspec_pathogen_p
+  mean_macspec_sterile_p, mean_macspec_pathogen_p
 ))
 df_comparisons_keep = df_comparisons
 
 # ============= FILTER BASED ON CONTROL
-df_comparisons_ctrl_test = df_comparisons_keep %>%
-  dplyr::mutate(diff_ctrl_test = mean_ctrl_pathogen_p-mean_tregs_off_pathogen_p)
-
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id','diff_ctrl_test')]
-df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, distinct(df_results[c('param_set_id','d_ctrl_vs_test_pathogen_p')]), by='param_set_id')
-ids_matter_df = df_comparisons_ctrl_test_simple %>% dplyr::filter(abs(d_ctrl_vs_test_pathogen_p)>=jsd_th & diff_ctrl_test>tol_in)
-ids_matter    = unique(ids_matter_df %>% dplyr::pull(param_set_id))
-length(ids_matter)
-df_comparisons = df_comparisons %>% dplyr::filter(param_set_id %in% ids_matter)
-
+if(filter_control==1){
+  df_comparisons_ctrl_test = df_comparisons_keep %>%
+    dplyr::mutate(diff_ctrl_test = mean_ctrl_pathogen_p-mean_tregs_off_pathogen_p)
+  
+  df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id','diff_ctrl_test')]
+  df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, distinct(df_results[c('param_set_id','d_ctrl_vs_test_pathogen_p')]), by='param_set_id')
+  ids_matter_df = df_comparisons_ctrl_test_simple %>% dplyr::filter(abs(d_ctrl_vs_test_pathogen_p)>=jsd_th & diff_ctrl_test>tol_in)
+  ids_matter    = unique(ids_matter_df %>% dplyr::pull(param_set_id))
+  length(ids_matter)
+  df_comparisons = df_comparisons %>% dplyr::filter(param_set_id %in% ids_matter)
+}
 # ============= FILTER BASED ON CONTROL
 
 df_comparisons = df_comparisons %>% dplyr::mutate(diff_tregs_on_minus_off = ifelse(injury_type=='pathogenic', 
@@ -83,12 +73,7 @@ df_comparisons = df_comparisons %>% dplyr::mutate(diff_notrnd_minus_rnd = ifelse
                                                                                  mean_tregs_on_pathogen_e-mean_tregs_rnd_pathogen_e,
                                                                                  mean_tregs_on_sterile_e-mean_tregs_rnd_sterile_e))
 
-df_comparisons = df_comparisons %>% dplyr::mutate(tregs_off_sd = ifelse(injury_type=='pathogenic', sd_tregs_off_pathogen_e, sd_tregs_off_sterile_e))
-df_comparisons = df_comparisons %>% dplyr::mutate(tregs_on_no_rnd_sd = ifelse(injury_type=='pathogenic', sd_tregs_on_pathogen_e, sd_tregs_on_sterile_e))
-df_comparisons = df_comparisons %>% dplyr::mutate(tregs_on_rnd_sd = ifelse(injury_type=='pathogenic', sd_tregs_rnd_pathogen_e, sd_tregs_rnd_sterile_e))
-
-df_comparisons = df_comparisons %>% dplyr::select(param_set_id, injury_type, diff_tregs_on_minus_off, diff_notrnd_minus_rnd, 
-                                                  tregs_off_sd, tregs_on_no_rnd_sd, tregs_on_rnd_sd)
+df_comparisons = df_comparisons %>% dplyr::select(param_set_id, injury_type, diff_tregs_on_minus_off, diff_notrnd_minus_rnd)
 
 df_comparisons = merge(df_comparisons, distinct(df_results[c('param_set_id',
                                                              'd_tregs_on_vs_off_pathogen_e',
@@ -154,10 +139,10 @@ saveRDS(df_comparisons_plot,'./df_comparisons_plot.rds')
 cohens_th = jsd_th # example threshold for x
 e_th      = tol_in # example threshold for y
 
-source('./MISC/REGIONS_with_pathogen.R')
+source('./MISC/REGIONS.R')
 
 ggsave(
-  filename = paste0("./ABM_JSD_CTRL.png"),
+  filename = paste0("./ABM_JSD_TREGS_ON_vs_OFF.png"),
   plot = p,
   width = 9,
   height = 6,

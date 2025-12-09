@@ -23,20 +23,28 @@ saveRDS(dfp,'dfp_merged.rds')
 
 # For blue region
 blue_points = dfp %>% filter(region == "blue_region")
-if(nrow(blue_points) > 0) {
+if(nrow(blue_points) > 1) {
   blue_palette = colorRampPalette(c("#637AB9", "#4FB7B3", "#016B61", "#2F5755"))(nrow(blue_points))
   # blue_palette = colorRampPalette(c("#313647", "#2F5755", "#016B61", "#4FB7B3", "#637AB9", "#3B38A0", "#1A2A80"))(100)
   blue_dist_breaks = seq(min(blue_points$euclidean_dist), max(blue_points$euclidean_dist), length.out = nrow(blue_points)+1)
   blue_points$color_idx = cut(blue_points$euclidean_dist, breaks = blue_dist_breaks, labels = FALSE, include.lowest = TRUE)
   blue_points$point_color = blue_palette[blue_points$color_idx]
+}else{
+  blue_palette = colorRampPalette(c("#637AB9", "#4FB7B3", "#016B61", "#2F5755"))(nrow(blue_points))
+  blue_points$color_idx = 1
+  blue_points$point_color = blue_palette[blue_points$color_idx]
 }
 
 # For pink region  
 pink_points = dfp %>% filter(region == "pink_region")
-if(nrow(pink_points) > 0) {
+if(nrow(pink_points) > 1) {
   red_palette = colorRampPalette(c("#FF9B17", "#FA812F", "#E83F25", "#BF092F"))(nrow(pink_points))
   pink_dist_breaks = seq(min(pink_points$euclidean_dist), max(pink_points$euclidean_dist), length.out = nrow(pink_points)+1)
   pink_points$color_idx = cut(pink_points$euclidean_dist, breaks = pink_dist_breaks, labels = FALSE, include.lowest = TRUE)
+  pink_points$point_color = red_palette[pink_points$color_idx]
+}else{
+  red_palette = colorRampPalette(c("#FF9B17", "#FA812F", "#E83F25", "#BF092F"))(nrow(pink_points))
+  pink_points$color_idx = 1
   pink_points$point_color = red_palette[pink_points$color_idx]
 }
 
