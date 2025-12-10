@@ -8,15 +8,16 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
-param_id_vec = 20800
+# path         = "/Users/burcutepekule/Desktop/sim_abm_10/"
+param_id_vec = 33200
 # param_id_vec = 32100
 rep_ind_vec  = 0:99
 alpha_plot   = 1/length(rep_ind_vec)
 
-control_pick         = c(0)
+control_pick         = c(0, 1)
 sterile_pick         = c(0)
-tregs_on_pick        = c(0)
-macspec_on_pick      = c(0, 1)
+tregs_on_pick        = c(0, 1)
+macspec_on_pick      = c(0)
 randomize_tregs_pick = c(0)
 
 for(param_id in param_id_vec){

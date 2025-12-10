@@ -8,13 +8,22 @@ dfp    = df_comparisons_plot %>%
 dfp = dfp %>%
   mutate(euclidean_dist = sqrt(x^2 + (y/125)^2)) #otherwise y dominates!
 
+# # Create region classification
+# dfp = dfp %>%
+#   mutate(region = case_when(
+#     x >= cohens_th & y >= e_th & diff_better_cohens!=0 ~ "blue_region",  # blue region
+#     x >= cohens_th & y <= -e_th & diff_better_cohens!=0 ~ "pink_region", # pink region
+#     TRUE ~ "other"  # everything else stays gray
+#   ))
+
 # Create region classification
 dfp = dfp %>%
   mutate(region = case_when(
-    x >= cohens_th & y >= e_th & diff_better_cohens!=0 ~ "blue_region",  # blue region
-    x >= cohens_th & y <= -e_th & diff_better_cohens!=0 ~ "pink_region", # pink region
+    diff_better_cohens==+1 ~ "blue_region",  # blue region
+    diff_better_cohens==-1 ~ "pink_region", # pink region
     TRUE ~ "other"  # everything else stays gray
   ))
+
 
 # Create separate color assignment for blue and pink regions
 # Use simple direct mapping based on euclidean distance
@@ -84,7 +93,7 @@ p_label_on = ggplot(dfp, aes(x = x, y = y, shape = injury_type, color = color_gr
   geom_hline(yintercept = 0, linetype = "solid", col='black') +
   theme_minimal() +
   labs(x = paste0("jensen-shannon distance (threshold = ", cohens_th, ")"),
-       y = paste0("Epithelial score for tregs_on - tregs_off (threshold = ±", round(e_th), " for max score of 125.)"),
+       y = paste0(score_type," score ",jensen_distance, " threshold = ±", round(e_th), " for max score of ",round(max(dfp$diff_compare)),")"),
        title = paste0('Num of parameter sets: ',length(unique(dfp$param_set_id))),
        shape = "Injury Type",
        color = "Parameter Set ID") + 
@@ -108,7 +117,7 @@ if(nrow(blue_points) > 1) {
   blue_dist_breaks = seq(min(blue_points$euclidean_dist), max(blue_points$euclidean_dist), length.out = nrow(blue_points)+1)
   blue_points$color_idx = cut(blue_points$euclidean_dist, breaks = blue_dist_breaks, labels = FALSE, include.lowest = TRUE)
   blue_points$point_color = blue_palette[blue_points$color_idx]
-}else{
+}else if(nrow(blue_points)==1){
   blue_palette = colorRampPalette(c("#637AB9", "#4FB7B3", "#016B61", "#2F5755"))(nrow(blue_points))
   blue_points$color_idx = 1
   blue_points$point_color = blue_palette[blue_points$color_idx]
@@ -121,7 +130,7 @@ if(nrow(pink_points) > 1) {
   pink_dist_breaks = seq(min(pink_points$euclidean_dist), max(pink_points$euclidean_dist), length.out = nrow(pink_points)+1)
   pink_points$color_idx = cut(pink_points$euclidean_dist, breaks = pink_dist_breaks, labels = FALSE, include.lowest = TRUE)
   pink_points$point_color = red_palette[pink_points$color_idx]
-}else{
+}else if(nrow(pink_points)==1){
   red_palette = colorRampPalette(c("#FF9B17", "#FA812F", "#E83F25", "#BF092F"))(nrow(pink_points))
   pink_points$color_idx = 1
   pink_points$point_color = red_palette[pink_points$color_idx]
@@ -160,7 +169,7 @@ p_label_off = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = p
   geom_hline(yintercept = 0, linetype = "solid", col='black', size = 0.7) +
   theme_minimal() +
   labs(x = paste0("jensen-shannon distance (threshold = ", cohens_th, ")"),
-       y = paste0("Epithelial score for tregs_on - tregs_off (threshold = ±", round(e_th), " for max score of 125.)"),
+       y = paste0(score_type," score ",jensen_distance, " threshold = ±", round(e_th), " for max score of ",round(max(dfp_final$diff_compare)),")"),
        title = paste0('Num of parameter sets: ',length(unique(dfp$param_set_id))),
        shape = "Injury Type") + 
   scale_y_continuous(

@@ -1,12 +1,17 @@
 rm(list=ls())
 jsd_th         = 0.3
-tol_in         = 125*0.25
+tol_in_e       = 125*0.25
+tol_in_p       = 100
 M1_M2_diff     = 1
 filter_control = 1
 labels_on      = 1
-analysis_pick  = 1
-th_ctrl_pat    = -Inf
-score_type     = 'epithelial' # or 'pathogenic'
+score_type     = 'epithelial' # or 'pathogenic' or 'both'
+# score_type     = 'pathogen' # or 'pathogen' or 'both'
+# score_type     = 'both'
+# data_suffix    = '_10' # empty for 100 reps, _10 for 10 reps
+data_suffix    = '' # empty for 100 reps, _10 for 10 reps
+
+analysis_pick  = 2
 
 if(analysis_pick==1){
   # 1 =========================================
@@ -40,10 +45,11 @@ if(analysis_pick==1){
   jensen_distance     = 'macspec_vs_tregs_rnd'
 }
 
-source('./DLL_datazanalyse_abm_regions.R')
+source('./MISC/FILTER_REGIONS.R')
+source('./MISC/PLOT_REGIONS.R')
 
 df_params           = read_csv('./lhs_parameters_della.csv', show_col_types = FALSE)
-df_results_keep     = readRDS('./data_cpp_read_abm.rds')
+df_results_keep     = readRDS(paste0('./data_cpp_read_abm',data_suffix,'.rds'))
 df_plot             = df_comparisons_plot
 df_plot             = merge(df_plot, df_params, by='param_set_id')
 if(M1_M2_diff==1){
