@@ -1,15 +1,19 @@
 rm(list=ls())
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = 100
+tol_in_p       = tol_in_e
 M1_M2_diff     = 1
 filter_control = 1
-labels_on      = 1
+labels_on      = 0
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogen' or 'both'
 # score_type     = 'both'
 # data_suffix    = '_10' # empty for 100 reps, _10 for 10 reps
 data_suffix    = '' # empty for 100 reps, _10 for 10 reps
+
+inj_type= 'sterile'
+inj_type= 'pathogenic'
+# inj_type= 'pooled'
 
 analysis_pick  = 2
 
@@ -56,10 +60,6 @@ if(M1_M2_diff==1){
   df_plot = df_plot %>% dplyr::mutate(activity_engulf_M1_M2_diff = activity_engulf_M1_baseline-activity_engulf_M2_baseline)
 }
 source('./MISC/LOAD_PARAM_VECTOR.R') #M1_M2_diff adjusts params as well
-
-inj_type= 'sterile'
-inj_type= 'pathogenic'
-# inj_type= 'pooled'
 
 if(inj_type!='pooled'){
   df_plot = df_plot %>% dplyr::filter(injury_type==inj_type)

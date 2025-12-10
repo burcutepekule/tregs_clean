@@ -276,8 +276,6 @@ if(violin_on==1){
   
 }
 
-print(p_params)
-
 ggsave(
   filename = paste0("./PARAMS_",inj_type,"_",jensen_distance,"_",score_type,".png"),
   plot = p_params,
@@ -286,5 +284,3 @@ ggsave(
   dpi = 300,
   bg='white'
 )
-
-dev.off()

@@ -312,14 +312,15 @@ if(exists("num_cols")){
       p_use = p_label_off
     }
   }else if(num_cols>12){
-    width_adjust = 21
+    width_adjust = 9
     labels_on    = 0 # flip because too many
     p_use = p_label_off
   }else{
-    width_adjust = round(num_cols*1.75)
     if(labels_on==1){
+      width_adjust = round(num_cols*1.75)
       p_use = p_label_on
     }else{
+      width_adjust = 9
       p_use = p_label_off
     }
   }
