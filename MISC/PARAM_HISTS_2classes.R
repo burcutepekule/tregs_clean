@@ -4,11 +4,11 @@ df_analysis = df_lda %>%
   mutate(
     Comp1 = plsda_df$Comp1,
     Comp2 = plsda_df$Comp2,
-    in_tregs_better_region = (tregs_better_cohens==1),
-    in_tregs_worse_region =  (tregs_better_cohens==-1),
-    region = ifelse(tregs_better_cohens==-1, "Tregs worse only", 
-                    ifelse(tregs_better_cohens==1, "Tregs better only","Tregs don't matter")),
-    treg_outcome = tregs_better_cohens
+    in_diff_better_region = (diff_better_cohens==1),
+    in_tregs_worse_region = (diff_better_cohens==-1),
+    region = ifelse(diff_better_cohens==-1, "Worse only", 
+                    ifelse(diff_better_cohens==1, "Better only","Don't matter")),
+    treg_outcome = diff_better_cohens
   )
 
 # Compare parameter values across regions
@@ -35,11 +35,11 @@ print(region_means)
 # Which parameters differ most between regions?
 region_differences = region_means %>%
   mutate(
-    better_vs_neutral = abs(`Tregs better only` - `Tregs don't matter`)/(`Tregs better only`+`Tregs don't matter`)
+    better_vs_neutral = abs(`Better only` - `Don't matter`)/(`Better only`+`Don't matter`)
   ) %>%
   arrange(desc(better_vs_neutral))
 
-print("Parameters most different between Tregs better vs worse regions:")
+print("Parameters most different between Better vs worse regions:")
 print(head(region_differences, 10))
 
 # ======== Step 2: Use PLS-DA Loadings to Understand Components
@@ -85,18 +85,18 @@ p_loadings = ggplot(comp1_loadings %>% head(10),
 
 # ==== Step 3: Characterize Each Region
 # Statistical tests: which parameters are significantly different?
-# Test each parameter between Tregs better vs worse regions
+# Test each parameter between Better vs worse regions
 param_tests = data.frame()
 
 for(param in param_names) {
   # Get values for each region
   # Not region but the real classification
   better_vals = df_analysis %>% 
-    filter(region == "Tregs better only") %>%
+    filter(region == "Better only") %>%
     pull(!!sym(param))
   
   neutral_vals = df_analysis %>% 
-    filter(region == "Tregs don't matter") %>%
+    filter(region == "Don't matter") %>%
     pull(!!sym(param))
   
   # Skip if not enough data
@@ -144,7 +144,7 @@ p_values_for_plot = param_tests %>%
 
 # Boxplots for top parameters
 df_plot_params = df_analysis %>%
-  dplyr::filter(region %in% c("Tregs better only", "Tregs don't matter")) %>%
+  dplyr::filter(region %in% c("Better only", "Don't matter")) %>%
   dplyr::select(region, all_of(top_params)) %>%
   pivot_longer(cols = -region, names_to = "parameter", values_to = "value") %>%
   mutate(
@@ -161,19 +161,19 @@ y_positions = df_plot_params %>%
   left_join(p_values_for_plot, by = "parameter")
 
 p_params = ggplot(df_plot_params, aes(x = region, y = value, fill = region)) +
-  geom_violin(alpha = 0.2, trim = FALSE) +
+  geom_violin(alpha = 0.2, trim = TRUE) +
   geom_boxplot(width = 0.2, alpha = 0.8, outlier.shape = NA) +
   # facet_wrap(~parameter_labeled, scales = "free_y", ncol = 4) + # if you want it ordered according to p val
   facet_wrap(~parameter, scales = "free_y", ncol = 4) + # ordered alphabetically (easier to compare among inj types.)
   scale_fill_manual(values = c(
-    "Tregs better only" = "lightblue",
-    "Tregs don't matter" = "gray80"
+    "Better only" = "lightblue",
+    "Don't matter" = "gray80"
   )) +
   scale_y_continuous(expand = expansion(mult = c(0.00, 0.10))) +  # Add this line
   # Add significance brackets
   # geom_signif(
   #   comparisons = list(
-  #     c("Tregs better only", "Tregs don't matter"),
+  #     c("Better only", "Don't matter"),
   #     textsize = 5,
   #     step_increase = 0.2,
   #     tip_length = 0.02
@@ -184,7 +184,7 @@ p_params = ggplot(df_plot_params, aes(x = region, y = value, fill = region)) +
   #   tip_length = 0.02     # Length of bracket tips
   # ) +
   geom_signif(
-    comparisons = list(c("Tregs better only", "Tregs don't matter")),
+    comparisons = list(c("Better only", "Don't matter")),
     test = "t.test",
     test.args = list(var.equal = FALSE),   # Welch t-test
     map_signif_level = TRUE,
@@ -197,13 +197,13 @@ p_params = ggplot(df_plot_params, aes(x = region, y = value, fill = region)) +
     axis.text.x = element_text(angle = 45, hjust = 1),
     strip.text = element_text(size = 12)
   ) +
-  labs(title = "Top Parameters Distinguishing Treg Effect Regions",
+  labs(title = "Top Parameters Distinguishing Effect Regions",
        x = "", y = "Parameter Value")
 
 print(p_params)
 
 ggsave(
-  filename = paste0("./treg_top_params_PLS_DA_",inj_type,"_classification.png"),
+  filename = paste0("./PARAMS_",inj_type,"_",jensen_distance,"_",score_type,".png"),
   plot = p_params,
   width = 18,
   height = 20,
@@ -212,11 +212,3 @@ ggsave(
 )
 
 dev.off()
-
-
-df_plot_params_pick = df_plot_params %>% dplyr::filter(parameter=='treg_discrimination_efficiency')
-table(df_plot_params_pick$region)
-
-df_plot_params_pick_dm = df_plot_params_pick %>% dplyr::filter(region=="Tregs don't matter") %>% dplyr::pull(value)
-df_plot_params_pick_bt = df_plot_params_pick %>% dplyr::filter(region=="Tregs better only") %>% dplyr::pull(value)
-t.test(df_plot_params_pick_dm, df_plot_params_pick_bt)

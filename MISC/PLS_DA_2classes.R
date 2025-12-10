@@ -7,7 +7,7 @@ library(ggsignif)
 
 plsda_model = plsda(
   X = df_lda %>% dplyr::select(all_of(param_names)),
-  Y = df_lda$tregs_better_cohens,
+  Y = df_lda$diff_better_cohens,
   ncomp = 2
 )
 
@@ -16,7 +16,7 @@ plsda_proj = plsda_model$variates$X
 plsda_df = data.frame(
   Comp1 = plsda_proj[, 1],
   Comp2 = plsda_proj[, 2],
-  treg_outcome = as.factor(df_lda$tregs_better_cohens)
+  treg_outcome = as.factor(df_lda$diff_better_cohens)
 )
 
 # ============ DUAL ELLIPSE ANALYSIS ============
@@ -106,9 +106,9 @@ plsda_df$in_ellipse_minus1 = ellipse_minus1$mahal_dist < qchisq(level_minus1, df
 plsda_df = plsda_df %>%
   mutate(region = case_when(
     in_ellipse_plus1 & in_ellipse_minus1 ~ "Both",
-    in_ellipse_plus1 ~ "Tregs better only",
-    in_ellipse_minus1 ~ "Tregs worse only",
-    TRUE ~ "Tregs don't matter"
+    in_ellipse_plus1 ~ "Better only",
+    in_ellipse_minus1 ~ "Worse only",
+    TRUE ~ "Don't matter"
   ))
 
 # Function to generate ellipse coordinates
@@ -159,9 +159,9 @@ p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
   geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
              aes(color = region), alpha = 0.8, size = 2) +
   scale_color_manual(values = c(
-    "Tregs don't matter" = "gray90",
-    "Tregs better only" = "lightblue",
-    "Tregs worse only" = "pink",
+    "Don't matter" = "gray90",
+    "Better only" = "lightblue",
+    "Worse only" = "pink",
     "Both" = "orange"
   )) +
   # Manual ellipses using exact calculations
@@ -180,110 +180,16 @@ p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
                   color = "black", size = 3, fontface = "bold",
                   inherit.aes = FALSE) +
   theme_minimal() +
-  labs(title = paste0("PLS DA of parameter sets based on Treg help: conf. : (",level_plus1,")"),
-       subtitle = sprintf("Enrichment Tregs better: %.1f-fold", 
-                          ellipse_plus1$results$enrichment[ellipse_plus1$results$conf_level == level_plus1]))
-
-
-print(p2)
+  labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
 
 ggsave(
-  filename = paste0("./treg_regions_PLS_DA_",inj_type,"_w_arrows.png"),
+  filename = paste0("./PLS_DA_",inj_type,"_",jensen_distance,"_",score_type,".png"),
   plot = p2,
   width = 9,
   height = 6,
   dpi = 300,
   bg='white'
 )
-
-dev.off()
-
-# # Plot 3: Separate panels for each class
-# 
-# p3a = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
-#   geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
-#              aes(color = in_ellipse_plus1), alpha = 0.3, size = 2) +
-#   geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
-#              color = "darkblue", alpha = 0.8, size = 3) +
-#   stat_ellipse(data = ellipse_plus1$class_points, 
-#                aes(x = Comp1, y = Comp2),
-#                type = "norm", level = level_plus1, 
-#                color = "blue", linewidth = 1.5) +
-#   scale_color_manual(values = c("gray80", "lightblue")) +
-#   theme_minimal() +
-#   labs(title = "Class +1 (Tregs Better)",
-#        subtitle = sprintf("Enrichment: %.1f-fold", 
-#                           ellipse_plus1$results$enrichment[ellipse_plus1$results$conf_level == level_plus1]))
-# 
-# p3b = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
-#   geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
-#              aes(color = in_ellipse_minus1), alpha = 0.3, size = 2) +
-#   geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
-#              color = "darkred", alpha = 0.8, size = 3) +
-#   stat_ellipse(data = ellipse_minus1$class_points, 
-#                aes(x = Comp1, y = Comp2),
-#                type = "norm", level = level_minus1, 
-#                color = "red", linewidth = 1.5) +
-#   scale_color_manual(values = c("gray80", "pink")) +
-#   theme_minimal() +
-#   labs(title = "Class -1 (Tregs Worse)",
-#        subtitle = sprintf("Enrichment: %.1f-fold", 
-#                           ellipse_minus1$results$enrichment[ellipse_minus1$results$conf_level == level_minus1]))
-# 
-# print(p3a | p3b)
-# 
-# ggsave(
-#   filename = paste0("./treg_regions_PLS_DA_sidebyside.png"),
-#   plot = (p3a | p3b),
-#   width = 14,
-#   height = 6,
-#   dpi = 300,
-#   bg='white'
-# )
-# 
-# dev.off()
-
-# ============ COMPARISON TABLE ============
-
-# cat("\n========== COMPARISON AT SELECTED CONFIDENCE LEVELS ==========\n")
-comparison = data.frame(
-  Class = c("+1"),
-  Conf_Level = c(level_plus1),
-  N_Total = c(sum(plsda_df$treg_outcome == "1")),
-  N_Captured = c(
-    ellipse_plus1$results$n_target_captured[ellipse_plus1$results$conf_level == level_plus1]
-  ),
-  Recall = c(
-    ellipse_plus1$results$recall[ellipse_plus1$results$conf_level == level_plus1]
-  ),
-  Precision = c(
-    ellipse_plus1$results$precision[ellipse_plus1$results$conf_level == level_plus1]
-  ),
-  Enrichment = c(
-    ellipse_plus1$results$enrichment[ellipse_plus1$results$conf_level == level_plus1]
-  )
-)
-
-# print(comparison)
-
-# ============ ENRICHMENT COMPARISON PLOTS ============
-
-# # Combine results for plotting
-# ellipse_plus1$results$class = "+1"
-# ellipse_minus1$results$class = "-1"
-# combined_results = rbind(ellipse_plus1$results, ellipse_minus1$results)
-# 
-# p4 = ggplot(combined_results, aes(x = recall, y = enrichment, color = class)) +
-#   geom_line(linewidth = 1.2) +
-#   geom_point(size = 3) +
-#   scale_color_manual(values = c("+1" = "blue", "-1" = "red")) +
-#   theme_minimal() +
-#   labs(title = "Enrichment vs Recall for Both Classes",
-#        x = "Recall (% of class captured)",
-#        y = "Fold Enrichment",
-#        color = "Class")
-# 
-# print(p4)
 
 source("./MISC/PARAM_HISTS_2classes.R")
 

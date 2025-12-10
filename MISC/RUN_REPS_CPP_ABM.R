@@ -303,8 +303,8 @@ for (reps_in in 0:(num_reps-1)){
       source('./MISC/CONVERT_TO_DATAFRAME_ABM.R')
       p = plot_simtime_simple()
       ggsave(
-        paste0(dir_name_frames, "/frame_param_",param_set_id_use,"_rep_", reps_in, "_STERILE_", sterile, "_TREGS_",
-               allow_tregs, "_trnd_", randomize_tregs, "_", t, ".png"),
+        paste0(dir_name_frames, "/frame_param_", param_set_id_use, "_rep_", reps_in,
+               "_ind_", scenario_ind, "_", t, ".png"),
         plot = p,
         width = 12,
         height = 10,

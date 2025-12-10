@@ -1,7 +1,7 @@
 dfp    = df_comparisons_plot %>%
   mutate(
     x = abs(cohens_d),
-    y = diff_tregs_on_minus_off
+    y = diff_compare
   )
 
 # Calculate Euclidean distance from origin (0,0)
@@ -11,15 +11,94 @@ dfp = dfp %>%
 # Create region classification
 dfp = dfp %>%
   mutate(region = case_when(
-    x >= cohens_th & y >= e_th & tregs_better_cohens!=0 ~ "blue_region",  # blue region
-    x >= cohens_th & y <= -e_th & tregs_better_cohens!=0 ~ "pink_region", # pink region
+    x >= cohens_th & y >= e_th & diff_better_cohens!=0 ~ "blue_region",  # blue region
+    x >= cohens_th & y <= -e_th & diff_better_cohens!=0 ~ "pink_region", # pink region
     TRUE ~ "other"  # everything else stays gray
   ))
 
-saveRDS(dfp,'dfp_merged.rds')
-
 # Create separate color assignment for blue and pink regions
 # Use simple direct mapping based on euclidean distance
+
+
+# Get unique param_set_ids in each region
+blue_params = unique(dfp$param_set_id[dfp$region == "blue_region"])
+pink_params = unique(dfp$param_set_id[dfp$region == "pink_region"])
+
+total_len = length(blue_params)+length(pink_params)
+num_cols  = ceiling(total_len/20)
+
+# Create color palettes
+library(colorspace)
+
+blue_colors = setNames(
+  colorRampPalette(c("#1A2A80", "#3B38A0", "#637AB9", "#4FB7B3", "#016B61","#2F5755","#313647"))(length(blue_params)), 
+  as.character(blue_params)
+)
+
+pink_colors = setNames(
+  colorRampPalette(c("#FF9B17","#FA812F","#E83F25","#F75270", "#DC143C","#BF092F","#7D0A0A"))(length(pink_params)), 
+  as.character(pink_params)
+)
+
+# Combine all colors
+all_colors = c("other" = "gray70", blue_colors, pink_colors)
+
+# Update color_group to use param_set_id for coloring
+dfp = dfp %>%
+  mutate(color_group = ifelse(region == "other", "other", as.character(param_set_id)))
+
+# Before creating the plot, use the order from all_colors
+dfp$color_group = factor(dfp$color_group, levels = names(all_colors))
+
+p_label_on = ggplot(dfp, aes(x = x, y = y, shape = injury_type, color = color_group)) +
+  annotate("rect",
+           xmin = cohens_th, xmax = Inf,
+           ymin = -Inf, ymax = -1*e_th,
+           fill = "pink", alpha = 0.3) +
+  annotate("rect",
+           xmin = cohens_th, xmax = Inf,
+           ymin = e_th, ymax = Inf,
+           fill = "lightblue", alpha = 0.3) +
+  annotate("rect",
+           xmin = -Inf, xmax = cohens_th,
+           ymin = -Inf, ymax = Inf,
+           fill = "gray80", alpha = 0.15) +
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -1*e_th, ymax = e_th,
+           fill = "gray80", alpha = 0.15) +
+  geom_point(size = 3) +
+  geom_text_repel(data = dfp %>% filter(region != "other"),
+                  aes(label = param_set_id),
+                  size = 3,
+                  max.overlaps = 20,
+                  box.padding = 0.5,
+                  point.padding = 0.3,
+                  segment.color = "grey50",
+                  segment.size = 0.2) +
+  scale_shape_manual(name = "Injury Type", values = c("sterile" = 16, "pathogenic" = 2)) +
+  scale_color_manual(name = "Parameter Set ID", values = all_colors) +
+  geom_vline(xintercept = cohens_th, linetype = "dashed") +
+  geom_hline(yintercept = e_th, linetype = "dashed") +
+  geom_hline(yintercept = -1*e_th, linetype = "dashed") +
+  geom_hline(yintercept = 0, linetype = "solid", col='black') +
+  theme_minimal() +
+  labs(x = paste0("jensen-shannon distance (threshold = ", cohens_th, ")"),
+       y = paste0("Epithelial score for tregs_on - tregs_off (threshold = ±", round(e_th), " for max score of 125.)"),
+       title = paste0('Num of parameter sets: ',length(unique(dfp$param_set_id))),
+       shape = "Injury Type",
+       color = "Parameter Set ID") + 
+  scale_y_continuous(
+    breaks = sort(c(seq(round(min(dfp$diff_compare))-5,
+                        round(max(dfp$diff_compare))+5, by=10), 0))
+  ) +
+  scale_x_continuous(
+    breaks = sort(c(seq(0, 1, by=0.1), cohens_th))
+  ) +
+  guides( 
+    color = guide_legend(ncol = num_cols),
+    shape = guide_legend(ncol = num_cols)
+  )
 
 # For blue region
 blue_points = dfp %>% filter(region == "blue_region")
@@ -51,12 +130,11 @@ if(nrow(pink_points) > 1) {
 # For other region
 other_points = dfp %>% filter(region == "other")
 other_points$point_color = "gray70"
-
 # Combine all
 dfp_final = bind_rows(blue_points, pink_points, other_points)
 
 # Create plot
-p = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = point_color)) +
+p_label_off = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = point_color)) +
   annotate("rect",
            xmin = cohens_th, xmax = Inf,
            ymin = -Inf, ymax = -1*e_th,
@@ -86,8 +164,8 @@ p = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = point_color
        title = paste0('Num of parameter sets: ',length(unique(dfp$param_set_id))),
        shape = "Injury Type") + 
   scale_y_continuous(
-    breaks = sort(c(seq(round(min(dfp$diff_tregs_on_minus_off))-5,
-                        round(max(dfp$diff_tregs_on_minus_off))+5, by=10), 0))
+    breaks = sort(c(seq(round(min(dfp$diff_compare))-5,
+                        round(max(dfp$diff_compare))+5, by=10), 0))
   ) +
   scale_x_continuous(
     breaks = sort(c(seq(0, 1, by=0.1), cohens_th))
@@ -95,4 +173,6 @@ p = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = point_color
   guides(
     shape = guide_legend(order = 1)
   )
+
+
 

@@ -60,10 +60,10 @@ plot_on    = 0
 plot_every = 0
 t_max      = 5000
 grid_size  = 25
-num_reps   = 10
+num_reps   = 100
 
-n_phagocytes = round(grid_size * grid_size * 0.05)
-n_tregs = round(grid_size * grid_size * 0.05)
+n_phagocytes = round(grid_size*grid_size*0.20)
+n_tregs = round(grid_size*grid_size*0.20)
 n_commensals_lp = 20
 
 injury_percentage = 60
@@ -117,7 +117,7 @@ scenarios_df_ctrl = expand.grid(
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
-cat("Total simulations:", length(loop_over) * nrow(scenarios_df) * num_reps, "\n\n")
+cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 
 # ============================================================================
 # MAIN SIMULATION LOOP
