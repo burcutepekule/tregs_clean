@@ -79,7 +79,7 @@ matrix_to_commensal_df = function() {
 }
 
 agent_colors = c(
-  epithelial_score   = "#2D3250",
+  epithelial_score   = "#000080",
   epithelial_healthy = "#B0E2FF",
   epithelial_inj_1   = "#8CB4E5",
   epithelial_inj_2   = "#6987CC",

@@ -8,14 +8,15 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
-param_id_vec = 38002
-rep_ind_vec  = 0:9
+param_id_vec = 20800
+# param_id_vec = 32100
+rep_ind_vec  = 0:99
 alpha_plot   = 1/length(rep_ind_vec)
 
-control_pick         = c(1)
-sterile_pick         = c(0, 1)
+control_pick         = c(0)
+sterile_pick         = c(0)
 tregs_on_pick        = c(0)
-macspec_on_pick      = c(0)
+macspec_on_pick      = c(0, 1)
 randomize_tregs_pick = c(0)
 
 for(param_id in param_id_vec){
@@ -69,10 +70,8 @@ for(param_id in param_id_vec){
     theme_minimal() +
     labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
   
-  # print(p)
-  
   ggsave(
-    filename = paste0("./",variables,"_",param_id,".png"),
+    filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
     height = 8,
@@ -96,7 +95,7 @@ for(param_id in param_id_vec){
   # print(p)
   
   ggsave(
-    filename = paste0("./",variables,"_",param_id,".png"),
+    filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
     height = 8,
@@ -120,7 +119,7 @@ for(param_id in param_id_vec){
   # print(p)
   
   ggsave(
-    filename = paste0("./",variables,"_",param_id,".png"),
+    filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
     height = 8,
