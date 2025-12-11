@@ -1,7 +1,7 @@
 rm(list=ls())
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = tol_in_e
+tol_in_p       = 5*tol_in_e
 M1_M2_diff     = 1
 filter_control = 1
 labels_on      = 0
