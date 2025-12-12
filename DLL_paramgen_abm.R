@@ -28,6 +28,7 @@ param_bounds = list(
   activity_engulf_M1_baseline = c(0.05, 0.75),
   activity_engulf_M2_baseline = c(0.05, 0.75),
   activity_ROS_M1_baseline = c(0, 1),
+  cc_phagocyte = c(3, 30),# discrete parameter, will be rounded
   active_age_limit = c(3, 30),  # discrete parameter, will be rounded
   treg_discrimination_efficiency = c(0, 1)
 )
@@ -56,6 +57,7 @@ for (param in param_names) {
 
 # Round the discrete parameter
 lhs_samples$active_age_limit = round(lhs_samples$active_age_limit)
+lhs_samples$cc_phagocyte     = round(lhs_samples$cc_phagocyte)
 
 # Apply the rules
 # th_ROS_microbe should be lower than th_ROS_epith_recover

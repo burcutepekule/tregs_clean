@@ -379,7 +379,7 @@ for (reps_in in 0:(num_reps-1)){
           avg_SAMPs = avg_SAMPs_vec[idx]
           # bacteria_count = bacteria_count_vec[idx]
           
-          if(macspec_on==1){ # perfect macrophage
+          if(macspec_on>0){ # perfectly or equally discriminating macrophage
             # Calculate engulfment pattern with discrimination
             num_pat_engulfed = phagocyte_pathogens_engulfed[i]
             num_com_engulfed = phagocyte_commensals_engulfed[i]
@@ -531,7 +531,7 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # Count commensals (+1) and pathogens (-1) from registry for each phagocyte
     phagocyte_commensals_engulfed = rowSums(phagocyte_bacteria_registry > 0)
-    phagocyte_pathogens_engulfed = rowSums(phagocyte_bacteria_registry < 0)
+    phagocyte_pathogens_engulfed  = rowSums(phagocyte_bacteria_registry < 0)
 
     # ========================================================================
     # TREG ACTIVATION & EFFECTOR ACTIONS

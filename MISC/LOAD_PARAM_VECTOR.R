@@ -24,6 +24,7 @@ if(M1_M2_diff==1){
     # "rate_leak_pathogen_injury", #remove, same for all 
     # "rate_leak_commensal_baseline", #remove, same for all 
     "active_age_limit",
+    "cc_phagocyte",
     "treg_discrimination_efficiency",
     "activity_engulf_M1_M2_diff"
   )
@@ -52,6 +53,7 @@ if(M1_M2_diff==1){
     # "rate_leak_pathogen_injury", #remove, same for all 
     # "rate_leak_commensal_baseline", #remove, same for all 
     "active_age_limit",
+    "cc_phagocyte",
     "treg_discrimination_efficiency"
   )
 }

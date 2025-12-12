@@ -49,8 +49,8 @@ rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, param_set_use$rate_leak_pa
 
 # Phagocyte parameters
 active_age_limit = as.integer(param_set_use$active_age_limit)
-cc_phagocyte = 5
-digestion_time = 1
+cc_phagocyte     = as.integer(param_set_use$cc_phagocyte)
+# digestion_time   = 1 # by default digestion happens every time point
 
 # Treg parameters
 treg_vicinity_effect = 1
@@ -58,7 +58,14 @@ treg_discrimination_efficiency = param_set_use$treg_discrimination_efficiency
 # allow_tregs_to_suppress_cognate = FALSE
 
 # Macrophage specificity parameters
-mac_discrimination_efficiency = 1 # PERFECT DISCRIMINATION
+if(macspec_on == 2){# PERFECT DISCRIMINATION
+  mac_discrimination_efficiency = 1 
+}else if(macspec_on == 1){# SAME DISCRIMINATION - Fair comparison
+  mac_discrimination_efficiency = treg_discrimination_efficiency 
+}else{
+  mac_discrimination_efficiency = 0 # no need to have this, shouldn't throw an error
+}
+
 mac_rat_com_pat_threshold     = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
 
 # ============================================================================
