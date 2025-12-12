@@ -32,8 +32,7 @@ for (reps_in in 0:(num_reps-1)){
   phagocyte_activity_ROS = rep(activity_ROS_M0_baseline, n_phagocytes)
   phagocyte_activity_engulf = rep(activity_engulf_M0_baseline, n_phagocytes)
   phagocyte_active_age = rep(0, n_phagocytes)
-  phagocyte_memory_timer = rep(0, n_phagocytes)  # Per-phagocyte memory decay timer
-  # phagocyte_bacteria_registry = matrix(0, nrow = n_phagocytes, ncol = cc_phagocyte)
+  phagocyte_bacteria_registry = matrix(0, nrow = n_phagocytes, ncol = cc_phagocyte)  # Memory: +1=commensal, -1=pathogen, 0=empty
   
   # Initialize tregs
   treg_x = sample(1:grid_size, n_tregs, TRUE)
@@ -321,15 +320,11 @@ for (reps_in in 0:(num_reps-1)){
     M0_indices = which(phagocyte_phenotype == 0)
     M1_indices = which(phagocyte_phenotype == 1)
     M2_indices = which(phagocyte_phenotype == 2)
-    
-    # # Registry shifting every digestion_time steps
-    # if (t %% digestion_time == 0) {
-    #   phagocyte_bacteria_registry = cbind(
-    #     matrix(0, nrow = nrow(phagocyte_bacteria_registry), ncol = 1),
-    #     phagocyte_bacteria_registry[, -ncol(phagocyte_bacteria_registry)]
-    #   )
-    # }
-    
+
+    # Calculate counts from registry (used in phenotype updates)
+    phagocyte_commensals_engulfed = rowSums(phagocyte_bacteria_registry > 0)
+    phagocyte_pathogens_engulfed = rowSums(phagocyte_bacteria_registry < 0)
+
     # Process M0 phagocytes (candidates for activation)
     if (length(M0_indices) > 0) {
       # C++ ACCELERATION: Calculate all signals at once
@@ -474,15 +469,6 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # ENGULFMENT PROCESS
     # ========================================================================
-    # Update per-phagocyte memory timers (independent decay)
-    phagocyte_memory_timer = phagocyte_memory_timer + 1
-    decay_indices = which(phagocyte_memory_timer >= 3)
-    if (length(decay_indices) > 0) {
-      phagocyte_pathogens_engulfed[decay_indices] = pmax(0, phagocyte_pathogens_engulfed[decay_indices] - 1)
-      phagocyte_commensals_engulfed[decay_indices] = pmax(0, phagocyte_commensals_engulfed[decay_indices] - 1)
-      phagocyte_memory_timer[decay_indices] = 0  # Reset timer after decay
-    }
-
     phagocyte_positions = paste(phagocyte_x, phagocyte_y, sep = "_")
     
     for (i in 1:length(phagocyte_x)) {
@@ -499,15 +485,13 @@ for (reps_in in 0:(num_reps-1)){
           indices_to_engulf = pathogen_indices[engulf_success]
           
           if (length(indices_to_engulf) > 0) {
-            phagocyte_pathogens_engulfed[i] = phagocyte_pathogens_engulfed[i] + length(indices_to_engulf)
-
             pathogen_coords = pathogen_coords[-indices_to_engulf, , drop = FALSE]
-            
-            # # C++ ACCELERATION: shift_insert
-            # phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
-            #   phagocyte_bacteria_registry[i, ],
-            #   rep(1, length(indices_to_engulf))
-            # )
+
+            # C++ ACCELERATION: shift_insert with -1 for pathogens
+            phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
+              phagocyte_bacteria_registry[i, ],
+              rep(-1, length(indices_to_engulf))
+            )
             
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             pathogens_killed_by_Mac[phagocyte_phenotype_index] =
@@ -526,15 +510,13 @@ for (reps_in in 0:(num_reps-1)){
           indices_to_engulf = commensal_indices[engulf_success]
           
           if (length(indices_to_engulf) > 0) {
-            phagocyte_commensals_engulfed[i] = phagocyte_commensals_engulfed[i] + length(indices_to_engulf)
-
             commensal_coords = commensal_coords[-indices_to_engulf, , drop = FALSE]
-            
-            # # C++ ACCELERATION: shift_insert
-            # phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
-            #   phagocyte_bacteria_registry[i, ],
-            #   rep(1, length(indices_to_engulf))
-            # )
+
+            # C++ ACCELERATION: shift_insert with +1 for commensals
+            phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
+              phagocyte_bacteria_registry[i, ],
+              rep(1, length(indices_to_engulf))
+            )
             
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             commensals_killed_by_Mac[phagocyte_phenotype_index] =
@@ -543,7 +525,14 @@ for (reps_in in 0:(num_reps-1)){
         }
       }
     }
-    
+
+    # ========================================================================
+    # CALCULATE COUNTS FROM REGISTRY
+    # ========================================================================
+    # Count commensals (+1) and pathogens (-1) from registry for each phagocyte
+    phagocyte_commensals_engulfed = rowSums(phagocyte_bacteria_registry > 0)
+    phagocyte_pathogens_engulfed = rowSums(phagocyte_bacteria_registry < 0)
+
     # ========================================================================
     # TREG ACTIVATION & EFFECTOR ACTIONS
     # C++ ACCELERATION: find_nearby_tregs
