@@ -3,12 +3,13 @@ jsd_th         = 0.3
 tol_in_e       = 125*0.25
 tol_in_p       = 5*tol_in_e
 M1_M2_diff     = 1
-filter_control = 1
+filter_control = 0
 labels_on      = 0
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogen' or 'both'
 # score_type     = 'both'
 # data_suffix    = '_10' # empty for 100 reps, _10 for 10 reps
+# data_suffix    = '_100' # empty for 100 reps, _10 for 10 reps
 data_suffix    = '' # empty for 100 reps, _10 for 10 reps
 
 inj_type= 'sterile'

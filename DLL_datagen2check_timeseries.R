@@ -28,7 +28,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 10
-t_max      = 2000
+t_max      = 1000
 plot_on    = 0
 plot_every = 10
 if(plot_on==1){
@@ -104,8 +104,9 @@ results = c()
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
 
+  for (scenario_ind in c(3,5)){
   # for (scenario_ind in 1:nrow(scenarios_df)){
-  for (scenario_ind in 1){
+  # for (scenario_ind in 1){
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
@@ -137,6 +138,22 @@ for(param_set_id_use in loop_over){
 }
 
 variables = c("epithelial_score")
+
+data_long = results %>%
+  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+
+p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+  geom_line(alpha = .1, linewidth = 1) +
+  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+  scale_color_manual(values = agent_colors) +
+  theme_minimal() +
+  labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
+
+print(p)
+
+
+variables = c("treg_active")
 
 data_long = results %>%
   dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%

@@ -9,12 +9,12 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
 # path         = "/Users/burcutepekule/Desktop/sim_abm_10/"
-param_id_vec = 33200
+param_id_vec = 0
 # param_id_vec = 32100
-rep_ind_vec  = 0:99
+rep_ind_vec  = 0:9
 alpha_plot   = 1/length(rep_ind_vec)
 
-control_pick         = c(0, 1)
+control_pick         = c(0)
 sterile_pick         = c(0)
 tregs_on_pick        = c(0, 1)
 macspec_on_pick      = c(0)
@@ -127,5 +127,30 @@ for(param_id in param_id_vec){
     dpi = 300,
     bg='white'
   )
+  
+  
+  variables = c('treg_active')
+  
+  data_long = results %>%
+    dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+  
+  p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+    geom_line(alpha = alpha_plot, linewidth = 1) +
+    facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+    scale_color_manual(values = agent_colors) +
+    theme_minimal() +
+    labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
+  
+  ggsave(
+    filename = paste0("./timeseries/",variables,"_",param_id,".png"),
+    plot = p,
+    width = 14,
+    height = 8,
+    dpi = 300,
+    bg='white'
+  )
+  
+  
 }
 

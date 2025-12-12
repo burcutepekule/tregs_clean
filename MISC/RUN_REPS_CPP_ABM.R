@@ -540,14 +540,13 @@ for (reps_in in 0:(num_reps-1)){
     
     # ========================================================================
     # TREG ACTIVATION & EFFECTOR ACTIONS
-    # CRITICAL: Always consume random numbers to maintain stream synchronization!
     # C++ ACCELERATION: find_nearby_tregs
     # ========================================================================
     M1_phagocyte_indices = which(phagocyte_phenotype == 1)
     M2_phagocyte_indices = which(phagocyte_phenotype == 2)
     M_activate_phagocyte_indices = c(M1_phagocyte_indices, M2_phagocyte_indices)
     
-    if (length(M_activate_phagocyte_indices) > 0) {
+    if (allow_tregs == 1 && length(M_activate_phagocyte_indices) > 0) {
       for (i in M_activate_phagocyte_indices) {
         px = phagocyte_x[i]
         py = phagocyte_y[i]
