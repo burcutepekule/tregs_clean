@@ -32,6 +32,7 @@ for (reps_in in 0:(num_reps-1)){
   phagocyte_activity_ROS = rep(activity_ROS_M0_baseline, n_phagocytes)
   phagocyte_activity_engulf = rep(activity_engulf_M0_baseline, n_phagocytes)
   phagocyte_active_age = rep(0, n_phagocytes)
+  phagocyte_memory_timer = rep(0, n_phagocytes)  # Per-phagocyte memory decay timer
   # phagocyte_bacteria_registry = matrix(0, nrow = n_phagocytes, ncol = cc_phagocyte)
   
   # Initialize tregs
@@ -473,6 +474,15 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # ENGULFMENT PROCESS
     # ========================================================================
+    # Update per-phagocyte memory timers (independent decay)
+    phagocyte_memory_timer = phagocyte_memory_timer + 1
+    decay_indices = which(phagocyte_memory_timer >= 3)
+    if (length(decay_indices) > 0) {
+      phagocyte_pathogens_engulfed[decay_indices] = pmax(0, phagocyte_pathogens_engulfed[decay_indices] - 1)
+      phagocyte_commensals_engulfed[decay_indices] = pmax(0, phagocyte_commensals_engulfed[decay_indices] - 1)
+      phagocyte_memory_timer[decay_indices] = 0  # Reset timer after decay
+    }
+
     phagocyte_positions = paste(phagocyte_x, phagocyte_y, sep = "_")
     
     for (i in 1:length(phagocyte_x)) {
@@ -490,9 +500,7 @@ for (reps_in in 0:(num_reps-1)){
           
           if (length(indices_to_engulf) > 0) {
             phagocyte_pathogens_engulfed[i] = phagocyte_pathogens_engulfed[i] + length(indices_to_engulf)
-            ### NOT INFINITE, NEEDS MEMORY!
-            phagocyte_pathogens_engulfed[i] = max(0, phagocyte_pathogens_engulfed[i]-1*(t%%3==0)) # every 3 timesteps decreases 1!
-            
+
             pathogen_coords = pathogen_coords[-indices_to_engulf, , drop = FALSE]
             
             # # C++ ACCELERATION: shift_insert
@@ -519,9 +527,7 @@ for (reps_in in 0:(num_reps-1)){
           
           if (length(indices_to_engulf) > 0) {
             phagocyte_commensals_engulfed[i] = phagocyte_commensals_engulfed[i] + length(indices_to_engulf)
-            ### NOT INFINITE, NEEDS MEMORY!
-            phagocyte_commensals_engulfed[i] = max(0, phagocyte_commensals_engulfed[i]-1*(t%%3==0)) # every 3 timesteps decreases 1!
-            
+
             commensal_coords = commensal_coords[-indices_to_engulf, , drop = FALSE]
             
             # # C++ ACCELERATION: shift_insert
