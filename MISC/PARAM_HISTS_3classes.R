@@ -277,7 +277,7 @@ if(violin_on==1){
 }
 
 ggsave(
-  filename = paste0("./PARAMS_",inj_type,"_",jensen_distance,"_",score_type,".png"),
+  filename = paste0("./PARAMS_",inj_type,"_",jensen_distance,"_",score_type,"_",filter_control,".png"),
   plot = p_params,
   width = 18,
   height = 20,

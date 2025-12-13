@@ -80,107 +80,290 @@ analyze_class_ellipse = function(plsda_df, target_class, conf_levels) {
 # Analyze both classes
 conf_levels    = c(0.50, 0.75, 0.90, 0.95, 0.99)
 
-ellipse_plus1  = analyze_class_ellipse(plsda_df, "1", conf_levels)
-ellipse_minus1 = analyze_class_ellipse(plsda_df, "-1", conf_levels)
-
-# ============ VISUALIZATIONS ============
-
-# Add ellipse membership to dataframe
-plsda_df$in_ellipse_plus1  = ellipse_plus1$mahal_dist < qchisq(level_plus1, df = 2)
-plsda_df$in_ellipse_minus1 = ellipse_minus1$mahal_dist < qchisq(level_minus1, df = 2)
-
-# Create a combined category
-plsda_df = plsda_df %>%
-  mutate(region = case_when(
-    in_ellipse_plus1 & in_ellipse_minus1 ~ "Both",
-    in_ellipse_plus1 ~ "Better only",
-    in_ellipse_minus1 ~ "Worse only",
-    TRUE ~ "Don't matter"
-  ))
-
-# Function to generate ellipse coordinates
-get_ellipse_coords = function(center, cov_matrix, level, n_points = 100) {
-  theta = seq(0, 2 * pi, length.out = n_points)
-  circle = cbind(cos(theta), sin(theta))
+if(length(which(plsda_df$treg_outcome==1))>2 & length(which(plsda_df$treg_outcome==-1))>2){
+  ellipse_plus1  = analyze_class_ellipse(plsda_df, "1", conf_levels)
+  plsda_df$in_ellipse_plus1  = ellipse_plus1$mahal_dist < qchisq(level_plus1, df = 2)
   
-  # Scale by chi-square quantile
-  radius = sqrt(qchisq(level, df = 2))
-  ellipse = circle %*% chol(cov_matrix) * radius
-  ellipse = sweep(ellipse, 2, center, "+")
+  ellipse_minus1 = analyze_class_ellipse(plsda_df, "-1", conf_levels)
+  plsda_df$in_ellipse_minus1 = ellipse_minus1$mahal_dist < qchisq(level_minus1, df = 2)
   
-  return(data.frame(x = ellipse[, 1], y = ellipse[, 2]))
+  # ============ VISUALIZATIONS ============
+  
+  # Create a combined category
+  plsda_df = plsda_df %>%
+    mutate(region = case_when(
+      in_ellipse_plus1 & in_ellipse_minus1 ~ "Both",
+      in_ellipse_plus1 ~ "Better only",
+      in_ellipse_minus1 ~ "Worse only",
+      TRUE ~ "Don't matter"
+    ))
+  
+  # Function to generate ellipse coordinates
+  get_ellipse_coords = function(center, cov_matrix, level, n_points = 100) {
+    theta = seq(0, 2 * pi, length.out = n_points)
+    circle = cbind(cos(theta), sin(theta))
+    
+    # Scale by chi-square quantile
+    radius = sqrt(qchisq(level, df = 2))
+    ellipse = circle %*% chol(cov_matrix) * radius
+    ellipse = sweep(ellipse, 2, center, "+")
+    
+    return(data.frame(x = ellipse[, 1], y = ellipse[, 2]))
+  }
+  
+  # Generate ellipse coordinates
+  ellipse_plus1_coords = get_ellipse_coords(
+    ellipse_plus1$center, 
+    ellipse_plus1$cov, 
+    level_plus1
+  )
+  
+  ellipse_minus1_coords = get_ellipse_coords(
+    ellipse_minus1$center, 
+    ellipse_minus1$cov, 
+    level_minus1
+  )
+  
+  # ============ ADD PLS-DA LOADINGS AS ARROWS ============
+  
+  # Create a scaling factor for the arrows
+  arrow_scale = 5  # Adjust this to make arrows longer/shorter
+  
+  # Get PLS-DA loadings
+  plsda_loadings = plsda_model$loadings$X
+  
+  # Create arrows dataframe
+  plsda_arrows = data.frame(
+    parameter = rownames(plsda_loadings),
+    Comp1 = plsda_loadings[, 1] * arrow_scale,
+    Comp2 = plsda_loadings[, 2] * arrow_scale
+  )
+  
+  # Select top N most important parameters
+  n_arrows = 12 #23 to select all 
+  plsda_arrows = plsda_arrows %>%
+    mutate(total_loading = sqrt(Comp1^2 + Comp2^2)) %>%
+    arrange(desc(total_loading)) %>%
+    head(n_arrows)
+  
+  # ============ PLOT WITH ARROWS ============
+  
+  p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
+               aes(color = region), alpha = 0.8, size = 2) +
+    scale_color_manual(values = c(
+      "Don't matter" = "gray90",
+      "Better only" = "lightblue",
+      "Worse only" = "pink",
+      "Both" = "orange"
+    )) +
+    # Manual ellipses using exact calculations
+    geom_path(data = ellipse_plus1_coords, aes(x = x, y = y),
+              color = "blue", linewidth = 1.5, inherit.aes = FALSE) +
+    geom_path(data = ellipse_minus1_coords, aes(x = x, y = y),
+              color = "red", linewidth = 1.5, inherit.aes = FALSE) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
+               color = "darkblue", alpha = 0.8, size = 3) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
+               color = "darkred", alpha = 0.8, size = 3) +
+    # Add parameter vectors (arrows)
+    geom_segment(data = plsda_arrows,
+                 aes(x = 0, y = 0, xend = Comp1, yend = Comp2),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 color = "black", linewidth = 0.5,
+                 inherit.aes = FALSE) +
+    geom_text_repel(data = plsda_arrows,
+                    aes(x = Comp1, y = Comp2, label = parameter),
+                    color = "black", size = 3, fontface = "bold",
+                    inherit.aes = FALSE) +
+    theme_minimal() +
+    labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
+}else if(length(which(plsda_df$treg_outcome==1))>2 & length(which(plsda_df$treg_outcome==-1))<=2){
+  ellipse_plus1  = analyze_class_ellipse(plsda_df, "1", conf_levels)
+  plsda_df$in_ellipse_plus1  = ellipse_plus1$mahal_dist < qchisq(level_plus1, df = 2)
+  
+  pts = plsda_df[plsda_df$treg_outcome == -1, c("Comp1", "Comp2")]
+  ellipse_minus1 = data.frame(Comp1 = pts$Comp1, Comp2 = pts$Comp2, treg_outcome = -1)
+  plsda_df$in_ellipse_minus1 = TRUE
+  
+  # ============ VISUALIZATIONS ============
+  
+  # Create a combined category
+  plsda_df = plsda_df %>%
+    mutate(region = case_when(
+      in_ellipse_plus1 & in_ellipse_minus1 ~ "Both",
+      in_ellipse_plus1 ~ "Better only",
+      in_ellipse_minus1 ~ "Worse only",
+      TRUE ~ "Don't matter"
+    ))
+  
+  # Function to generate ellipse coordinates
+  get_ellipse_coords = function(center, cov_matrix, level, n_points = 100) {
+    theta = seq(0, 2 * pi, length.out = n_points)
+    circle = cbind(cos(theta), sin(theta))
+    
+    # Scale by chi-square quantile
+    radius = sqrt(qchisq(level, df = 2))
+    ellipse = circle %*% chol(cov_matrix) * radius
+    ellipse = sweep(ellipse, 2, center, "+")
+    
+    return(data.frame(x = ellipse[, 1], y = ellipse[, 2]))
+  }
+  
+  # Generate ellipse coordinates
+  ellipse_plus1_coords = get_ellipse_coords(
+    ellipse_plus1$center, 
+    ellipse_plus1$cov, 
+    level_plus1
+  )
+
+  # ============ ADD PLS-DA LOADINGS AS ARROWS ============
+  
+  # Create a scaling factor for the arrows
+  arrow_scale = 5  # Adjust this to make arrows longer/shorter
+  
+  # Get PLS-DA loadings
+  plsda_loadings = plsda_model$loadings$X
+  
+  # Create arrows dataframe
+  plsda_arrows = data.frame(
+    parameter = rownames(plsda_loadings),
+    Comp1 = plsda_loadings[, 1] * arrow_scale,
+    Comp2 = plsda_loadings[, 2] * arrow_scale
+  )
+  
+  # Select top N most important parameters
+  n_arrows = 12 #23 to select all 
+  plsda_arrows = plsda_arrows %>%
+    mutate(total_loading = sqrt(Comp1^2 + Comp2^2)) %>%
+    arrange(desc(total_loading)) %>%
+    head(n_arrows)
+  
+  # ============ PLOT WITH ARROWS ============
+  
+  p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
+               aes(color = region), alpha = 0.8, size = 2) +
+    scale_color_manual(values = c(
+      "Don't matter" = "gray90",
+      "Better only" = "lightblue",
+      "Worse only" = "pink",
+      "Both" = "orange"
+    )) +
+    # Manual ellipses using exact calculations
+    geom_path(data = ellipse_plus1_coords, aes(x = x, y = y),
+              color = "blue", linewidth = 1.5, inherit.aes = FALSE) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
+               color = "darkblue", alpha = 0.8, size = 3) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
+               color = "darkred", alpha = 0.8, size = 3) +
+    # Add parameter vectors (arrows)
+    geom_segment(data = plsda_arrows,
+                 aes(x = 0, y = 0, xend = Comp1, yend = Comp2),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 color = "black", linewidth = 0.5,
+                 inherit.aes = FALSE) +
+    geom_text_repel(data = plsda_arrows,
+                    aes(x = Comp1, y = Comp2, label = parameter),
+                    color = "black", size = 3, fontface = "bold",
+                    inherit.aes = FALSE) +
+    theme_minimal() +
+    labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
+}else{
+  pts = plsda_df[plsda_df$treg_outcome == 1, c("Comp1", "Comp2")]
+  ellipse_plus1 = data.frame(Comp1 = pts$Comp1, Comp2 = pts$Comp2, treg_outcome = 1)
+  plsda_df$ellipse_plus1 = TRUE
+  
+  ellipse_minus1 = analyze_class_ellipse(plsda_df, "-1", conf_levels)
+  plsda_df$in_ellipse_minus1 = ellipse_minus1$mahal_dist < qchisq(level_minus1, df = 2)
+  
+  # ============ VISUALIZATIONS ============
+  
+  # Create a combined category
+  plsda_df = plsda_df %>%
+    mutate(region = case_when(
+      in_ellipse_plus1 & in_ellipse_minus1 ~ "Both",
+      in_ellipse_plus1 ~ "Better only",
+      in_ellipse_minus1 ~ "Worse only",
+      TRUE ~ "Don't matter"
+    ))
+  
+  # Function to generate ellipse coordinates
+  get_ellipse_coords = function(center, cov_matrix, level, n_points = 100) {
+    theta = seq(0, 2 * pi, length.out = n_points)
+    circle = cbind(cos(theta), sin(theta))
+    
+    # Scale by chi-square quantile
+    radius = sqrt(qchisq(level, df = 2))
+    ellipse = circle %*% chol(cov_matrix) * radius
+    ellipse = sweep(ellipse, 2, center, "+")
+    
+    return(data.frame(x = ellipse[, 1], y = ellipse[, 2]))
+  }
+  
+  # Generate ellipse coordinates
+  ellipse_minus1_coords = get_ellipse_coords(
+    ellipse_minus1$center, 
+    ellipse_minus1$cov, 
+    level_minus1
+  )
+  
+  # ============ ADD PLS-DA LOADINGS AS ARROWS ============
+  
+  # Create a scaling factor for the arrows
+  arrow_scale = 5  # Adjust this to make arrows longer/shorter
+  
+  # Get PLS-DA loadings
+  plsda_loadings = plsda_model$loadings$X
+  
+  # Create arrows dataframe
+  plsda_arrows = data.frame(
+    parameter = rownames(plsda_loadings),
+    Comp1 = plsda_loadings[, 1] * arrow_scale,
+    Comp2 = plsda_loadings[, 2] * arrow_scale
+  )
+  
+  # Select top N most important parameters
+  n_arrows = 12 #23 to select all 
+  plsda_arrows = plsda_arrows %>%
+    mutate(total_loading = sqrt(Comp1^2 + Comp2^2)) %>%
+    arrange(desc(total_loading)) %>%
+    head(n_arrows)
+  
+  # ============ PLOT WITH ARROWS ============
+  
+  p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
+               aes(color = region), alpha = 0.8, size = 2) +
+    scale_color_manual(values = c(
+      "Don't matter" = "gray90",
+      "Better only" = "lightblue",
+      "Worse only" = "pink",
+      "Both" = "orange"
+    )) +
+    # Manual ellipses using exact calculations
+    geom_path(data = ellipse_minus1_coords, aes(x = x, y = y),
+              color = "red", linewidth = 1.5, inherit.aes = FALSE) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
+               color = "darkblue", alpha = 0.8, size = 3) +
+    geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
+               color = "darkred", alpha = 0.8, size = 3) +
+    # Add parameter vectors (arrows)
+    geom_segment(data = plsda_arrows,
+                 aes(x = 0, y = 0, xend = Comp1, yend = Comp2),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 color = "black", linewidth = 0.5,
+                 inherit.aes = FALSE) +
+    geom_text_repel(data = plsda_arrows,
+                    aes(x = Comp1, y = Comp2, label = parameter),
+                    color = "black", size = 3, fontface = "bold",
+                    inherit.aes = FALSE) +
+    theme_minimal() +
+    labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
 }
 
-# Generate ellipse coordinates
-ellipse_plus1_coords = get_ellipse_coords(
-  ellipse_plus1$center, 
-  ellipse_plus1$cov, 
-  level_plus1
-)
-
-ellipse_minus1_coords = get_ellipse_coords(
-  ellipse_minus1$center, 
-  ellipse_minus1$cov, 
-  level_minus1
-)
-
-# ============ ADD PLS-DA LOADINGS AS ARROWS ============
-
-# Create a scaling factor for the arrows
-arrow_scale = 5  # Adjust this to make arrows longer/shorter
-
-# Get PLS-DA loadings
-plsda_loadings = plsda_model$loadings$X
-
-# Create arrows dataframe
-plsda_arrows = data.frame(
-  parameter = rownames(plsda_loadings),
-  Comp1 = plsda_loadings[, 1] * arrow_scale,
-  Comp2 = plsda_loadings[, 2] * arrow_scale
-)
-
-# Select top N most important parameters
-n_arrows = 12 #23 to select all 
-plsda_arrows = plsda_arrows %>%
-  mutate(total_loading = sqrt(Comp1^2 + Comp2^2)) %>%
-  arrange(desc(total_loading)) %>%
-  head(n_arrows)
-
-# ============ PLOT WITH ARROWS ============
-
-p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
-  geom_point(data = plsda_df %>% filter(treg_outcome == "0"),
-             aes(color = region), alpha = 0.8, size = 2) +
-  scale_color_manual(values = c(
-    "Don't matter" = "gray90",
-    "Better only" = "lightblue",
-    "Worse only" = "pink",
-    "Both" = "orange"
-  )) +
-  # Manual ellipses using exact calculations
-  geom_path(data = ellipse_plus1_coords, aes(x = x, y = y),
-            color = "blue", linewidth = 1.5, inherit.aes = FALSE) +
-  geom_path(data = ellipse_minus1_coords, aes(x = x, y = y),
-            color = "red", linewidth = 1.5, inherit.aes = FALSE) +
-  geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
-             color = "darkblue", alpha = 0.8, size = 3) +
-  geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
-             color = "darkred", alpha = 0.8, size = 3) +
-  # Add parameter vectors (arrows)
-  geom_segment(data = plsda_arrows,
-               aes(x = 0, y = 0, xend = Comp1, yend = Comp2),
-               arrow = arrow(length = unit(0.3, "cm")),
-               color = "black", linewidth = 0.5,
-               inherit.aes = FALSE) +
-  geom_text_repel(data = plsda_arrows,
-                  aes(x = Comp1, y = Comp2, label = parameter),
-                  color = "black", size = 3, fontface = "bold",
-                  inherit.aes = FALSE) +
-  theme_minimal() +
-  labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
-
 ggsave(
-  filename = paste0("./PLS_DA_",inj_type,"_",jensen_distance,"_",score_type,".png"),
+  filename = paste0("./PLS_DA_",inj_type,"_",jensen_distance,"_",score_type,"_",filter_control,".png"),
   plot = p2,
   width = 9,
   height = 6,

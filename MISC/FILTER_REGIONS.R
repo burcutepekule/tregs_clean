@@ -19,8 +19,10 @@ length(unique(df_results_keep$param_set_id))
 reps_df       = as.data.frame(table(df_results_keep$param_set_id))
 if(data_suffix == '_10'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==200) %>% dplyr::pull(Var1) # 20 = 10 reps per scenario, 10 scenarios x 2 times recording for epithelial and pathogen scores 
-}else{
+}else if(data_suffix == '_100'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==2000) %>% dplyr::pull(Var1) # 200 = 100 reps per scenario, 10 scenarios x 2 times recording for epithelial and pathogen scores 
+}else{
+  keep_param_id = reps_df %>% dplyr::filter(Freq==480) %>% dplyr::pull(Var1) # 480 = 20 reps per scenario, 12 scenarios x 2 times recording for epithelial and pathogen scores 
 }
 df_results    = df_results_keep %>% filter(param_set_id %in% keep_param_id)
 
@@ -44,12 +46,14 @@ df_comparisons = distinct(df_results %>% dplyr::select(
   mean_tregs_off_sterile_e, mean_tregs_off_pathogen_e,
   mean_tregs_on_sterile_e, mean_tregs_on_pathogen_e,
   mean_tregs_rnd_sterile_e, mean_tregs_rnd_pathogen_e,
-  mean_macspec_sterile_e, mean_macspec_pathogen_e,
+  mean_macspec1_sterile_e, mean_macspec1_pathogen_e,
+  mean_macspec2_sterile_e, mean_macspec2_pathogen_e,
   mean_ctrl_sterile_p, mean_ctrl_pathogen_p,
   mean_tregs_off_sterile_p, mean_tregs_off_pathogen_p,
   mean_tregs_on_sterile_p, mean_tregs_on_pathogen_p,
   mean_tregs_rnd_sterile_p, mean_tregs_rnd_pathogen_p,
-  mean_macspec_sterile_p, mean_macspec_pathogen_p
+  mean_macspec1_sterile_p, mean_macspec1_pathogen_p,
+  mean_macspec2_sterile_p, mean_macspec2_pathogen_p
 ))
 df_comparisons_keep = df_comparisons
 

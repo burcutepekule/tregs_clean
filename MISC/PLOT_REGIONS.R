@@ -311,7 +311,7 @@ if(exists("num_cols")){
     }else{
       p_use = p_label_off
     }
-  }else if(num_cols>12){
+  }else if(num_cols>18){
     width_adjust = 9
     labels_on    = 0 # flip because too many
     p_use = p_label_off
@@ -330,7 +330,7 @@ if(exists("num_cols")){
 }
 
 ggsave(
-  filename = paste0("./ABM_JSD_",jensen_distance,"_",score_type,".png"),
+  filename = paste0("./ABM_JSD_",jensen_distance,"_",score_type,"_",filter_control,".png"),
   plot = p_use,
   width = width_adjust,
   height = 6,

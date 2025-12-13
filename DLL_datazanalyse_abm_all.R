@@ -1,10 +1,10 @@
 rm(list=ls())
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = 5*tol_in_e
+tol_in_p       = 25*25*0.5
 M1_M2_diff     = 1
-filter_control = 0
-labels_on      = 0
+filter_control = 1
+labels_on      = 1
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogen' or 'both'
 # score_type     = 'both'
@@ -12,11 +12,12 @@ score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # data_suffix    = '_100' # empty for 100 reps, _10 for 10 reps
 data_suffix    = '' # empty for 100 reps, _10 for 10 reps
 
+### THIS IS FOR PARAMETERS
 inj_type= 'sterile'
 inj_type= 'pathogenic'
-# inj_type= 'pooled'
+inj_type= 'pooled'
 
-analysis_pick  = 2
+analysis_pick  = 2 #2, 5, 8?
 
 if(analysis_pick==1){
   # 1 =========================================
@@ -35,19 +36,34 @@ if(analysis_pick==1){
   jensen_distance     = 'tregs_on_vs_rnd'
 }else if(analysis_pick==4){
   # 4 =========================================
-  condition_subt_from = 'macspec'
+  condition_subt_from = 'macspec1'
   condition_subt      = 'tregs_off'
-  jensen_distance     = 'macspec_vs_tregs_off'
+  jensen_distance     = 'macspec1_vs_tregs_off'
 }else if(analysis_pick==5){
   # 5 =========================================
-  condition_subt_from = 'macspec'
+  condition_subt_from = 'macspec1'
   condition_subt      = 'tregs_on'
-  jensen_distance     = 'macspec_vs_tregs_on'
+  jensen_distance     = 'macspec1_vs_tregs_on'
 }else if(analysis_pick==6){
   # 6 =========================================
-  condition_subt_from = 'macspec'
+  condition_subt_from = 'macspec1'
   condition_subt      = 'tregs_rnd'
-  jensen_distance     = 'macspec_vs_tregs_rnd'
+  jensen_distance     = 'macspec1_vs_tregs_rnd'
+}else if(analysis_pick==7){
+  # 7 =========================================
+  condition_subt_from = 'macspec2'
+  condition_subt      = 'tregs_off'
+  jensen_distance     = 'macspec2_vs_tregs_off'
+}else if(analysis_pick==8){
+  # 8 =========================================
+  condition_subt_from = 'macspec2'
+  condition_subt      = 'tregs_on'
+  jensen_distance     = 'macspec2_vs_tregs_on'
+}else if(analysis_pick==9){
+  # 9 =========================================
+  condition_subt_from = 'macspec2'
+  condition_subt      = 'tregs_rnd'
+  jensen_distance     = 'macspec2_vs_tregs_rnd'
 }
 
 source('./MISC/FILTER_REGIONS.R')
@@ -72,8 +88,10 @@ classes = unique(df_lda$diff_better_cohens)
 level_plus1  = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
 level_minus1 = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
 violin_on    = 1
-if(identical(classes, c(0,1))){
-  source('./MISC/PLS_DA_2classes.R')
+if(sum(classes)==1){ 
+  source('./MISC/PLS_DA_2classes_0p1.R')
+}else if(sum(classes)==-1){
+  source('./MISC/PLS_DA_2classes_0n1.R')
 }else{
   source('./MISC/PLS_DA_3classes.R')
 }

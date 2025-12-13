@@ -47,18 +47,18 @@ files_1_1_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+
 files_0_0_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_trnd_0.rds$", full.names = TRUE)
 files_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_trnd_0.rds$", full.names = TRUE)
 files_0_0_0_1_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_trnd_1.rds$", full.names = TRUE)
-# Test (with ROS), perfect macrophage (equally good)
+# Test (with ROS), macrophage (equally good)
 files_0_0_1_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_1_tregs_0_trnd_0.rds$", full.names = TRUE)
-# Test (with ROS), perfect macrophage (perfect)
+# Test (with ROS), macrophage (perfect)
 files_0_0_2_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_2_tregs_0_trnd_0.rds$", full.names = TRUE)
 # === PATHOGENIC
 # Test (with ROS)
 files_0_1_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_0_tregs_0_trnd_0.rds$", full.names = TRUE)
 files_0_1_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_0_tregs_1_trnd_0.rds$", full.names = TRUE)
 files_0_1_0_1_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_0_tregs_1_trnd_1.rds$", full.names = TRUE)
-# Test (with ROS), perfect macrophage (equally good)
+# Test (with ROS), macrophage (equally good)
 files_0_1_1_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_1_tregs_0_trnd_0.rds$", full.names = TRUE)
-# Test (with ROS), perfect macrophage (perfect)
+# Test (with ROS), macrophage (perfect)
 files_0_1_2_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_2_tregs_0_trnd_0.rds$", full.names = TRUE)
 
 indices_1_0_0_0_0 = str_extract(basename(files_1_0_0_0_0), "\\d+") |> as.numeric()
@@ -420,16 +420,16 @@ if(length(loop_over)>0){
       all_comparison_results_reps$d_tregs_on_vs_rnd_pathogen_e = calculate_js_divergence(scores_0_0_0_1_0_e_keep, scores_0_0_0_1_1_e_keep, method = "fd")[1]
       
       # 4: Perfect macrophage vs tregs OFF (macrophage specificity effect)
-      all_comparison_results_reps$d_macspec_vs_tregs_off_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_0_0_e_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_off_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_0_0_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_off_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_0_0_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_off_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_0_0_e_keep, method = "fd")[1]
       
       # 5: Perfect macrophage vs tregs ON (comparing two rescue mechanisms)
-      all_comparison_results_reps$d_macspec_vs_tregs_on_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_1_0_e_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_on_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_1_0_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_on_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_1_0_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_on_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_1_0_e_keep, method = "fd")[1]
       
       # 6: Perfect macrophage vs tregs ON and RANDOM (comparing two rescue mechanisms)
-      all_comparison_results_reps$d_macspec_vs_tregs_rnd_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_1_1_e_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_rnd_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_1_1_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_rnd_sterile_e  = calculate_js_divergence(scores_0_1_1_0_0_e_keep, scores_0_1_0_1_1_e_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_rnd_pathogen_e = calculate_js_divergence(scores_0_0_1_0_0_e_keep, scores_0_0_0_1_1_e_keep, method = "fd")[1]
 
       # 7: Perfect macrophage (macspec_2) vs tregs OFF (macrophage specificity effect)
       all_comparison_results_reps$d_macspec2_vs_tregs_off_sterile_e  = calculate_js_divergence(scores_0_1_2_0_0_e_keep, scores_0_1_0_0_0_e_keep, method = "fd")[1]
@@ -462,16 +462,16 @@ if(length(loop_over)>0){
       all_comparison_results_reps$d_tregs_on_vs_rnd_pathogen_p = calculate_js_divergence(scores_0_0_0_1_0_p_keep, scores_0_0_0_1_1_p_keep, method = "fd")[1]
       
       # 4: Perfect macrophage vs tregs OFF (macrophage specificity effect)
-      all_comparison_results_reps$d_macspec_vs_tregs_off_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_0_0_p_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_off_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_0_0_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_off_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_0_0_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_off_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_0_0_p_keep, method = "fd")[1]
       
       # 5: Perfect macrophage vs tregs ON (comparing two rescue mechanisms)
-      all_comparison_results_reps$d_macspec_vs_tregs_on_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_1_0_p_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_on_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_1_0_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_on_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_1_0_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_on_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_1_0_p_keep, method = "fd")[1]
       
       # 6: Perfect macrophage vs tregs ON and RANDOM (comparing two rescue mechanisms)
-      all_comparison_results_reps$d_macspec_vs_tregs_rnd_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_1_1_p_keep, method = "fd")[1]
-      all_comparison_results_reps$d_macspec_vs_tregs_rnd_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_1_1_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_rnd_sterile_p  = calculate_js_divergence(scores_0_1_1_0_0_p_keep, scores_0_1_0_1_1_p_keep, method = "fd")[1]
+      all_comparison_results_reps$d_macspec1_vs_tregs_rnd_pathogen_p = calculate_js_divergence(scores_0_0_1_0_0_p_keep, scores_0_0_0_1_1_p_keep, method = "fd")[1]
 
       # 7: Perfect macrophage (macspec_2) vs tregs OFF (macrophage specificity effect)
       all_comparison_results_reps$d_macspec2_vs_tregs_off_sterile_p  = calculate_js_divergence(scores_0_1_2_0_0_p_keep, scores_0_1_0_0_0_p_keep, method = "fd")[1]
@@ -508,8 +508,8 @@ if(length(loop_over)>0){
       all_comparison_results_reps$mean_tregs_rnd_pathogen_e = mean(scores_0_0_0_1_1_e_keep)
       
       # Test - perfect macrophage (macspec_1)
-      all_comparison_results_reps$mean_macspec_sterile_e  = mean(scores_0_1_1_0_0_e_keep)
-      all_comparison_results_reps$mean_macspec_pathogen_e = mean(scores_0_0_1_0_0_e_keep)
+      all_comparison_results_reps$mean_macspec1_sterile_e  = mean(scores_0_1_1_0_0_e_keep)
+      all_comparison_results_reps$mean_macspec1_pathogen_e = mean(scores_0_0_1_0_0_e_keep)
 
       # Test - perfect macrophage (macspec_2)
       all_comparison_results_reps$mean_macspec2_sterile_e  = mean(scores_0_1_2_0_0_e_keep)
@@ -533,8 +533,8 @@ if(length(loop_over)>0){
       all_comparison_results_reps$sd_tregs_rnd_pathogen_e = sd(scores_0_0_0_1_1_e_keep)
       
       # Test - perfect macrophage (macspec_1)
-      all_comparison_results_reps$sd_macspec_sterile_e  = sd(scores_0_1_1_0_0_e_keep)
-      all_comparison_results_reps$sd_macspec_pathogen_e = sd(scores_0_0_1_0_0_e_keep)
+      all_comparison_results_reps$sd_macspec1_sterile_e  = sd(scores_0_1_1_0_0_e_keep)
+      all_comparison_results_reps$sd_macspec1_pathogen_e = sd(scores_0_0_1_0_0_e_keep)
 
       # Test - perfect macrophage (macspec_2)
       all_comparison_results_reps$sd_macspec2_sterile_e  = sd(scores_0_1_2_0_0_e_keep)
@@ -558,8 +558,8 @@ if(length(loop_over)>0){
       all_comparison_results_reps$mean_tregs_rnd_pathogen_p = mean(scores_0_0_0_1_1_p_keep)
       
       # Test - perfect macrophage (macspec_1)
-      all_comparison_results_reps$mean_macspec_sterile_p  = mean(scores_0_1_1_0_0_p_keep)
-      all_comparison_results_reps$mean_macspec_pathogen_p = mean(scores_0_0_1_0_0_p_keep)
+      all_comparison_results_reps$mean_macspec1_sterile_p  = mean(scores_0_1_1_0_0_p_keep)
+      all_comparison_results_reps$mean_macspec1_pathogen_p = mean(scores_0_0_1_0_0_p_keep)
 
       # Test - perfect macrophage (macspec_2)
       all_comparison_results_reps$mean_macspec2_sterile_p  = mean(scores_0_1_2_0_0_p_keep)
@@ -583,8 +583,8 @@ if(length(loop_over)>0){
       all_comparison_results_reps$sd_tregs_rnd_pathogen_p = sd(scores_0_0_0_1_1_p_keep)
       
       # Test - perfect macrophage (macspec_1)
-      all_comparison_results_reps$sd_macspec_sterile_p  = sd(scores_0_1_1_0_0_p_keep)
-      all_comparison_results_reps$sd_macspec_pathogen_p = sd(scores_0_0_1_0_0_p_keep)
+      all_comparison_results_reps$sd_macspec1_sterile_p  = sd(scores_0_1_1_0_0_p_keep)
+      all_comparison_results_reps$sd_macspec1_pathogen_p = sd(scores_0_0_1_0_0_p_keep)
 
       # Test - perfect macrophage (macspec_2)
       all_comparison_results_reps$sd_macspec2_sterile_p  = sd(scores_0_1_2_0_0_p_keep)

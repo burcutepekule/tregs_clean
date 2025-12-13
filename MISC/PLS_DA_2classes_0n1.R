@@ -125,9 +125,9 @@ get_ellipse_coords = function(center, cov_matrix, level, n_points = 100) {
 }
 
 # Generate ellipse coordinates
-ellipse_plus1_coords = get_ellipse_coords(
-  ellipse_plus1$center, 
-  ellipse_plus1$cov, 
+ellipse_minus1_coords = get_ellipse_coords(
+  ellipse_minus1$center, 
+  ellipse_minus1$cov, 
   level_plus1
 )
 
@@ -165,10 +165,10 @@ p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
     "Both" = "orange"
   )) +
   # Manual ellipses using exact calculations
-  geom_path(data = ellipse_plus1_coords, aes(x = x, y = y),
-            color = "blue", linewidth = 1.5, inherit.aes = FALSE) +
-  geom_point(data = plsda_df %>% filter(treg_outcome == "1"),
-             color = "darkblue", alpha = 0.8, size = 3) +
+  geom_path(data = ellipse_minus1_coords, aes(x = x, y = y),
+            color = "red", linewidth = 1.5, inherit.aes = FALSE) +
+  geom_point(data = plsda_df %>% filter(treg_outcome == "-1"),
+             color = "darkred", alpha = 0.8, size = 3) +
   # Add parameter vectors (arrows)
   geom_segment(data = plsda_arrows,
                aes(x = 0, y = 0, xend = Comp1, yend = Comp2),
@@ -183,7 +183,7 @@ p2 = ggplot(plsda_df, aes(x = Comp1, y = Comp2)) +
   labs(title = paste0("PLS DA of parameter sets: conf. (",level_plus1,")"))
 
 ggsave(
-  filename = paste0("./PLS_DA_",inj_type,"_",jensen_distance,"_",score_type,".png"),
+  filename = paste0("./PLS_DA_",inj_type,"_",jensen_distance,"_",score_type,"_",filter_control,".png"),
   plot = p2,
   width = 9,
   height = 6,
@@ -191,6 +191,6 @@ ggsave(
   bg='white'
 )
 
-source("./MISC/PARAM_HISTS_2classes.R")
+source("./MISC/PARAM_HISTS_2classes_0n1.R")
 
 
