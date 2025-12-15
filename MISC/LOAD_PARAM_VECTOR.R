@@ -2,7 +2,7 @@
 if(M1_M2_diff==1){
   param_names = c(
     "th_ROS_microbe",
-    "th_ROS_epith_recover",
+    "th_ROS_epith_injury", # changed from recover to injury because naming was wrong
     # "epith_recovery_chance", #remove, same for all 
     "rat_com_pat_threshold",
     "diffusion_speed_DAMPs",
@@ -31,7 +31,7 @@ if(M1_M2_diff==1){
 }else{
   param_names = c(
     "th_ROS_microbe",
-    "th_ROS_epith_recover",
+    "th_ROS_epith_injury",# changed from recover to injury because naming was wrong
     # "epith_recovery_chance", #remove, same for all 
     "rat_com_pat_threshold",
     "diffusion_speed_DAMPs",

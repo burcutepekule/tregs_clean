@@ -1,17 +1,45 @@
 rm(list=ls())
-library(dplyr)
-library(tidyr)
-library(zoo)
-library(cowplot)
-library(av)
-library(ggplot2)
+jsd_th         = 0.3
+tol_in_e       = 125*0.25
+tol_in_p       = 25*25*0.5
+M1_M2_diff     = 1
+filter_control = 1
+labels_on      = 0
+score_type     = 'epithelial' # or 'pathogenic' or 'both'
+# score_type     = 'pathogen' # or 'pathogen' or 'both'
+# score_type     = 'both'
+data_suffix    = '' #
+
+### THIS IS FOR PARAMETERS
+inj_type= 'sterile'
+inj_type= 'pathogenic'
+inj_type= 'pooled'
+
+condition_subt_from = 'tregs_on'
+condition_subt      = 'tregs_off'
+jensen_distance     = 'tregs_on_vs_off'
+
+source('./MISC/FILTER_REGIONS.R')
+source('./MISC/PLOT_REGIONS.R')
+tregs_better_df              = df_comparisons_plot %>% dplyr::filter(diff_better_cohens==1) 
+tregs_better_df_sterile      = tregs_better_df %>% dplyr::filter(injury_type=='sterile')
+tregs_better_df_pathogenic   = tregs_better_df %>% dplyr::filter(injury_type=='pathogenic')
+tregs_better_ids_sterile     = sort(unique(tregs_better_df_sterile %>% dplyr::pull(param_set_id)))
+tregs_better_ids_pathogenic  = sort(unique(tregs_better_df_pathogenic %>% dplyr::pull(param_set_id)))
+
+params_df        = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+params_df_pick   = params_df %>% dplyr::filter(param_set_id %in% tregs_better_ids_sterile)
+
+params_df_pick   = params_df_pick[order(params_df_pick$treg_discrimination_efficiency),]
+df_merged        = merge(params_df_pick, tregs_better_df_sterile, by='param_set_id')
+plot(df_merged$treg_discrimination_efficiency, df_merged$diff_compare)
+df_merged        = df_merged[order(df_merged$treg_discrimination_efficiency),]
 
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(10900) # contradictory treg rnd
+loop_over    = params_df_pick[1,]$param_set_id # contradictory treg rnd
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
 # ============================================================================
@@ -104,7 +132,8 @@ results = c()
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   
-  for (scenario_ind in c(3, 5)){
+  for (scenario_ind in c(4, 6, 8)){ # sterile tregs on tregs off tregs rnd
+    # for (scenario_ind in c(5, 7)){
     # for (scenario_ind in c(3, 9, 11)){
     # for (scenario_ind in 1:nrow(scenarios_df)){
     # for (scenario_ind in 1){
@@ -153,17 +182,19 @@ p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
 
 print(p)
 
-variables = c("pathogen")
+# variables = c("pathogen")
+# 
+# data_long = results %>%
+#   dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+#   pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+# 
+# p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+#   geom_line(alpha = .1, linewidth = 1) +
+#   facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+#   scale_color_manual(values = agent_colors) +
+#   theme_minimal() +
+#   labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+# 
+# print(p)
 
-data_long = results %>%
-  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
-  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
 
-p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
-  geom_line(alpha = .1, linewidth = 1) +
-  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
-  scale_color_manual(values = agent_colors) +
-  theme_minimal() +
-  labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
-
-print(p)

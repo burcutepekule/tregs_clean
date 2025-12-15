@@ -198,7 +198,7 @@ if(violin_on==1){
     geom_violin(alpha = 0.2, trim = TRUE) +
     geom_boxplot(width = 0.2, alpha = 0.8, outlier.shape = NA) +
     # facet_wrap(~parameter_labeled, scales = "free_y", ncol = 4) + # if you want it ordered according to p val
-    facet_wrap(~parameter, scales = "free_y", ncol = 4) + # ordered alphabetically (easier to compare among inj types.)
+    facet_wrap(~parameter, scales = "free_y", ncol = 5) + # ordered alphabetically (easier to compare among inj types.)
     scale_fill_manual(values = c(
       "Better only" = "lightblue",
       "Don't matter" = "gray80",
@@ -244,7 +244,7 @@ if(violin_on==1){
   p_params = ggplot(df_plot_params, aes(x = region, y = value, fill = region)) +
     geom_boxplot(width = 0.2, alpha = 0.2) +
     # facet_wrap(~parameter_labeled, scales = "free_y", ncol = 4) + # if you want it ordered according to p val
-    facet_wrap(~parameter, scales = "free_y", ncol = 4) + # ordered alphabetically (easier to compare among inj types.)
+    facet_wrap(~parameter, scales = "free_y", ncol = 5) + # ordered alphabetically (easier to compare among inj types.)
     scale_fill_manual(values = c(
       "Better only" = "lightblue",
       "Don't matter" = "gray80",
@@ -279,8 +279,8 @@ if(violin_on==1){
 ggsave(
   filename = paste0("./PARAMS_",inj_type,"_",jensen_distance,"_",score_type,"_",filter_control,".png"),
   plot = p_params,
-  width = 18,
-  height = 20,
+  width = 18*0.95,
+  height = 14*0.95,
   dpi = 300,
   bg='white'
 )

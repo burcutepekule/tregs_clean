@@ -11,7 +11,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(38002)
+loop_over    = c(2600)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
 # ============================================================================
@@ -28,7 +28,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 2000
+t_max      = 500
 plot_on    = 1
 plot_every = 10
 if(plot_on==1){
@@ -79,12 +79,12 @@ scenarios_df = expand.grid(
   sterile         = c(0, 1),
   allow_tregs     = c(0, 1),
   randomize_tregs = c(0, 1),
-  macspec_on      = c(0, 1)
+  macspec_on      = c(0, 1, 2)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
 scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
-scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on ==1 & allow_tregs == 1 & randomize_tregs==1))
-scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on ==1 & allow_tregs == 1 & randomize_tregs==0))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
 scenarios_df_ctrl = expand.grid(
   control         = c(1),
   sterile         = c(0, 1),
@@ -104,7 +104,8 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
 
-  for (scenario_ind in 1:nrow(scenarios_df)){
+  # for (scenario_ind in 1:nrow(scenarios_df)){
+  for (scenario_ind in c(3,5)){
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs

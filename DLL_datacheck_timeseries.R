@@ -14,11 +14,11 @@ param_id_vec = 0
 rep_ind_vec  = 0:9
 alpha_plot   = 1/length(rep_ind_vec)
 
-control_pick         = c(0)
-sterile_pick         = c(0)
+control_pick         = c(0, 1)
+sterile_pick         = c(0, 1)
 tregs_on_pick        = c(0, 1)
-macspec_on_pick      = c(0)
-randomize_tregs_pick = c(0)
+macspec_on_pick      = c(0, 1, 2)
+randomize_tregs_pick = c(0, 1)
 
 for(param_id in param_id_vec){
   # Control
@@ -72,10 +72,10 @@ for(param_id in param_id_vec){
     labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
   
   ggsave(
-    filename = paste0("./timeseries/",variables,"_",param_id,".png"),
+    filename = paste0("./timeseries/",variables[1],"_",param_id,".png"),
     plot = p,
     width = 14,
-    height = 8,
+    height = 6,
     dpi = 300,
     bg='white'
   )
@@ -99,7 +99,7 @@ for(param_id in param_id_vec){
     filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
-    height = 8,
+    height = 6,
     dpi = 300,
     bg='white'
   )
@@ -115,7 +115,7 @@ for(param_id in param_id_vec){
     facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
-    labs(title = "Epithelial Cell Dynamics", x = "Time", y = "Count", color = "Agent")
+    labs(title = "Pathogen Abundance", x = "Time", y = "Count", color = "Agent")
   
   # print(p)
   
@@ -123,7 +123,7 @@ for(param_id in param_id_vec){
     filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
-    height = 8,
+    height = 6,
     dpi = 300,
     bg='white'
   )
@@ -146,7 +146,7 @@ for(param_id in param_id_vec){
     filename = paste0("./timeseries/",variables,"_",param_id,".png"),
     plot = p,
     width = 14,
-    height = 8,
+    height = 6,
     dpi = 300,
     bg='white'
   )

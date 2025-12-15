@@ -21,8 +21,10 @@ if(data_suffix == '_10'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==200) %>% dplyr::pull(Var1) # 20 = 10 reps per scenario, 10 scenarios x 2 times recording for epithelial and pathogen scores 
 }else if(data_suffix == '_100'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==2000) %>% dplyr::pull(Var1) # 200 = 100 reps per scenario, 10 scenarios x 2 times recording for epithelial and pathogen scores 
-}else{
+}else if(data_suffix == '_20'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==480) %>% dplyr::pull(Var1) # 480 = 20 reps per scenario, 12 scenarios x 2 times recording for epithelial and pathogen scores 
+}else{
+  keep_param_id = reps_df %>% dplyr::filter(Freq==2400) %>% dplyr::pull(Var1) # 480 = 100 reps per scenario, 12 scenarios x 2 times recording for epithelial and pathogen scores 
 }
 df_results    = df_results_keep %>% filter(param_set_id %in% keep_param_id)
 
@@ -72,4 +74,5 @@ if(filter_control==1){ # This is to pick cases where ROS is an evolutionary favo
   
 }
 # ============= FILTER BASED ON CONTROL ====================================================
+length(unique(df_comparisons$param_set_id))
 
