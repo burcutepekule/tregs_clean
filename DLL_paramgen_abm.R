@@ -11,24 +11,27 @@ param_bounds = list(
   rate_leak_commensal_baseline = c(0.05, 0.05), #FIXED
   epith_recovery_chance = c(0.05, 0.05), #FIXED
   th_ROS_microbe = c(0, 1), 
-  th_ROS_epith_recover = c(0, 1),
+  th_ROS_epith_injury = c(0, 1),
   rat_com_pat_threshold = c(0.5, 1),
   diffusion_speed_DAMPs = c(0, 0.12),
+  diffusion_speed_PAMPs = c(0, 0.12),
   diffusion_speed_SAMPs = c(0, 0.12),
   diffusion_speed_ROS = c(0, 0.12),
   add_ROS = c(0, 1),
   add_DAMPs = c(0, 1),
   add_SAMPs = c(0, 1),
+  add_PAMPs = c(0, 1),
   ros_decay = c(0, 0.5),
   DAMPs_decay = c(0, 0.5),
   SAMPs_decay = c(0, 0.5),
+  PAMPs_decay = c(0, 0.5),
   activation_threshold_DAMPs = c(0, 0.5),
   activation_threshold_SAMPs = c(0, 0.5),
   activity_engulf_M0_baseline = c(0.05, 0.05), #FIXED
   activity_engulf_M1_baseline = c(0.05, 0.75),
   activity_engulf_M2_baseline = c(0.05, 0.75),
   activity_ROS_M1_baseline = c(0, 1),
-  cc_phagocyte = c(3, 30),# discrete parameter, will be rounded
+  cc_phagocyte     = c(3, 30),# discrete parameter, will be rounded
   active_age_limit = c(3, 30),  # discrete parameter, will be rounded
   treg_discrimination_efficiency = c(0, 1)
 )
@@ -60,8 +63,8 @@ lhs_samples$active_age_limit = round(lhs_samples$active_age_limit)
 lhs_samples$cc_phagocyte     = round(lhs_samples$cc_phagocyte)
 
 # Apply the rules
-# th_ROS_microbe should be lower than th_ROS_epith_recover
-lhs_samples = lhs_samples %>% dplyr::filter(th_ROS_microbe<th_ROS_epith_recover)
+# th_ROS_microbe should be lower than th_ROS_epith_injury
+lhs_samples = lhs_samples %>% dplyr::filter(th_ROS_microbe<th_ROS_epith_injury)
 lhs_samples = lhs_samples[1:(n_samples/10),]
 
 # Add parameter set ID

@@ -60,7 +60,7 @@ plot_on    = 0
 plot_every = 0
 t_max      = 5000
 grid_size  = 25
-num_reps   = 100
+num_reps   = 10
 
 n_phagocytes = round(grid_size*grid_size*0.20)
 n_tregs = round(grid_size*grid_size*0.20)
@@ -72,10 +72,7 @@ max_level_injury  = 5
 max_cell_value_ROS   = 1
 max_cell_value_DAMPs = 1
 max_cell_value_SAMPs = 1
-
-lim_ROS  = max_cell_value_ROS
-lim_DAMP = max_cell_value_DAMPs
-lim_SAMP = max_cell_value_SAMPs
+max_cell_value_PAMPs = 1
 
 act_radius_ROS   = 1
 act_radius_treg  = 1
@@ -147,8 +144,9 @@ for(param_set_id_use in loop_over){
     # ========================================================================
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
-    source("./MISC/RUN_REPS_CPP_ABM.R")
-
+    # source("./MISC/RUN_REPS_CPP_ABM.R")
+    source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
+    
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
     scenario_elapsed_total = scenario_elapsed_total + scenario_elapsed
