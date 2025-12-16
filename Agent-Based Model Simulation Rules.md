@@ -164,8 +164,9 @@ Microbes perform biased random walks:
 ## 4. Phagocytes (Macrophages/Dendritic Cells)
 
 ### Population
-- Fixed number: `n_phagocytes = round(grid_size * grid_size * 0.20)` = 125 cells
+- Initial number: `n_phagocytes = round(grid_size * grid_size * 0.20)` = 125 cells
 - Do not proliferate or die during simulation
+- **NEW:** Can be dynamically recruited from tissue borders in response to danger signals (see Recruitment section below)
 
 ### Movement & Chemotaxis
 Phagocytes perform chemotaxis toward danger signals:
@@ -288,6 +289,46 @@ At each time step, for each phagocyte:
 
 4. **Track deaths:**
    - Separate counters for commensals/pathogens killed by M0/M1/M2
+
+### Recruitment from Tissue Borders
+
+**NEW FEATURE - Border Recruitment Based on Local Danger Signals**
+
+Macrophages can be dynamically recruited into the tissue from the three non-epithelial borders in response to inflammation:
+
+**Recruitment Mechanism:**
+1. **Recruitment borders:**
+   - **TOP border** (y = grid_size): All x positions
+   - **LEFT border** (x = 1): All y positions except epithelium (y > 1)
+   - **RIGHT border** (x = grid_size): All y positions except epithelium (y > 1)
+
+2. **Location-specific recruitment:**
+   - For each border position, calculate local danger signal: `danger_at_border = DAMPs[border_pos] + PAMPs[border_pos]`
+   - Number recruited: `n_recruit ~ Poisson(λ = recruitment_rate_danger × danger_at_border)`
+   - Stochastic recruitment proportional to local inflammation
+
+3. **Properties of recruited macrophages:**
+   - Enter at exact border position with high danger signal
+   - Initialize as M0 phenotype (resting/naive)
+   - Have empty bacteria registry
+   - Immediately begin sensing local signals and can activate
+
+4. **Timing:**
+   - Recruitment occurs after signal diffusion/decay
+   - Before cell movement
+   - Ensures recruited cells respond to current danger landscape
+
+**Parameters:**
+- `recruitment_rate_danger` (range: 0-0.5)
+  - Controls recruitment rate via Poisson λ parameter
+  - Higher values = more aggressive recruitment
+  - Set to 0 disables recruitment (backward compatibility)
+
+**Biological Interpretation:**
+- Mimics monocyte recruitment from blood vessels at tissue periphery
+- Recruitment strength proportional to local chemokine gradients
+- Realistic spatial heterogeneity in immune cell infiltration
+- Allows model to capture dynamic changes in immune cell numbers during inflammation
 
 ---
 
@@ -470,7 +511,116 @@ Tregs are activated by encountering phagocytes presenting predominantly commensa
 
 ---
 
-## 7. Simulation Scenarios
+## 7. Simulation Algorithm (Order of Operations)
+
+At each time step `t`, the following operations are performed in this exact order:
+
+### 1. Update Injury Site
+- Identify currently injured epithelial cells: `injury_site_updated = which(level_injury > 0)`
+
+### 2. Update SAMPs (from activated Tregs)
+- For each activated Treg (phenotype = 1):
+  - Add SAMPs at Treg location
+  - Uses C++ batch function `update_SAMPs_batch_cpp()`
+
+### 3. Update ROS (from M1 phagocytes)
+- For each M1 phagocyte:
+  - Add ROS at phagocyte location: `ROS[y, x] += activity_ROS * add_ROS`
+
+### 4. Move Microbes
+- **Pathogens and commensals** perform random walks:
+  - At epithelium (y=1): Can only move up or laterally
+  - In lamina propria (y>1): Can move in any direction
+  - Coordinates clamped to grid boundaries [1, grid_size]
+
+### 5. Pre-Calculate Microbe Counts at Epithelium
+- Count pathogens and commensals at y=1 for each x position
+- Used for DAMP generation and epithelial injury calculation
+
+### 6. Update DAMPs
+- Add DAMPs from injured epithelium: `DAMPs[1, x] += level_injury[x] * add_DAMPs`
+- Add DAMPs from microbes at epithelium: `DAMPs[1, x] += logistic_scaled(pathogen_count + commensal_count) * add_DAMPs`
+
+### 7. Update PAMPs
+- For each grid position with pathogens:
+  - Add PAMPs: `PAMPs[y, x] += logistic_scaled(pathogen_count) * add_PAMPs`
+
+### 8. Diffuse & Decay Signals
+- **Diffusion:** All signals (DAMPs, PAMPs, SAMPs, ROS) diffuse via discrete Laplacian
+  - Uses C++ function `diffuse_matrix_cpp()` for 5-10x speedup
+  - Reflective boundary conditions (except top)
+- **Decay:** Linear decay for all signals: `Signal = Signal * (1 - decay_rate)`
+- **Capping:** Enforce maximum values for all signals
+
+### 9. Recruit Macrophages from Borders (NEW)
+- If `recruitment_rate_danger > 0`:
+  - For each border position (top, left, right):
+    - Calculate local danger: `danger_at_border = DAMPs + PAMPs`
+    - Recruit: `n_recruit ~ Poisson(recruitment_rate_danger * danger_at_border)`
+    - Add new M0 macrophages at border position
+
+### 10. Move Phagocytes and Tregs
+- **Phagocytes:** Chemotax toward `DAMPs + PAMPs`
+- **Tregs:** Chemotax toward `DAMPs` (if `randomize_tregs = 0`) or move randomly (if `randomize_tregs = 1`)
+- Both use probabilistic movement based on local signal gradients
+
+### 11. Add New Microbes (Leakage)
+- **Pathogens:** Leak through injured epithelium (unless `sterile = 1`)
+  - Rate: `rate_leak_pathogen_injury * mean(level_injury) * length(injury_site)`
+  - Enter at y=1, weighted by injury level
+- **Commensals:** Leak through epithelium (baseline + injury-enhanced)
+  - Baseline: `rate_leak_commensal_baseline * grid_size`
+  - Injury-enhanced: `rate_leak_commensal_injury * mean(level_injury) * length(injury_site)`
+
+### 12. Update Phagocyte Phenotypes
+- **M0 phagocytes:** Assess environment, potentially activate to M1 or M2
+  - Calculate `danger_signal = avg_DAMPs + avg_PAMPs`
+  - Calculate `avg_SAMPs`
+  - Activate based on signal dominance
+- **M1/M2 phagocytes:** After `active_age_limit` steps, reassess
+  - With macrophage specificity: Use engulfment history
+  - Without: Use environmental signals only
+
+### 13. Update Treg Active Age
+- Increment `active_age` for activated Tregs
+- Deactivate Tregs after `active_age_limit` steps
+
+### 14. Engulfment Process
+- For each phagocyte:
+  - Find colocated microbes
+  - Attempt engulfment (probability = `activity_engulf`)
+  - Update bacteria registry
+  - Remove engulfed microbes from environment
+  - Track deaths by phenotype
+
+### 15. Treg Activation
+- If `allow_tregs = 1`:
+  - For each M1/M2 phagocyte with bacteria:
+    - Find nearby Tregs (within `treg_vicinity_effect`)
+    - Calculate commensal/pathogen ratio with discrimination
+    - Activate Tregs if commensal ratio > threshold
+
+### 16. Kill Microbes with ROS
+- For each microbe:
+  - Calculate average ROS in vicinity (`act_radius_ROS`)
+  - Kill if ROS > `th_ROS_microbe`
+  - Uses C++ function `kill_microbes_with_ros_cpp()` for 50-100x speedup
+
+### 17. Update Epithelial Injury
+- **Increase injury:**
+  - From pathogens at epithelium: `+logistic_scaled(pathogen_count)`
+  - From high ROS: `+1` if local ROS > `th_ROS_epith_injury`
+- **Stochastic recovery:**
+  - Each injured cell: probability `epith_recovery_chance` to reduce injury by 1
+- **Cap:** Maximum injury level = 5
+
+### 18. Save Abundances
+- Record all population counts and cumulative death counters
+- Append to longitudinal dataframe
+
+---
+
+## 8. Simulation Scenarios
 
 The simulation explores multiple experimental conditions through scenario combinations:
 
@@ -526,7 +676,7 @@ For each parameter set:
 
 ---
 
-## 8. Parameters
+## 9. Parameters
 
 ### Fixed Parameters (not in CSV)
 
@@ -607,9 +757,12 @@ Read from `lhs_parameters_della.csv` (Latin Hypercube Sampling):
 - `treg_discrimination_efficiency` - Treg ability to distinguish commensals from pathogens (0-1)
 - `mac_discrimination_efficiency` - Derived from scenario and Treg discrimination (when `macspec_on > 0`)
 
+**Recruitment:**
+- `recruitment_rate_danger` - Macrophage recruitment rate from borders proportional to danger signal (0-0.5) (NEW)
+
 ---
 
-## 9. Metrics Recorded (Longitudinal Data)
+## 10. Metrics Recorded (Longitudinal Data)
 
 At each time step, the following data is recorded and saved in longitudinal dataframes:
 
@@ -670,7 +823,7 @@ Each longitudinal dataframe includes:
 
 ---
 
-## 10. Implementation & Computational Optimization
+## 11. Implementation & Computational Optimization
 
 ### Script Organization
 
@@ -731,7 +884,7 @@ Rscript DLL_datagen_abm.R 10 2  # Process chunk 2 of 10
 
 ---
 
-## 11. Key Changes from Original Documentation
+## 12. Key Changes from Original Documentation
 
 ### Major Additions
 
@@ -752,6 +905,14 @@ Rscript DLL_datagen_abm.R 10 2  # Process chunk 2 of 10
    - Entire computational pipeline optimized with C++ implementations
    - 20-100x speedup for most intensive operations
    - Essential for large parameter explorations
+
+4. **Macrophage Recruitment from Borders:**
+   - Completely new feature for dynamic immune cell recruitment
+   - Location-specific recruitment proportional to local danger signals (DAMPs + PAMPs)
+   - Macrophages enter from top, left, and right borders (not epithelium)
+   - Poisson-distributed stochastic recruitment
+   - Allows model to capture dynamic changes in macrophage numbers during inflammation
+   - Controlled by `recruitment_rate_danger` parameter (range: 0-0.5)
 
 ### Logic Changes
 
@@ -790,7 +951,7 @@ Rscript DLL_datagen_abm.R 10 2  # Process chunk 2 of 10
 
 ---
 
-## 12. Biological Interpretation & Model Logic
+## 13. Biological Interpretation & Model Logic
 
 ### Immune Response Phases
 
@@ -878,7 +1039,7 @@ All functions are vectorized for batch operations where possible. Fallback R imp
 
 ## Document Metadata
 
-**Version:** 2.0 (Updated)
+**Version:** 2.1 (Updated)
 **Date:** 2025-12-16
-**Primary Changes:** Added PAMPs system, macrophage specificity, C++ acceleration, updated parameter names, clarified logic
+**Primary Changes:** Added PAMPs system, macrophage specificity, C++ acceleration, border recruitment system, complete simulation algorithm documentation, updated parameter names, clarified logic
 **Corresponds to:** `DLL_datagen_abm.R` and `MISC/RUN_REPS_CPP_ABM_PAMPS.R`
