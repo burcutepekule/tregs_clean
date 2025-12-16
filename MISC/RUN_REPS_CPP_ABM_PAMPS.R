@@ -189,8 +189,79 @@ for (reps_in in 0:(num_reps-1)){
 
     DAMPs = DAMPs - DAMPs_decay*DAMPs
     SAMPs = SAMPs - SAMPs_decay*SAMPs
-    PAMPs = PAMPs - PAMPs_decay*PAMPs 
+    PAMPs = PAMPs - PAMPs_decay*PAMPs
     ROS   = ROS - ros_decay*ROS
+
+    # ========================================================================
+    # RECRUIT MACROPHAGES FROM BORDERS (based on danger signal)
+    # ========================================================================
+    if (recruitment_rate_danger > 0) {
+      danger_signal_grid = DAMPs + PAMPs
+
+      # Recruit from TOP border (y = grid_size)
+      for (x in 1:grid_size) {
+        danger_at_border = danger_signal_grid[grid_size, x]
+        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+
+        if (n_recruit > 0) {
+          phagocyte_x = c(phagocyte_x, rep(x, n_recruit))
+          phagocyte_y = c(phagocyte_y, rep(grid_size, n_recruit))
+          phagocyte_pathogens_engulfed = c(phagocyte_pathogens_engulfed, rep(0, n_recruit))
+          phagocyte_commensals_engulfed = c(phagocyte_commensals_engulfed, rep(0, n_recruit))
+          phagocyte_num_times_activated = c(phagocyte_num_times_activated, rep(0, n_recruit))
+          phagocyte_phenotype = c(phagocyte_phenotype, rep(0, n_recruit))  # Start as M0
+          phagocyte_activity_ROS = c(phagocyte_activity_ROS, rep(activity_ROS_M0_baseline, n_recruit))
+          phagocyte_activity_engulf = c(phagocyte_activity_engulf, rep(activity_engulf_M0_baseline, n_recruit))
+          phagocyte_active_age = c(phagocyte_active_age, rep(0, n_recruit))
+
+          # Extend bacteria registry matrix
+          new_registry = matrix(0, nrow = n_recruit, ncol = cc_phagocyte)
+          phagocyte_bacteria_registry = rbind(phagocyte_bacteria_registry, new_registry)
+        }
+      }
+
+      # Recruit from LEFT border (x = 1, y > 1 to avoid epithelium)
+      for (y in 2:grid_size) {
+        danger_at_border = danger_signal_grid[y, 1]
+        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+
+        if (n_recruit > 0) {
+          phagocyte_x = c(phagocyte_x, rep(1, n_recruit))
+          phagocyte_y = c(phagocyte_y, rep(y, n_recruit))
+          phagocyte_pathogens_engulfed = c(phagocyte_pathogens_engulfed, rep(0, n_recruit))
+          phagocyte_commensals_engulfed = c(phagocyte_commensals_engulfed, rep(0, n_recruit))
+          phagocyte_num_times_activated = c(phagocyte_num_times_activated, rep(0, n_recruit))
+          phagocyte_phenotype = c(phagocyte_phenotype, rep(0, n_recruit))
+          phagocyte_activity_ROS = c(phagocyte_activity_ROS, rep(activity_ROS_M0_baseline, n_recruit))
+          phagocyte_activity_engulf = c(phagocyte_activity_engulf, rep(activity_engulf_M0_baseline, n_recruit))
+          phagocyte_active_age = c(phagocyte_active_age, rep(0, n_recruit))
+
+          new_registry = matrix(0, nrow = n_recruit, ncol = cc_phagocyte)
+          phagocyte_bacteria_registry = rbind(phagocyte_bacteria_registry, new_registry)
+        }
+      }
+
+      # Recruit from RIGHT border (x = grid_size, y > 1 to avoid epithelium)
+      for (y in 2:grid_size) {
+        danger_at_border = danger_signal_grid[y, grid_size]
+        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+
+        if (n_recruit > 0) {
+          phagocyte_x = c(phagocyte_x, rep(grid_size, n_recruit))
+          phagocyte_y = c(phagocyte_y, rep(y, n_recruit))
+          phagocyte_pathogens_engulfed = c(phagocyte_pathogens_engulfed, rep(0, n_recruit))
+          phagocyte_commensals_engulfed = c(phagocyte_commensals_engulfed, rep(0, n_recruit))
+          phagocyte_num_times_activated = c(phagocyte_num_times_activated, rep(0, n_recruit))
+          phagocyte_phenotype = c(phagocyte_phenotype, rep(0, n_recruit))
+          phagocyte_activity_ROS = c(phagocyte_activity_ROS, rep(activity_ROS_M0_baseline, n_recruit))
+          phagocyte_activity_engulf = c(phagocyte_activity_engulf, rep(activity_engulf_M0_baseline, n_recruit))
+          phagocyte_active_age = c(phagocyte_active_age, rep(0, n_recruit))
+
+          new_registry = matrix(0, nrow = n_recruit, ncol = cc_phagocyte)
+          phagocyte_bacteria_registry = rbind(phagocyte_bacteria_registry, new_registry)
+        }
+      }
+    }
 
     # ========================================================================
     # MOVE PHAGOCYTES AND TREGS

@@ -71,6 +71,9 @@ if(macspec_on == 2){# PERFECT DISCRIMINATION
 
 mac_rat_com_pat_threshold     = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
 
+# Recruitment parameters
+recruitment_rate_danger = param_set_use$recruitment_rate_danger
+
 # ============================================================================
 # INITIALIZE SIMULATION
 # ============================================================================
