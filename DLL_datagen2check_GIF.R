@@ -11,9 +11,9 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(305)
+loop_over    = c(1102)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-
+params_df$activation_threshold_danger = 0.1
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -29,8 +29,9 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 num_reps   = 1
 t_max      = 500
+
 plot_on    = 1
-plot_every = 5
+plot_every = 10
 if(plot_on==1){
   dir_name_data = '/Users/burcutepekule/Desktop/gif_out'
   dir.create(dir_name_data, showWarnings = FALSE)

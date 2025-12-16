@@ -4,7 +4,7 @@ tol_in_e       = 125*0.25
 tol_in_p       = 25*25*0.05
 M1_M2_diff     = 1
 filter_control = 1
-labels_on      = 0
+labels_on      = 1
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogenic' or 'both'
 

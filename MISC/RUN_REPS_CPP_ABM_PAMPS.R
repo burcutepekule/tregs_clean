@@ -1,17 +1,13 @@
 # ============================================================================
 # C++ ACCELERATED VERSION WITH PAMPs SUPPORT
 # ============================================================================
-# This file extends RUN_REPS_CPP_ABM.R with PAMPs (Pathogen-Associated Molecular Patterns)
-# PAMPs: Toxins released by pathogens that diffuse through the environment
-# Macrophages chemotax toward combined DAMPs + PAMPs gradient
-# ============================================================================
 
 for (reps_in in 0:(num_reps-1)){
 
   # Initialize fields
   DAMPs = matrix(0, grid_size, grid_size)
   SAMPs = matrix(0, grid_size, grid_size)
-  PAMPs = matrix(0, grid_size, grid_size)  # NEW: Pathogen toxins
+  PAMPs = matrix(0, grid_size, grid_size)  # Toxins released by pathogens that diffuse through the environment
   ROS   = matrix(0, grid_size, grid_size)
 
   # Initialize epithelium
@@ -77,7 +73,7 @@ for (reps_in in 0:(num_reps-1)){
   macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3) #onelevel
   microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
   tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
-  microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2 * 4)
+  microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
 
   # ============================================================================
   # MAIN SIMULATION LOOP
@@ -89,7 +85,6 @@ for (reps_in in 0:(num_reps-1)){
 
     # ========================================================================
     # UPDATE SAMPs (from activated Tregs)
-    # C++ ACCELERATION: Batch update of SAMPs matrix
     # ========================================================================
     active_tregs = which(treg_phenotype == 1)
     if (length(active_tregs) > 0) {
@@ -106,11 +101,11 @@ for (reps_in in 0:(num_reps-1)){
     M1_phagocytes = which(phagocyte_phenotype == 1)
     if (length(M1_phagocytes) > 0) {
       coords = cbind(phagocyte_y[M1_phagocytes], phagocyte_x[M1_phagocytes])
-      ROS[coords] = ROS[coords] + phagocyte_activity_ROS[M1_phagocytes] * add_ROS
+      ROS[coords] = ROS[coords] + phagocyte_activity_ROS[M1_phagocytes]*add_ROS
     }
 
     # ========================================================================
-    # MOVE MICROBES (UPDATED ORDER: before DAMP calculation)
+    # MOVE MICROBES
     # ========================================================================
     if (nrow(pathogen_coords) > 0) {
       dy = ifelse(pathogen_coords[, "y"] == 1,
@@ -150,37 +145,18 @@ for (reps_in in 0:(num_reps-1)){
     }
 
     # ========================================================================
-    # UPDATE DAMPs (UPDATED: includes epithelium + microbe counts)
+    # UPDATE DAMPs 
     # ========================================================================
     # DAMPs from epithelial injury
-    DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury * add_DAMPs
+    DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury*add_DAMPs
 
     # DAMPs from microbes touching epithelium
-    DAMPs[1, ] = DAMPs[1, ] + 1 * logistic_scaled_0_to_5_quantized(
+    DAMPs[1, ] = DAMPs[1, ] + logistic_scaled_0_to_5_quantized(
       pathogen_epithelium_counts + commensal_epithelium_counts
-    ) * add_DAMPs
-
-    # Additional DAMPs from pathogen locations (multiplied by 0 anyway)
-    DAMPs_add = matrix(0, nrow = nrow(DAMPs), ncol = ncol(DAMPs))
-    if (nrow(pathogen_coords) > 0) {
-      pat_counts_tab = table(pathogen_coords[, "x"], pathogen_coords[, "y"])
-      if (length(pat_counts_tab) > 0) {
-        pat_x = as.numeric(rownames(pat_counts_tab))
-        pat_y = as.numeric(colnames(pat_counts_tab))
-        for (xi in seq_along(pat_x)) {
-          for (yi in seq_along(pat_y)) {
-            if (pat_counts_tab[xi, yi] > 0) {
-              DAMPs_add[pat_y[yi], pat_x[xi]] = 0 * add_DAMPs *
-                logistic_scaled_0_to_5_quantized(pat_counts_tab[xi, yi])
-            }
-          }
-        }
-      }
-    }
-    DAMPs = DAMPs + DAMPs_add
+    )*add_DAMPs
 
     # ========================================================================
-    # UPDATE PAMPs (NEW: Pathogen-Associated Molecular Patterns)
+    # UPDATE PAMPs 
     # ========================================================================
     # PAMPs from pathogen locations - toxins released by pathogens
     PAMPs_add = matrix(0, nrow = nrow(PAMPs), ncol = ncol(PAMPs))
@@ -192,8 +168,6 @@ for (reps_in in 0:(num_reps-1)){
         for (xi in seq_along(pat_x)) {
           for (yi in seq_along(pat_y)) {
             if (pat_counts_tab[xi, yi] > 0) {
-              # Add PAMPs based on pathogen count at each location
-              # NOTE: Requires parameter 'add_PAMPs' to be defined (similar to add_DAMPs)
               PAMPs_add[pat_y[yi], pat_x[xi]] = add_PAMPs *
                 logistic_scaled_0_to_5_quantized(pat_counts_tab[xi, yi])
             }
@@ -210,20 +184,20 @@ for (reps_in in 0:(num_reps-1)){
     # C++ version (5-10x faster)
     DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top=FALSE)
     SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs, reflect_top=FALSE)
-    PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, reflect_top=FALSE)  # NEW
+    PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, reflect_top=FALSE) 
     ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top=FALSE)
 
-    DAMPs = DAMPs - DAMPs_decay * DAMPs
-    SAMPs = SAMPs - SAMPs_decay * SAMPs
-    PAMPs = PAMPs - PAMPs_decay * PAMPs  # NEW
-    ROS   = ROS - ros_decay * ROS
+    DAMPs = DAMPs - DAMPs_decay*DAMPs
+    SAMPs = SAMPs - SAMPs_decay*SAMPs
+    PAMPs = PAMPs - PAMPs_decay*PAMPs 
+    ROS   = ROS - ros_decay*ROS
 
     # ========================================================================
     # MOVE PHAGOCYTES AND TREGS
     # ========================================================================
-    density_matrix_tregs = if (randomize_tregs == 1) 0 * DAMPs else DAMPs
+    density_matrix_tregs = if (randomize_tregs == 1) 0*DAMPs else DAMPs
 
-    # NEW: Combine DAMPs and PAMPs for macrophage chemotaxis
+    # Combine DAMPs and PAMPs for macrophage chemotaxis
     # This allows macrophages to respond to both tissue damage (DAMPs) and pathogen signals (PAMPs)
     density_matrix_phagocytes = DAMPs + PAMPs
 
@@ -291,7 +265,7 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # ADD NEW MICROBES
     # ========================================================================
-    n_pathogens_lp_new = round(mean(epithelium$level_injury) * rate_leak_pathogen_injury *
+    n_pathogens_lp_new = round(mean(epithelium$level_injury)*rate_leak_pathogen_injury *
                                  length(injury_site_updated))
     if (n_pathogens_lp_new > 0) {
       new_pathogen_coords = matrix(c(
@@ -304,9 +278,9 @@ for (reps_in in 0:(num_reps-1)){
       last_id_pathogen = last_id_pathogen + n_pathogens_lp_new
     }
 
-    n_commensals_lp_new_injury = round(mean(epithelium$level_injury) * rate_leak_commensal_injury *
+    n_commensals_lp_new_injury = round(mean(epithelium$level_injury)*rate_leak_commensal_injury *
                                          length(injury_site_updated))
-    n_commensals_lp_new_baseline = round(rate_leak_commensal_baseline * grid_size)
+    n_commensals_lp_new_baseline = round(rate_leak_commensal_baseline*grid_size)
 
     total_new_commensals = n_commensals_lp_new_baseline + n_commensals_lp_new_injury
     if (total_new_commensals > 0) {
@@ -357,7 +331,6 @@ for (reps_in in 0:(num_reps-1)){
 
     # Process M0 phagocytes (candidates for activation)
     if (length(M0_indices) > 0) {
-      # C++ ACCELERATION: Calculate all signals at once
       signals = calculate_phagocyte_signals_cpp(
         M0_indices, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
         act_radius_DAMPs, act_radius_SAMPs, DAMPs, SAMPs, grid_size
@@ -380,19 +353,19 @@ for (reps_in in 0:(num_reps-1)){
         avg_PAMPs = avg_PAMPs_vec[idx]
         # bacteria_count = bacteria_count_vec[idx]
 
-        # NEW: Combine DAMPs + PAMPs as danger signal
+        # Combine DAMPs + PAMPs as danger signal
         danger_signal = avg_DAMPs + avg_PAMPs
 
         if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
           phagocyte_phenotype[i] = 1
           phagocyte_active_age[i] = 1
-          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
-          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
+          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
+          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
         } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
           phagocyte_phenotype[i] = 2
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
+          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
         }
       }
     }
@@ -428,7 +401,7 @@ for (reps_in in 0:(num_reps-1)){
           avg_PAMPs = avg_PAMPs_vec[idx]
           # bacteria_count = bacteria_count_vec[idx]
 
-          # NEW: Combine DAMPs + PAMPs as danger signal
+          # Combine DAMPs + PAMPs as danger signal
           danger_signal = avg_DAMPs + avg_PAMPs
 
           if(macspec_on>0){ # perfectly or equally discriminating macrophage
@@ -446,16 +419,7 @@ for (reps_in in 0:(num_reps-1)){
 
             if ((num_pat_engulfed + num_com_engulfed) > 0) {
               rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
-              
-              # # ===== beta distribution option
-              # alpha = (1 - mac_discrimination_efficiency) * 1 +
-              #   mac_discrimination_efficiency * (rat_com_pat_real * precision_mac)
-              # beta = (1 - mac_discrimination_efficiency) * 1 +
-              #   mac_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_mac)
-              # rat_com_pat = sample_rbeta(alpha, beta)
-              
-              # ===== random noise option - easier to understand - interpolates between "random guess" and "truth"
-              rat_com_pat = mac_discrimination_efficiency*rat_com_pat_real+(1-mac_discrimination_efficiency)*runif(1)
+              rat_com_pat      = mac_discrimination_efficiency*rat_com_pat_real+(1-mac_discrimination_efficiency)*runif(1)
 
               pathogen_engulfment_dominant  = rat_com_pat <= (1 - mac_rat_com_pat_threshold)
               commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
@@ -466,14 +430,14 @@ for (reps_in in 0:(num_reps-1)){
               # M1: Either environmental danger OR pathogen engulfment
               phagocyte_phenotype[i] = 1
               phagocyte_active_age[i] = 1
-              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
-              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
+              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
             } else if (SAMPs_dominant && commensal_engulfment_dominant) {
               # M2: Both environmental safety AND commensal engulfment required
               phagocyte_phenotype[i] = 2
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
             } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
               # Revert to M0 if both signals are low (danger = DAMPs + PAMPs)
               phagocyte_phenotype[i] = 0
@@ -485,13 +449,13 @@ for (reps_in in 0:(num_reps-1)){
             if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
               phagocyte_phenotype[i] = 1
               phagocyte_active_age[i] = 1
-              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
-              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step * bacteria_count
+              phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
             } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
               phagocyte_phenotype[i] = 2
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
+              phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
             } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
               phagocyte_phenotype[i] = 0
               phagocyte_active_age[i] = 0
@@ -613,16 +577,7 @@ for (reps_in in 0:(num_reps-1)){
 
           if ((num_pat_antigens + num_com_antigens) > 0) {
             rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)
-            
-            # # ===== beta distribution option
-            # alpha = (1 - treg_discrimination_efficiency) * 1 +
-            #   treg_discrimination_efficiency * (rat_com_pat_real * precision_treg)
-            # beta = (1 - treg_discrimination_efficiency) * 1 +
-            #   treg_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_treg)
-            # rat_com_pat = sample_rbeta(alpha, beta)
-            
-            # ===== random noise option - easier to understand - interpolates between "random guess" and "truth"
-            rat_com_pat = treg_discrimination_efficiency*rat_com_pat_real+(1-treg_discrimination_efficiency)*runif(1)
+            rat_com_pat      = treg_discrimination_efficiency*rat_com_pat_real+(1-treg_discrimination_efficiency)*runif(1)
           
             # But ONLY apply the effect if Tregs are allowed to work
             if (rat_com_pat > rat_com_pat_threshold) {
@@ -640,7 +595,6 @@ for (reps_in in 0:(num_reps-1)){
     # C++ ACCELERATION: Batch killing with single function call (HUGE SPEEDUP)
     # ========================================================================
     if (nrow(pathogen_coords) > 0) {
-      # C++ version (50-100x faster!)
       result = kill_microbes_with_ros_cpp(
         pathogen_coords, ROS, act_radius_ROS, th_ROS_microbe, grid_size
       )
@@ -649,7 +603,6 @@ for (reps_in in 0:(num_reps-1)){
     }
 
     if (nrow(commensal_coords) > 0) {
-      # C++ version (50-100x faster!)
       result = kill_microbes_with_ros_cpp(
         commensal_coords, ROS, act_radius_ROS, th_ROS_microbe, grid_size
       )
@@ -659,11 +612,9 @@ for (reps_in in 0:(num_reps-1)){
 
     # ========================================================================
     # UPDATE EPITHELIAL INJURY
-    # C++ ACCELERATION: Batch ROS calculation
     # ========================================================================
     epithelium_x = epithelium$x
 
-    # C++ ACCELERATION: Calculate ROS for all epithelial cells at once
     ros_means = calculate_epithelial_ros_cpp(
       epithelium_x, act_radius_ROS, ROS, grid_size
     )
@@ -689,13 +640,6 @@ for (reps_in in 0:(num_reps-1)){
     # SAVE ABUNDANCES
     # ========================================================================
     epithelium_longitudinal[t, ] = as.numeric(table(factor(epithelium$level_injury, levels = 0:5)))
-
-    # this might be wrong
-    # phagocyte_counts = c(
-    #   sum(phagocyte_phenotype == 0),
-    #   tabulate(phagocyte_active_age[phagocyte_phenotype == 1] + 1, cc_phagocyte + 1),
-    #   tabulate(phagocyte_active_age[phagocyte_phenotype == 2] + 1, cc_phagocyte + 1)
-    # )
 
     phagocyte_counts = c(
       sum(phagocyte_phenotype == 0),

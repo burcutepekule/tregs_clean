@@ -25,10 +25,6 @@ overlay_histograms = function(x, y,
   return(p)
 }
 
-# Example usage:
-# overlay_histograms(rnorm(1000), rnorm(1000, mean = 2), 
-#                    x_name = "Control", y_name = "Treatment")
-
 plot_param_vs_param = function(df, x_name, y_name) {
   ggplot(df, aes(x = !!sym(x_name), y = !!sym(y_name))) +
     geom_point(alpha = 0.6) +
@@ -218,6 +214,51 @@ plot_grid_DAMPs = function() {
   
 }
 
+plot_grid_PAMPs = function() {
+  
+  # Create full grid background (invisible or white)
+  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
+  
+  # --- Convert DAMP matrix to long format ---
+  damps_df = as.data.frame(PAMPs)
+  colnames(damps_df) = paste0("x", 1:ncol(damps_df))
+  damps_df = damps_df %>%
+    mutate(y = nrow(damps_df):1) %>%
+    pivot_longer(cols = starts_with("x"), names_to = "x", values_to = "value") %>%
+    mutate(x = as.integer(gsub("x", "", x)))
+  
+  # --- Epithelial layer: blue/orange by health ---
+  epithelial_df = epithelium %>%
+    mutate(
+      type = ifelse(level_injury == 0, "epithelial_healthy",
+                    paste0("epithelial_inj_", level_injury)),
+      fill = agent_colors[type],
+      y = grid_size+ 1 - y
+    ) %>%
+    dplyr::select(x, y, fill)
+  
+  # --- Plot ---
+  p_damps = ggplot() +
+    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
+    # DAMP heatmap with colorbar
+    geom_tile(data = damps_df, aes(x = x, y = y, fill = value)) +
+    scale_fill_gradient(low = "white", high = "black", name = "PAMPs Density", limits = c(0, lim_DAMP)) +
+    
+    # Epithelium on top with inline fill colors (no legend)
+    geom_tile(data = epithelial_df, aes(x = x, y = y), fill = epithelial_df$fill, width = 1, height = 1) +
+    
+    coord_fixed() +
+    # labs(title = "DAMP Heatmap with Epithelium (No Legend for Epithelium)") +
+    theme_minimal() +
+    theme(
+      panel.grid = element_blank(),
+      axis.title = element_blank(),
+      axis.text = element_blank()
+    )
+  return(p_damps)
+  
+}
+
 plot_grid_SAMPs = function() {
   
   # Create full grid background (invisible or white)
@@ -337,6 +378,66 @@ plot_grid_antiinf = function() {
   all_types = c(
     "epithelial_healthy", "epithelial_inj_1","epithelial_inj_2","epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
     "phagocyte_M2","treg_active")
+  
+  agent_plot_df = bind_rows(
+    epithelial_layer %>% dplyr::select(x, y, type),
+    phagocytes_plot %>% dplyr::select(x, y, type),
+    tregs_plot  %>% dplyr::select(x, y, type)
+  ) %>%
+    mutate(type = factor(type, levels = all_types))
+  
+  p_lym = ggplot() +
+    geom_tile(data = full_grid, aes(x = x, y = y), fill = "white", color = NA, width = 1, height = 1) +
+    geom_tile(data = agent_plot_df, aes(x = x, y = y, fill = type), width = 1, height = 1) +
+    scale_fill_manual(
+      values = agent_colors,
+      name = "Cell Type",
+      drop = FALSE  # =- ensures unused levels are shown
+    ) +
+    coord_fixed(ratio = 1) +
+    scale_x_continuous(expand = c(0, 0), limits = c(0, grid_size+1)) +
+    scale_y_reverse(expand = c(0, 0)) +  # Flip Y so y=0 is on top
+    theme_minimal() +
+    theme(
+      panel.grid = element_blank(),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      legend.position = "right"
+    )
+  
+  return(p_lym)
+}
+
+plot_grid_M1M2Treg = function() {
+  
+  # Create a base dataframe for the grid
+  grid = expand.grid(x = 1:grid_size, y = 0:grid_size)
+  
+  # 1. Epithelial cell state (y = 0 only)
+  # 1. Epithelial cell state (y = 0 only)
+  epithelial_layer = epithelium %>%
+    mutate(type = ifelse(level_injury == 0, "epithelial_healthy",
+                         paste0("epithelial_inj_", level_injury)))
+  
+  # 1. Phagocyte state 
+  phagocytes_plot = phagocytes %>%
+    mutate(type = ifelse(phenotype==0, "phagocyte_M0", 
+                         ifelse(phenotype==1, "phagocyte_M1","phagocyte_M2")))
+  
+  tregs_plot = tregs %>%
+    mutate(type = ifelse(phenotype==0, "treg_resting","treg_active"))
+  
+  tregs_plot = tregs_plot %>% filter(type=="treg_active")
+  phagocytes_plot = phagocytes_plot %>% filter(type %in% c("phagocyte_M1","phagocyte_M2"))
+  
+  # Create full grid background (invisible or white)
+  full_grid = expand.grid(x = 1:grid_size, y = 1:grid_size)
+  
+  # 2. Combine all agents into one dataframe with their type
+  all_types = c(
+    "epithelial_healthy","epithelial_inj_1","epithelial_inj_2",
+    "epithelial_inj_3","epithelial_inj_4","epithelial_inj_5",
+    "phagocyte_M1","phagocyte_M2","treg_active")
   
   agent_plot_df = bind_rows(
     epithelial_layer %>% dplyr::select(x, y, type),
@@ -785,9 +886,11 @@ plot_simtime_simple = function(){
   
   p_DAMPs  = plot_grid_DAMPs()
   p_SAMPs  = plot_grid_SAMPs()
+  p_PAMPs  = plot_grid_PAMPs()
   p_ROS    = plot_grid_ROS()
   p_d      = plot_grid_antiinf()
   p_a      = plot_grid_phagocyte_M1()
+  p_m1m2t  = plot_grid_M1M2Treg()
   p_lymp   = plot_grid_resting()
   p_com    = plot_grid_commensals()
   p_pat    = plot_grid_pathogens()
@@ -805,8 +908,12 @@ plot_simtime_simple = function(){
   
   tit_add = paste0('Sim. time : ',t,', Injury: ',injury_type,', Tregs allowed : ',allow_tregs)
   row_0 = plot_grid(p_mic_bar,p_lym_bar,p_treg_bar, p_cumdeath, ncol = 4, rel_widths =  c(1,1,1,1))
-  row_1 = plot_grid(p_com,p_pat,p_a,p_d,ncol = 4, rel_widths =  c(1,1,1.1,1.05))
-  row_2 = plot_grid(p_DAMPs,p_SAMPs,p_ROS,p_lymp,ncol = 4, rel_widths =  c(1,1,0.98,1.1))
+  
+  # row_1 = plot_grid(p_com,p_pat,p_a,p_d,ncol = 4, rel_widths =  c(1,1,1.1,1.05))
+  # row_2 = plot_grid(p_DAMPs,p_SAMPs,p_ROS,p_lymp,ncol = 4, rel_widths =  c(1,1,0.98,1.1))
+  
+  row_1 = plot_grid(p_com,p_pat,p_m1m2t,p_lymp,ncol = 4, rel_widths =  c(1,1,1,1))
+  row_2 = plot_grid(p_DAMPs,p_PAMPs,p_SAMPs,p_ROS,ncol = 4, rel_widths =  c(1,1,1,1))
   
   combined_plot = plot_grid(row_0,row_1,row_2,align='v',nrow = 3, rel_heights =  c(0.35,1,1))
   # combined_plot = plot_grid(row_1,row_2,align='v',nrow = 2, rel_heights =  c(1,1))

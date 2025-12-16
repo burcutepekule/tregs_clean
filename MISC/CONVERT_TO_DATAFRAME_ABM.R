@@ -1,5 +1,5 @@
 # Create the complete dataframe with bacteria registry
-phagocytes <- data.frame(
+phagocytes = data.frame(
   x = phagocyte_x,
   y = phagocyte_y,
   pathogens_engulfed = phagocyte_pathogens_engulfed,
@@ -12,7 +12,7 @@ phagocytes <- data.frame(
 )
 
 # Add the bacteria registry as a list column
-phagocytes$bacteria_registry <- 1
+phagocytes$bacteria_registry = 1
 
 tregs=data.frame(
   x = treg_x,
