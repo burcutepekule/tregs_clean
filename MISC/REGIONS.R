@@ -181,7 +181,7 @@ p_label_off = ggplot(dfp_final, aes(x = x, y = y, shape = injury_type, color = p
 
 
 if(max(dfp$diff_compare)>1000 | min(dfp$diff_compare)< -1000){
-  p_label_off = p_label_off + scale_y_continuous(trans = pseudo_log_trans(sigma = 200, base = 10))
+  p_label_off = p_label_off + scale_y_continuous(trans = pseudo_log_trans(sigma = 200, base = 2))
   p_label_on  = p_label_on + scale_y_continuous(trans = pseudo_log_trans(sigma = 200, base = 10))
 }else{
   p_label_off = p_label_off + 

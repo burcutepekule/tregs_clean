@@ -11,7 +11,7 @@ rat_com_pat_threshold = param_set_use$rat_com_pat_threshold
 diffusion_speed_DAMPs = param_set_use$diffusion_speed_DAMPs
 diffusion_speed_SAMPs = param_set_use$diffusion_speed_SAMPs
 diffusion_speed_PAMPs = param_set_use$diffusion_speed_PAMPs
-diffusion_speed_ROS = param_set_use$diffusion_speed_ROS
+diffusion_speed_ROS   = param_set_use$diffusion_speed_ROS
 
 # Signal production
 if(control==1){
@@ -33,8 +33,8 @@ SAMPs_decay = param_set_use$SAMPs_decay
 PAMPs_decay = param_set_use$PAMPs_decay
 
 # Activation thresholds
-activation_threshold_DAMPs = param_set_use$activation_threshold_DAMPs
-activation_threshold_SAMPs = param_set_use$activation_threshold_SAMPs
+activation_threshold_danger = param_set_use$activation_threshold_danger
+activation_threshold_SAMPs  = param_set_use$activation_threshold_SAMPs
 
 # Engulfment activities
 activity_engulf_M0_baseline = param_set_use$activity_engulf_M0_baseline
@@ -77,7 +77,7 @@ mac_rat_com_pat_threshold     = rat_com_pat_threshold # SAME THRESHOLD FOR COMPA
 injury_site = get_middle_percent(seq(1, grid_size), injury_percentage)
 n_pathogens_lp = round(rate_leak_pathogen_injury*length(injury_site))
 
-# Precision parameters for beta distribution sampling
-precision_treg = 10*(exp(5*treg_discrimination_efficiency*treg_discrimination_efficiency))
-precision_mac  = 10*(exp(5*mac_discrimination_efficiency*mac_discrimination_efficiency))
+# # Precision parameters for beta distribution sampling
+# precision_treg = 10*(exp(5*treg_discrimination_efficiency*treg_discrimination_efficiency))
+# precision_mac  = 10*(exp(5*mac_discrimination_efficiency*mac_discrimination_efficiency))
 

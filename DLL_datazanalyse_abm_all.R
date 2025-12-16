@@ -6,19 +6,17 @@ M1_M2_diff     = 1
 filter_control = 1
 labels_on      = 0
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
-# score_type     = 'pathogen' # or 'pathogen' or 'both'
-# score_type     = 'both'
-# data_suffix    = '_10' # 
-# data_suffix    = '_100' #
-# data_suffix    = '_20' # 
+# score_type     = 'pathogen' # or 'pathogenic' or 'both'
+
 data_suffix    = '' #
+# data_suffix    = '_pre_pamps' #
 
 ### THIS IS FOR PARAMETERS
-inj_type= 'sterile'
+inj_type= 'sterile' 
 inj_type= 'pathogenic'
 inj_type= 'pooled'
 
-analysis_pick  = 5 #2, 5, 8?
+analysis_pick  = 2 #2, 5, 8?
 
 if(analysis_pick==1){
   # 1 =========================================
@@ -68,7 +66,9 @@ if(analysis_pick==1){
 }
 
 source('./MISC/FILTER_REGIONS.R')
-source('./MISC/PLOT_REGIONS.R')
+source('./MISC/PLOT_REGIONS.R') # pathogen scores reversed
+# source('./MISC/PLOT_REGIONS_SIMPLE.R')  # pathogen scores NOT reversed, interpret like epithelium
+
 
 df_params           = read_csv('./lhs_parameters_della.csv', show_col_types = FALSE)
 colnames(df_params)[which(colnames(df_params)=='th_ROS_epith_recover')] = 'th_ROS_epith_injury'

@@ -11,7 +11,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(2600)
+loop_over    = c(305)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
 # ============================================================================
@@ -30,7 +30,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 num_reps   = 1
 t_max      = 500
 plot_on    = 1
-plot_every = 10
+plot_every = 5
 if(plot_on==1){
   dir_name_data = '/Users/burcutepekule/Desktop/gif_out'
   dir.create(dir_name_data, showWarnings = FALSE)
@@ -49,10 +49,13 @@ max_level_injury  = 5
 max_cell_value_ROS   = 1
 max_cell_value_DAMPs = 1
 max_cell_value_SAMPs = 1
+max_cell_value_PAMPs = 1
 
+## PLOTTING
 lim_ROS  = max_cell_value_ROS
 lim_DAMP = max_cell_value_DAMPs
 lim_SAMP = max_cell_value_SAMPs
+## PLOTTING
 
 act_radius_ROS   = 1
 act_radius_treg  = 1
@@ -125,7 +128,7 @@ for(param_set_id_use in loop_over){
     # ========================================================================
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
-    source("./MISC/RUN_REPS_CPP_ABM.R")
+    source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
 
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))

@@ -383,7 +383,7 @@ for (reps_in in 0:(num_reps-1)){
         # NEW: Combine DAMPs + PAMPs as danger signal
         danger_signal = avg_DAMPs + avg_PAMPs
 
-        if (danger_signal >= activation_threshold_DAMPs && danger_signal > avg_SAMPs) {
+        if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
           phagocyte_phenotype[i] = 1
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
@@ -437,7 +437,7 @@ for (reps_in in 0:(num_reps-1)){
             num_com_engulfed = phagocyte_commensals_engulfed[i]
 
             # Determine environmental signal dominance (DAMPs + PAMPs as danger)
-            DAMPs_dominant = (danger_signal >= activation_threshold_DAMPs && danger_signal > avg_SAMPs)
+            DAMPs_dominant = (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs)
             SAMPs_dominant = (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal)
 
             # Determine engulfment pattern dominance (with discrimination)
@@ -446,12 +446,16 @@ for (reps_in in 0:(num_reps-1)){
 
             if ((num_pat_engulfed + num_com_engulfed) > 0) {
               rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
-              alpha = (1 - mac_discrimination_efficiency) * 1 +
-                mac_discrimination_efficiency * (rat_com_pat_real * precision_mac)
-              beta = (1 - mac_discrimination_efficiency) * 1 +
-                mac_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_mac)
-
-              rat_com_pat = sample_rbeta(alpha, beta)
+              
+              # # ===== beta distribution option
+              # alpha = (1 - mac_discrimination_efficiency) * 1 +
+              #   mac_discrimination_efficiency * (rat_com_pat_real * precision_mac)
+              # beta = (1 - mac_discrimination_efficiency) * 1 +
+              #   mac_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_mac)
+              # rat_com_pat = sample_rbeta(alpha, beta)
+              
+              # ===== random noise option - easier to understand - interpolates between "random guess" and "truth"
+              rat_com_pat = mac_discrimination_efficiency*rat_com_pat_real+(1-mac_discrimination_efficiency)*runif(1)
 
               pathogen_engulfment_dominant  = rat_com_pat <= (1 - mac_rat_com_pat_threshold)
               commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
@@ -470,7 +474,7 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
               phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
-            } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_DAMPs) {
+            } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
               # Revert to M0 if both signals are low (danger = DAMPs + PAMPs)
               phagocyte_phenotype[i] = 0
               phagocyte_active_age[i] = 0
@@ -478,7 +482,7 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
             }
           }else{ # vanilla
-            if (danger_signal >= activation_threshold_DAMPs && danger_signal > avg_SAMPs) {
+            if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
               phagocyte_phenotype[i] = 1
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step * bacteria_count
@@ -488,7 +492,7 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
               phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step * bacteria_count
-            } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_DAMPs) {
+            } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
               phagocyte_phenotype[i] = 0
               phagocyte_active_age[i] = 0
               phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
@@ -608,16 +612,18 @@ for (reps_in in 0:(num_reps-1)){
           num_com_antigens = phagocyte_commensals_engulfed[i]
 
           if ((num_pat_antigens + num_com_antigens) > 0) {
-            # ALWAYS calculate and sample (to maintain stream synchronization)
             rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)
-            alpha = (1 - treg_discrimination_efficiency) * 1 +
-              treg_discrimination_efficiency * (rat_com_pat_real * precision_treg)
-            beta = (1 - treg_discrimination_efficiency) * 1 +
-              treg_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_treg)
-
-            # ALWAYS consume from random stream (both Tregs ON and OFF)
-            rat_com_pat = sample_rbeta(alpha, beta)
-
+            
+            # # ===== beta distribution option
+            # alpha = (1 - treg_discrimination_efficiency) * 1 +
+            #   treg_discrimination_efficiency * (rat_com_pat_real * precision_treg)
+            # beta = (1 - treg_discrimination_efficiency) * 1 +
+            #   treg_discrimination_efficiency * ((1 - rat_com_pat_real) * precision_treg)
+            # rat_com_pat = sample_rbeta(alpha, beta)
+            
+            # ===== random noise option - easier to understand - interpolates between "random guess" and "truth"
+            rat_com_pat = treg_discrimination_efficiency*rat_com_pat_real+(1-treg_discrimination_efficiency)*runif(1)
+          
             # But ONLY apply the effect if Tregs are allowed to work
             if (rat_com_pat > rat_com_pat_threshold) {
               treg_phenotype[nearby_treg_indices] = 1
