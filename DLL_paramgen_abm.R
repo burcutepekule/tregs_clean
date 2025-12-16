@@ -34,7 +34,8 @@ param_bounds = list(
   activity_ROS_M1_baseline = c(0, 1),
   cc_phagocyte     = c(3, 30),# discrete parameter, will be rounded
   active_age_limit = c(3, 30),  # discrete parameter, will be rounded
-  treg_discrimination_efficiency = c(0, 1)
+  treg_discrimination_efficiency = c(0, 1),
+  recruitment_rate_danger = c(0, 0.5)  # Macrophage recruitment rate from borders (proportional to danger signal)
 )
 
 param_names = names(param_bounds)
