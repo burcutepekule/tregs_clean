@@ -13,7 +13,7 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 loop_over    = c(1102)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-params_df$activation_threshold_danger = 0.1
+params_df$recruitment_rate_danger = 10
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -28,7 +28,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 500
+t_max      = 100
 
 plot_on    = 1
 plot_every = 10
@@ -104,6 +104,7 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
+
 
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)

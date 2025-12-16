@@ -69,18 +69,12 @@ if(macspec_on == 2){# PERFECT DISCRIMINATION
   mac_discrimination_efficiency = 0 # no need to have this, shouldn't throw an error
 }
 
-mac_rat_com_pat_threshold     = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
-
-# Recruitment parameters
-recruitment_rate_danger = param_set_use$recruitment_rate_danger
+mac_rat_com_pat_threshold = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
+recruitment_rate_danger   = param_set_use$recruitment_rate_danger
 
 # ============================================================================
 # INITIALIZE SIMULATION
 # ============================================================================
 injury_site = get_middle_percent(seq(1, grid_size), injury_percentage)
 n_pathogens_lp = round(rate_leak_pathogen_injury*length(injury_site))
-
-# # Precision parameters for beta distribution sampling
-# precision_treg = 10*(exp(5*treg_discrimination_efficiency*treg_discrimination_efficiency))
-# precision_mac  = 10*(exp(5*mac_discrimination_efficiency*mac_discrimination_efficiency))
 

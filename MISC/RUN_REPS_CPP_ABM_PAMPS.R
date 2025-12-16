@@ -198,10 +198,10 @@ for (reps_in in 0:(num_reps-1)){
     if (recruitment_rate_danger > 0) {
       danger_signal_grid = DAMPs + PAMPs
 
-      # Recruit from TOP border (y = grid_size)
+      # Recruit from BOTTOM border (y = grid_size)
       for (x in 1:grid_size) {
         danger_at_border = danger_signal_grid[grid_size, x]
-        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+        n_recruit = rpois(1, lambda = recruitment_rate_danger*danger_at_border)
 
         if (n_recruit > 0) {
           phagocyte_x = c(phagocyte_x, rep(x, n_recruit))
@@ -223,7 +223,7 @@ for (reps_in in 0:(num_reps-1)){
       # Recruit from LEFT border (x = 1, y > 1 to avoid epithelium)
       for (y in 2:grid_size) {
         danger_at_border = danger_signal_grid[y, 1]
-        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+        n_recruit = rpois(1, lambda = recruitment_rate_danger*danger_at_border)
 
         if (n_recruit > 0) {
           phagocyte_x = c(phagocyte_x, rep(1, n_recruit))
@@ -244,7 +244,7 @@ for (reps_in in 0:(num_reps-1)){
       # Recruit from RIGHT border (x = grid_size, y > 1 to avoid epithelium)
       for (y in 2:grid_size) {
         danger_at_border = danger_signal_grid[y, grid_size]
-        n_recruit = rpois(1, lambda = recruitment_rate_danger * danger_at_border)
+        n_recruit = rpois(1, lambda = recruitment_rate_danger*danger_at_border)
 
         if (n_recruit > 0) {
           phagocyte_x = c(phagocyte_x, rep(grid_size, n_recruit))
