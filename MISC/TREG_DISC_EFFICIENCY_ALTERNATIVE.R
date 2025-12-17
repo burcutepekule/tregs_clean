@@ -8,7 +8,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # eff = 0.073
-plot_data_means_keep = c()
+plot_data_stats_keep = c()
 for (eff in seq(0,1,0.1)){
   
   # Create data frame for plotting
@@ -76,13 +76,15 @@ for (eff in seq(0,1,0.1)){
       axis.title = element_text(size = 12)
     )
   
-  plot_data_means = plot_data %>% 
+  plot_data_stats = plot_data %>% 
     dplyr::group_by(real_ratio) %>% 
-    dplyr::summarise(group_mean = mean(perceived_ratio))
+    dplyr::summarise(group_min = min(perceived_ratio),
+                     group_mean = mean(perceived_ratio),
+                     group_max = max(perceived_ratio)) 
   
-  plot_data_means$eff=eff
+  plot_data_stats$eff=eff
   
-  plot_data_means_keep=rbind(plot_data_means_keep, plot_data_means)
+  plot_data_stats_keep=rbind(plot_data_stats_keep, plot_data_stats)
   
   ggsave(
     filename = paste0("./precision_",100*eff,".png"),
@@ -95,9 +97,13 @@ for (eff in seq(0,1,0.1)){
 }
 
 
-plot_data_means_keep = plot_data_means_keep %>% dplyr::mutate(diff_ratio=group_mean-real_ratio)
+plot_data_stats_keep = plot_data_stats_keep %>% dplyr::mutate(diff_ratio=group_mean-real_ratio)
+plot_data_stats_keep = plot_data_stats_keep %>% dplyr::mutate(width_ratio=group_max-group_min)
 
-plot(plot_data_means_keep$eff, plot_data_means_keep$diff_ratio)
+
+plot(plot_data_stats_keep$eff, plot_data_stats_keep$width_ratio)
+
+plot(plot_data_stats_keep$eff, plot_data_stats_keep$diff_ratio)
 
 # print(p)
 # 

@@ -62,9 +62,10 @@ t_max      = 5000
 grid_size  = 25
 num_reps   = 10
 
-n_phagocytes = round(grid_size*grid_size*0.20)
-n_tregs = round(grid_size*grid_size*0.20)
+n_phagocytes    = round(grid_size*grid_size*0.20)
+n_tregs         = round(grid_size*grid_size*0.20)
 n_commensals_lp = 20
+max_total_phagocytes = round(grid_size*grid_size*0.80)
 
 injury_percentage = 60
 max_level_injury  = 5
@@ -97,8 +98,10 @@ scenarios_df = expand.grid(
   control         = c(0),
   sterile         = c(0, 1),
   allow_tregs     = c(0, 1),
-  randomize_tregs = c(0, 1),
-  macspec_on      = c(0, 1, 2)
+  # randomize_tregs = c(0, 1),
+  randomize_tregs = c(0),
+  # macspec_on      = c(0, 1, 2)
+  macspec_on      = c(0)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
 scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -106,7 +109,8 @@ scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 
 scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
 scenarios_df_ctrl = expand.grid(
   control         = c(1),
-  sterile         = c(0, 1),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0)

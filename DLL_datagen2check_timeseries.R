@@ -11,7 +11,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(22900)
+loop_over    = c(37301)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -42,6 +42,7 @@ grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
 n_tregs         = round(grid_size*grid_size*0.20)
 n_commensals_lp = 20
+max_total_phagocytes = round(grid_size*grid_size*0.80)
 
 injury_percentage = 60
 max_level_injury  = 5
@@ -149,6 +150,23 @@ data_long = results %>%
 
 p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
   geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
+  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+  scale_color_manual(values = agent_colors) +
+  theme_minimal() +
+  labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+
+print(p)
+
+variables = c("phagocyte_M1")
+
+data_long = results %>%
+  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+
+p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+  geom_line(alpha = max(0.5/num_reps,.1), linewidth = 1) +
+  geom_smooth(aes(group = variable, color = variable), method = "loess", se = TRUE, 
+              linewidth = 1.5) +
   facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
   scale_color_manual(values = agent_colors) +
   theme_minimal() +

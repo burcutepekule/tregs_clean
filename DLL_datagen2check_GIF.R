@@ -11,9 +11,8 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(1102)
+loop_over    = c(37301)
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-params_df$recruitment_rate_danger = 10
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -28,7 +27,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 100
+t_max      = 1000
 
 plot_on    = 1
 plot_every = 10
@@ -40,9 +39,10 @@ if(plot_on==1){
   dir.create(dir_name_frames, showWarnings = FALSE)
 }
 grid_size       = 25
-n_phagocytes    = round(grid_size*grid_size*0.05)
-n_tregs         = round(grid_size*grid_size*0.05)
+n_phagocytes    = round(grid_size*grid_size*0.20)
+n_tregs         = round(grid_size*grid_size*0.20)
 n_commensals_lp = 20
+max_total_phagocytes = round(grid_size*grid_size*0.80)
 
 injury_percentage = 60
 max_level_injury  = 5

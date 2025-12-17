@@ -1,9 +1,9 @@
 rm(list=ls())
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = 25*25*0.05
+tol_in_p       = 25*25*0.25
 M1_M2_diff     = 1
-filter_control = 1
+filter_control = 0
 labels_on      = 1
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogenic' or 'both'
@@ -65,7 +65,8 @@ if(analysis_pick==1){
   jensen_distance     = 'macspec2_vs_tregs_rnd'
 }
 
-source('./MISC/FILTER_REGIONS.R')
+# source('./MISC/FILTER_REGIONS.R')
+source('./MISC/FILTER_REGIONS_SHORT.R')
 source('./MISC/PLOT_REGIONS.R') # pathogen scores reversed
 # source('./MISC/PLOT_REGIONS_SIMPLE.R')  # pathogen scores NOT reversed, interpret like epithelium
 

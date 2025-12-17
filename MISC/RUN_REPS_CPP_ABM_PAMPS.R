@@ -195,7 +195,7 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     # RECRUIT MACROPHAGES FROM BORDERS (based on danger signal)
     # ========================================================================
-    if (recruitment_rate_danger > 0) {
+    if (recruitment_rate_danger > 0 && length(phagocyte_x) < max_total_phagocytes) {
       danger_signal_grid = DAMPs + PAMPs
 
       # Recruit from BOTTOM border (y = grid_size)
@@ -427,6 +427,9 @@ for (reps_in in 0:(num_reps-1)){
         # Combine DAMPs + PAMPs as danger signal
         danger_signal = avg_DAMPs + avg_PAMPs
 
+        # why two conditions? because both can be very low, then any activation shouldn't happen
+        # and both can be very high, exceeding the thresholds - but then activation should 
+        # depend on the one that is dominating. 
         if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
           phagocyte_phenotype[i] = 1
           phagocyte_active_age[i] = 1
@@ -489,7 +492,9 @@ for (reps_in in 0:(num_reps-1)){
             commensal_engulfment_dominant = FALSE
 
             if ((num_pat_engulfed + num_com_engulfed) > 0) {
-              rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
+              rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed) # rat_com_pat_real can be interpreted 
+              # as the probability of presenting a commensal antigen to the Treg among all the engulfed antigens
+              
               rat_com_pat      = mac_discrimination_efficiency*rat_com_pat_real+(1-mac_discrimination_efficiency)*runif(1)
 
               pathogen_engulfment_dominant  = rat_com_pat <= (1 - mac_rat_com_pat_threshold)
@@ -647,7 +652,9 @@ for (reps_in in 0:(num_reps-1)){
           num_com_antigens = phagocyte_commensals_engulfed[i]
 
           if ((num_pat_antigens + num_com_antigens) > 0) {
-            rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)
+            rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)# rat_com_pat_real can be interpreted 
+            # as the probability of presenting a commensal antigen to the Treg among all the engulfed antigens
+            
             rat_com_pat      = treg_discrimination_efficiency*rat_com_pat_real+(1-treg_discrimination_efficiency)*runif(1)
           
             # But ONLY apply the effect if Tregs are allowed to work
