@@ -10,14 +10,14 @@ param_bounds = list(
   rate_leak_commensal_injury = c(0.5, 0.5), #FIXED
   rate_leak_commensal_baseline = c(0.05, 0.05), #FIXED
   epith_recovery_chance = c(0.05, 0.05), #FIXED
-  th_ROS_microbe = c(0, 1), 
-  th_ROS_epith_injury = c(0, 1),
+  th_ROS_microbe        = c(0, 0.4999),  # th_ROS_microbe should be lower than th_ROS_epith_injury
+  th_ROS_epith_injury   = c(0.5, 1), # th_ROS_microbe should be lower than th_ROS_epith_injury
   rat_com_pat_threshold = c(0.5, 1),
   diffusion_speed_DAMPs = c(0, 0.12),
   diffusion_speed_PAMPs = c(0, 0.12),
   diffusion_speed_SAMPs = c(0, 0.12),
-  diffusion_speed_ROS = c(0, 0.12),
-  add_ROS  = c(0, 1),
+  diffusion_speed_ROS   = c(0, 0.12),
+  add_ROS   = c(0, 1),
   add_DAMPs = c(0, 1),
   add_SAMPs = c(0, 1),
   add_PAMPs = c(0, 1),
@@ -29,10 +29,10 @@ param_bounds = list(
   activation_threshold_SAMPs  = c(0, 1),
   activity_engulf_M0_baseline = c(0.05, 0.05), #FIXED
   activity_engulf_M1_baseline = c(0.05, 0.75),
-  activity_engulf_M2_baseline = c(0.05, 0.75),
+  # activity_engulf_M2_baseline = c(0.05, 0.75),
   activity_ROS_M1_baseline    = c(0, 1),
-  cc_phagocyte     = c(3, 30),# discrete parameter, will be rounded
-  active_age_limit = c(3, 30),  # discrete parameter, will be rounded
+  cc_phagocyte     = c(3, 30), # discrete parameter, will be rounded
+  active_age_limit = c(3, 30), # discrete parameter, will be rounded
   treg_discrimination_efficiency = c(0, 1),
   recruitment_rate_danger = c(0, 0.1)  # Macrophage recruitment rate from borders (proportional to danger signal)
 )
@@ -62,10 +62,11 @@ for (param in param_names) {
 # Round the discrete parameter
 lhs_samples$active_age_limit = round(lhs_samples$active_age_limit)
 lhs_samples$cc_phagocyte     = round(lhs_samples$cc_phagocyte)
+# add M2
+lhs_samples$activity_engulf_M2_baseline = lhs_samples$activity_engulf_M1_baseline # let's make this equal to make it easier to compare
+param_names = c(param_names, 'activity_engulf_M2_baseline')
 
-# Apply the rules
-# th_ROS_microbe should be lower than th_ROS_epith_injury
-lhs_samples = lhs_samples %>% dplyr::filter(th_ROS_microbe<th_ROS_epith_injury)
+lhs_samples = lhs_samples %>% dplyr::filter(cc_phagocyte<=active_age_limit) # otherwise having a registry longer than the active age doesn't make sense
 lhs_samples = lhs_samples[1:(n_samples/10),]
 
 # Add parameter set ID
