@@ -495,10 +495,22 @@ for (reps_in in 0:(num_reps-1)){
               rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed) # rat_com_pat_real can be interpreted 
               # as the probability of presenting a commensal antigen to the Treg among all the engulfed antigens
               
-              rat_com_pat      = mac_discrimination_efficiency*rat_com_pat_real+(1-mac_discrimination_efficiency)*runif(1)
-
-              pathogen_engulfment_dominant  = rat_com_pat <= (1 - mac_rat_com_pat_threshold)
-              commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
+              # Step 1: Which antigen type is presented? (based on actual composition)
+              commensal_presented = runif(1) < rat_com_pat_real
+              
+              # Step 2: Does the Treg correctly identify what was presented?
+              if (commensal_presented) {
+                # A commensal antigen was presented
+                # Mac correctly identifies it as commensal with probability = efficiency
+                mac_identifies_as_commensal = runif(1) < mac_discrimination_efficiency
+              } else {
+                # A pathogen antigen was presented
+                # Mac incorrectly identifies it as commensal with probability = (1-efficiency)
+                mac_identifies_as_commensal = runif(1) < (1 - mac_discrimination_efficiency)
+              }
+              
+              pathogen_engulfment_dominant  = !mac_identifies_as_commensal
+              commensal_engulfment_dominant = mac_identifies_as_commensal
             }
 
             # POLARIZATION LOGIC: Danger dominates, M2 only with concordant safety
@@ -653,12 +665,24 @@ for (reps_in in 0:(num_reps-1)){
 
           if ((num_pat_antigens + num_com_antigens) > 0) {
             rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)# rat_com_pat_real can be interpreted 
-            # as the probability of presenting a commensal antigen to the Treg among all the engulfed antigens
+            # as the frequency of presenting a commensal antigen to the Treg among all the engulfed antigens
             
-            rat_com_pat      = treg_discrimination_efficiency*rat_com_pat_real+(1-treg_discrimination_efficiency)*runif(1)
+            # Step 1: Which antigen type is presented? (based on actual composition)
+            commensal_presented = runif(1) < rat_com_pat_real
+            
+            # Step 2: Does the Treg correctly identify what was presented?
+            if (commensal_presented) {
+              # A commensal antigen was presented
+              # Treg correctly identifies it as commensal with probability = efficiency
+              treg_identifies_as_commensal = runif(1) < treg_discrimination_efficiency
+            } else {
+              # A pathogen antigen was presented
+              # Treg incorrectly identifies it as commensal with probability = (1-efficiency)
+              treg_identifies_as_commensal = runif(1) < (1 - treg_discrimination_efficiency)
+            }
           
-            # But ONLY apply the effect if Tregs are allowed to work
-            if (rat_com_pat > rat_com_pat_threshold) {
+            # Step 3: Activate if Treg thinks it saw a commensal
+            if (treg_identifies_as_commensal) {
               treg_phenotype[nearby_treg_indices] = 1
               treg_activity_SAMPs_binary[nearby_treg_indices] = 1
               treg_active_age[nearby_treg_indices] = 1
