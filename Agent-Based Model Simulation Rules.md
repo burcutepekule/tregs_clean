@@ -226,32 +226,78 @@ After being active for `active_age_limit` time steps, M1 and M2 phagocytes reass
 - Based purely on current environmental signals
 
 **With Macrophage Specificity (`macspec_on > 0`):**
-Phagocytes use both environmental signals AND engulfment history:
+Phagocytes use both environmental signals AND engulfment history for polarization decisions:
 
 1. **Calculate engulfment pattern:**
-   - `num_pat_engulfed` = count of pathogens in bacteria registry
-   - `num_com_engulfed` = count of commensals in bacteria registry
-   - `rat_com_pat_real` = true ratio of commensal to total bacteria
+   ```r
+   num_pat_engulfed = phagocyte_pathogens_engulfed[i]  # Count in bacteria registry
+   num_com_engulfed = phagocyte_commensals_engulfed[i] # Count in bacteria registry
+   rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
+   ```
 
-2. **Apply discrimination:**
+2. **Apply discrimination efficiency:**
    - **If `macspec_on = 1`:** Use same discrimination as Tregs
      - `mac_discrimination_efficiency = treg_discrimination_efficiency`
    - **If `macspec_on = 2`:** Perfect discrimination
      - `mac_discrimination_efficiency = 1.0`
 
-   - Perceived ratio: `rat_com_pat = mac_discrimination_efficiency * rat_com_pat_real + (1 - mac_discrimination_efficiency) * runif(1)`
-   - Interpolates between truth (discrimination=1) and random guess (discrimination=0)
+   ```r
+   rat_com_pat = mac_discrimination_efficiency * rat_com_pat_real +
+                 (1 - mac_discrimination_efficiency) * runif(1)
+   ```
+   - Same blended perception approach as Tregs
+   - Interpolates between truth (efficiency=1) and random guess (efficiency=0)
 
-3. **Determine dominance:**
-   - Environmental: `DAMPs_dominant` vs `SAMPs_dominant` (using danger = DAMPs + PAMPs)
-   - Engulfment: `pathogen_engulfment_dominant` (rat_com_pat ≤ 1 - threshold) vs `commensal_engulfment_dominant` (rat_com_pat > threshold)
+3. **Determine signal dominance:**
+
+   **Environmental signals:**
+   ```r
+   danger_signal = avg_DAMPs + avg_PAMPs
+   DAMPs_dominant = (danger_signal >= activation_threshold_danger &&
+                     danger_signal > avg_SAMPs)
+   SAMPs_dominant = (avg_SAMPs >= activation_threshold_SAMPs &&
+                     avg_SAMPs > danger_signal)
+   ```
+
+   **Engulfment pattern (only if bacteria present):**
+   ```r
+   pathogen_engulfment_dominant  = (rat_com_pat <= 1 - mac_rat_com_pat_threshold)
+   commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
+   ```
+   - **Note:** Creates a "neutral zone" when threshold ≠ 0.5
+     - If threshold = 0.7:
+       - Commensal dominant: perceived ratio > 0.7 (>70% commensal)
+       - Pathogen dominant: perceived ratio ≤ 0.3 (<30% commensal)
+       - Neutral zone: 0.3 < ratio ≤ 0.7 (neither dominates)
 
 4. **Polarization logic (danger-biased):**
-   - **→ M1:** If `DAMPs_dominant OR pathogen_engulfment_dominant`
-     - Either environmental danger OR pathogen engulfment is sufficient
-   - **→ M2:** If `SAMPs_dominant AND commensal_engulfment_dominant`
-     - BOTH environmental safety AND commensal engulfment required
-   - **→ M0:** If both signals below threshold
+   ```r
+   if (DAMPs_dominant || pathogen_engulfment_dominant) {
+     # M1: Either environmental danger OR pathogen engulfment
+     phagocyte_phenotype[i] = 1
+   } else if (SAMPs_dominant && commensal_engulfment_dominant) {
+     # M2: Both environmental safety AND commensal engulfment required
+     phagocyte_phenotype[i] = 2
+   } else if (avg_SAMPs < activation_threshold_SAMPs &&
+              danger_signal < activation_threshold_danger) {
+     # M0: Both signals below threshold
+     phagocyte_phenotype[i] = 0
+   }
+   # Otherwise: maintain current phenotype
+   ```
+
+   **Key asymmetry (danger-biased):**
+   - **M1 activation:** OR logic (permissive)
+     - Environmental danger alone is sufficient
+     - Pathogen engulfment alone is sufficient
+   - **M2 activation:** AND logic (restrictive)
+     - Requires BOTH environmental safety AND commensal engulfment
+     - Prevents inappropriate M2 in dangerous contexts
+
+   **Biological rationale:**
+   - Prioritizes host defense over tolerance
+   - M1 is "safe" response (clears threats even if damaging)
+   - M2 requires concordant safety signals to avoid premature resolution
 
 ### Bacteria Registry & Digestion
 Each phagocyte maintains a memory of recently engulfed bacteria:
@@ -371,31 +417,54 @@ Tregs are activated by encountering phagocytes presenting predominantly commensa
 **Prerequisites:**
 - `allow_tregs = 1` (Tregs functional in this scenario)
 - Treg within `treg_vicinity_effect` distance of M1 or M2 phagocyte
-- Phagocyte has engulfed at least one bacterium
+- Phagocyte has engulfed at least one bacterium (`num_pat_antigens + num_com_antigens > 0`)
 
 **Antigen Recognition Process:**
 
-1. **Calculate antigen ratio:**
-   - `num_pat_antigens` = pathogens in phagocyte bacteria registry
-   - `num_com_antigens` = commensals in phagocyte bacteria registry
-   - `rat_com_pat_real` = true commensal ratio
+The model implements a **blended perception approach** where Treg discrimination efficiency modulates their ability to correctly assess antigen ratios:
 
-2. **Apply discrimination:**
-   - Tregs have imperfect discrimination ability: `treg_discrimination_efficiency`
-   - Perceived ratio: `rat_com_pat = treg_discrimination_efficiency * rat_com_pat_real + (1 - treg_discrimination_efficiency) * runif(1)`
-   - When discrimination = 0: completely random guess
-   - When discrimination = 1: perfect recognition
-   - Values between 0-1: interpolation between random and perfect
+1. **Calculate true antigen ratio:**
+   ```r
+   num_pat_antigens = phagocyte_pathogens_engulfed[i]  # Count of pathogens in registry
+   num_com_antigens = phagocyte_commensals_engulfed[i] # Count of commensals in registry
+   rat_com_pat_real = num_com_antigens / (num_com_antigens + num_pat_antigens)
+   ```
+   - `rat_com_pat_real` represents the true fraction of commensal antigens
+   - Ranges from 0 (all pathogens) to 1 (all commensals)
+   - Can be interpreted as the probability of presenting a commensal antigen
+
+2. **Apply discrimination efficiency:**
+   ```r
+   rat_com_pat = treg_discrimination_efficiency * rat_com_pat_real +
+                 (1 - treg_discrimination_efficiency) * runif(1)
+   ```
+   - **Interpretation:** Blends true ratio with random noise based on discrimination ability
+   - **When `treg_discrimination_efficiency = 1`:** Perfect discrimination
+     - `rat_com_pat = rat_com_pat_real` (sees true ratio)
+   - **When `treg_discrimination_efficiency = 0`:** No discrimination
+     - `rat_com_pat = runif(1)` (completely random guess)
+   - **When `treg_discrimination_efficiency ∈ (0,1)`:** Partial discrimination
+     - Interpolates between true ratio and random guess
+     - Higher efficiency → perception closer to reality
 
 3. **Activation decision:**
-   - If `rat_com_pat > rat_com_pat_threshold`: Treg activates
+   ```r
+   if (rat_com_pat > rat_com_pat_threshold) {
+     treg_phenotype[nearby_treg_indices] = 1
+     treg_activity_SAMPs_binary[nearby_treg_indices] = 1
+     treg_active_age[nearby_treg_indices] = 1
+   }
+   ```
+   - Activates if perceived commensal ratio exceeds threshold
    - Threshold typically 0.5-0.9 (from parameter set)
-   - All nearby Tregs (within `treg_vicinity_effect`) activate simultaneously
+   - **All nearby Tregs** (within `treg_vicinity_effect`) activate simultaneously
+   - Represents coordinated response to antigen presentation
 
-**Upon activation:**
-- `treg_phenotype = 1`
-- `treg_activity_SAMPs_binary = 1`
-- `treg_active_age = 1`
+**Biological Interpretation:**
+- `treg_discrimination_efficiency` models the Treg's ability to correctly identify antigens
+- Low efficiency: Tregs make more errors, activating based on noisy perception
+- High efficiency: Tregs accurately assess antigen composition
+- This approach models imperfect antigen recognition while maintaining computational tractability
 
 ### SAMP Production
 - Activated Tregs produce SAMPs at their location
@@ -687,7 +756,8 @@ Defined in `DLL_datagen_abm.R`:
 | `t_max` | 5000 | Maximum simulation time steps |
 | `grid_size` | 25 | Grid dimensions (25×25) |
 | `num_reps` | 10 | Replicates per scenario |
-| `n_phagocytes` | 125 | Number of phagocytes (20% of grid) |
+| `n_phagocytes` | 125 | Initial number of phagocytes (20% of grid) |
+| `max_total_phagocytes` | 500 | Maximum total phagocytes allowed (80% of grid) |
 | `n_tregs` | 125 | Number of Tregs (20% of grid) |
 | `n_commensals_lp` | 20 | Initial commensals |
 | `injury_percentage` | 60 | % of epithelium initially injured |
@@ -756,6 +826,9 @@ Read from `lhs_parameters_della.csv` (Latin Hypercube Sampling):
 **Discrimination:**
 - `treg_discrimination_efficiency` - Treg ability to distinguish commensals from pathogens (0-1)
 - `mac_discrimination_efficiency` - Derived from scenario and Treg discrimination (when `macspec_on > 0`)
+  - If `macspec_on = 1`: `mac_discrimination_efficiency = treg_discrimination_efficiency`
+  - If `macspec_on = 2`: `mac_discrimination_efficiency = 1.0` (perfect)
+- `mac_rat_com_pat_threshold` - Threshold for macrophage discrimination (set equal to `rat_com_pat_threshold`)
 
 **Recruitment:**
 - `recruitment_rate_danger` - Macrophage recruitment rate from borders proportional to danger signal (0-0.5) (NEW)
@@ -1039,7 +1112,22 @@ All functions are vectorized for batch operations where possible. Fallback R imp
 
 ## Document Metadata
 
-**Version:** 2.1 (Updated)
-**Date:** 2025-12-16
-**Primary Changes:** Added PAMPs system, macrophage specificity, C++ acceleration, border recruitment system, complete simulation algorithm documentation, updated parameter names, clarified logic
+**Version:** 2.2 (Comprehensive Update)
+**Date:** 2025-12-17
+**Primary Changes:**
+- Detailed clarification of Treg discrimination logic with code examples
+- Comprehensive macrophage discrimination documentation with danger-biased logic
+- Added neutral zone concept for discrimination thresholds
+- Clarified blended perception approach for antigen recognition
+- Added `max_total_phagocytes` parameter documentation
+- Verified all parameters match current implementation
+- Enhanced biological interpretation sections
+
 **Corresponds to:** `DLL_datagen_abm.R` and `MISC/RUN_REPS_CPP_ABM_PAMPS.R`
+
+**Note on Discrimination Implementation:**
+Both Tregs and macrophages (when `macspec_on > 0`) use a **blended perception approach** for antigen discrimination. The perceived commensal ratio is calculated as:
+```r
+perceived_ratio = discrimination_efficiency * true_ratio + (1 - discrimination_efficiency) * runif(1)
+```
+This interpolates between perfect recognition (efficiency = 1) and random guessing (efficiency = 0), providing a computationally efficient model of imperfect antigen identification.
