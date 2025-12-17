@@ -226,31 +226,53 @@ After being active for `active_age_limit` time steps, M1 and M2 phagocytes reass
 - Based purely on current environmental signals
 
 **With Macrophage Specificity (`macspec_on > 0`):**
-Phagocytes use both environmental signals AND engulfment history for polarization decisions:
+Phagocytes use both environmental signals AND engulfment history for polarization decisions.
 
-1. **Calculate engulfment pattern:**
+The model uses the same **stochastic two-step process** as Tregs to determine what the macrophage "perceives" from its engulfment history:
+
+1. **Calculate bacterial composition:**
    ```r
    num_pat_engulfed = phagocyte_pathogens_engulfed[i]  # Count in bacteria registry
    num_com_engulfed = phagocyte_commensals_engulfed[i] # Count in bacteria registry
    rat_com_pat_real = num_com_engulfed / (num_com_engulfed + num_pat_engulfed)
    ```
 
-2. **Apply discrimination efficiency:**
-   - **If `macspec_on = 1`:** Use same discrimination as Tregs
+2. **Set discrimination efficiency:**
+   - **If `macspec_on = 1`:** Macrophages use same discrimination as Tregs
      - `mac_discrimination_efficiency = treg_discrimination_efficiency`
    - **If `macspec_on = 2`:** Perfect discrimination
      - `mac_discrimination_efficiency = 1.0`
 
+3. **Step 1: Stochastic antigen selection**
    ```r
-   rat_com_pat = mac_discrimination_efficiency * rat_com_pat_real +
-                 (1 - mac_discrimination_efficiency) * runif(1)
+   commensal_presented = runif(1) < rat_com_pat_real
    ```
-   - Same blended perception approach as Tregs
-   - Interpolates between truth (efficiency=1) and random guess (efficiency=0)
+   - Which bacterial antigen is dominant in the engulfment history?
+   - Stochastic draw proportional to actual composition
 
-3. **Determine signal dominance:**
+4. **Step 2: Stochastic antigen identification**
+   ```r
+   if (commensal_presented) {
+     # Commensal antigen dominant
+     # Mac correctly identifies it with probability = mac_discrimination_efficiency
+     mac_identifies_as_commensal = runif(1) < mac_discrimination_efficiency
+   } else {
+     # Pathogen antigen dominant
+     # Mac incorrectly identifies as commensal with probability = (1 - efficiency)
+     mac_identifies_as_commensal = runif(1) < (1 - mac_discrimination_efficiency)
+   }
+   ```
 
-   **Environmental signals:**
+5. **Convert identification to dominance signals:**
+   ```r
+   pathogen_engulfment_dominant  = !mac_identifies_as_commensal
+   commensal_engulfment_dominant = mac_identifies_as_commensal
+   ```
+   - **Key change:** No threshold comparison - direct binary assignment
+   - If macrophage perceives commensal: `commensal_engulfment_dominant = TRUE`
+   - If macrophage perceives pathogen: `pathogen_engulfment_dominant = TRUE`
+
+6. **Determine environmental signal dominance:**
    ```r
    danger_signal = avg_DAMPs + avg_PAMPs
    DAMPs_dominant = (danger_signal >= activation_threshold_danger &&
@@ -259,24 +281,13 @@ Phagocytes use both environmental signals AND engulfment history for polarizatio
                      avg_SAMPs > danger_signal)
    ```
 
-   **Engulfment pattern (only if bacteria present):**
-   ```r
-   pathogen_engulfment_dominant  = (rat_com_pat <= 1 - mac_rat_com_pat_threshold)
-   commensal_engulfment_dominant = (rat_com_pat > mac_rat_com_pat_threshold)
-   ```
-   - **Note:** Creates a "neutral zone" when threshold ≠ 0.5
-     - If threshold = 0.7:
-       - Commensal dominant: perceived ratio > 0.7 (>70% commensal)
-       - Pathogen dominant: perceived ratio ≤ 0.3 (<30% commensal)
-       - Neutral zone: 0.3 < ratio ≤ 0.7 (neither dominates)
-
-4. **Polarization logic (danger-biased):**
+7. **Polarization logic (danger-biased):**
    ```r
    if (DAMPs_dominant || pathogen_engulfment_dominant) {
-     # M1: Either environmental danger OR pathogen engulfment
+     # M1: Either environmental danger OR perceived pathogen engulfment
      phagocyte_phenotype[i] = 1
    } else if (SAMPs_dominant && commensal_engulfment_dominant) {
-     # M2: Both environmental safety AND commensal engulfment required
+     # M2: Both environmental safety AND perceived commensal engulfment required
      phagocyte_phenotype[i] = 2
    } else if (avg_SAMPs < activation_threshold_SAMPs &&
               danger_signal < activation_threshold_danger) {
@@ -289,15 +300,16 @@ Phagocytes use both environmental signals AND engulfment history for polarizatio
    **Key asymmetry (danger-biased):**
    - **M1 activation:** OR logic (permissive)
      - Environmental danger alone is sufficient
-     - Pathogen engulfment alone is sufficient
+     - Perceived pathogen engulfment alone is sufficient
    - **M2 activation:** AND logic (restrictive)
-     - Requires BOTH environmental safety AND commensal engulfment
+     - Requires BOTH environmental safety AND perceived commensal engulfment
      - Prevents inappropriate M2 in dangerous contexts
 
    **Biological rationale:**
    - Prioritizes host defense over tolerance
-   - M1 is "safe" response (clears threats even if damaging)
-   - M2 requires concordant safety signals to avoid premature resolution
+   - M1 is the "safe default" response (clears threats even if causing collateral damage)
+   - M2 requires concordant safety signals to avoid premature resolution during active infection
+   - Macrophage discrimination represents PRR integration and pattern recognition
 
 ### Bacteria Registry & Digestion
 Each phagocyte maintains a memory of recently engulfed bacteria:
@@ -421,9 +433,9 @@ Tregs are activated by encountering phagocytes presenting predominantly commensa
 
 **Antigen Recognition Process:**
 
-The model implements a **blended perception approach** where Treg discrimination efficiency modulates their ability to correctly assess antigen ratios:
+The model implements a **stochastic two-step process** that separates antigen presentation from Treg identification:
 
-1. **Calculate true antigen ratio:**
+1. **Calculate antigen composition:**
    ```r
    num_pat_antigens = phagocyte_pathogens_engulfed[i]  # Count of pathogens in registry
    num_com_antigens = phagocyte_commensals_engulfed[i] # Count of commensals in registry
@@ -431,40 +443,55 @@ The model implements a **blended perception approach** where Treg discrimination
    ```
    - `rat_com_pat_real` represents the true fraction of commensal antigens
    - Ranges from 0 (all pathogens) to 1 (all commensals)
-   - Can be interpreted as the probability of presenting a commensal antigen
+   - Interpreted as the **probability** that a randomly selected antigen is commensal
 
-2. **Apply discrimination efficiency:**
+2. **Step 1: Stochastic antigen presentation**
    ```r
-   rat_com_pat = treg_discrimination_efficiency * rat_com_pat_real +
-                 (1 - treg_discrimination_efficiency) * runif(1)
+   commensal_presented = runif(1) < rat_com_pat_real
    ```
-   - **Interpretation:** Blends true ratio with random noise based on discrimination ability
-   - **When `treg_discrimination_efficiency = 1`:** Perfect discrimination
-     - `rat_com_pat = rat_com_pat_real` (sees true ratio)
-   - **When `treg_discrimination_efficiency = 0`:** No discrimination
-     - `rat_com_pat = runif(1)` (completely random guess)
-   - **When `treg_discrimination_efficiency ∈ (0,1)`:** Partial discrimination
-     - Interpolates between true ratio and random guess
-     - Higher efficiency → perception closer to reality
+   - Which antigen type is presented to the Treg?
+   - Stochastic draw based on actual bacterial composition
+   - If `rat_com_pat_real = 0.7`: 70% chance commensal presented, 30% chance pathogen presented
 
-3. **Activation decision:**
+3. **Step 2: Stochastic antigen identification**
    ```r
-   if (rat_com_pat > rat_com_pat_threshold) {
+   if (commensal_presented) {
+     # A commensal antigen was presented
+     # Treg correctly identifies it with probability = discrimination_efficiency
+     treg_identifies_as_commensal = runif(1) < treg_discrimination_efficiency
+   } else {
+     # A pathogen antigen was presented
+     # Treg incorrectly identifies it as commensal with probability = (1 - efficiency)
+     treg_identifies_as_commensal = runif(1) < (1 - treg_discrimination_efficiency)
+   }
+   ```
+   - Can the Treg correctly identify what was presented?
+   - **If commensal presented:** Correct ID with probability = efficiency
+   - **If pathogen presented:** Incorrect ID (as commensal) with probability = 1 - efficiency
+   - When efficiency = 1: Always identifies correctly
+   - When efficiency = 0: Always identifies incorrectly (random)
+   - When efficiency = 0.5: Cannot discriminate (50-50 guess)
+
+4. **Step 3: Activation decision**
+   ```r
+   if (treg_identifies_as_commensal) {
      treg_phenotype[nearby_treg_indices] = 1
      treg_activity_SAMPs_binary[nearby_treg_indices] = 1
      treg_active_age[nearby_treg_indices] = 1
    }
    ```
-   - Activates if perceived commensal ratio exceeds threshold
-   - Threshold typically 0.5-0.9 (from parameter set)
+   - Treg activates if it perceives a commensal antigen (regardless of truth)
    - **All nearby Tregs** (within `treg_vicinity_effect`) activate simultaneously
-   - Represents coordinated response to antigen presentation
+   - Represents coordinated response to perceived commensal presentation
 
 **Biological Interpretation:**
-- `treg_discrimination_efficiency` models the Treg's ability to correctly identify antigens
-- Low efficiency: Tregs make more errors, activating based on noisy perception
-- High efficiency: Tregs accurately assess antigen composition
-- This approach models imperfect antigen recognition while maintaining computational tractability
+- **Two separate processes:**
+  1. **Antigen selection:** Which bacterial antigen is processed and presented by MHC?
+  2. **Antigen recognition:** Can the Treg's TCR correctly identify what's being presented?
+- **Discrimination efficiency** models TCR specificity and affinity
+- High efficiency: Strong, specific TCR-MHC-antigen binding allows accurate identification
+- Low efficiency: Weak or cross-reactive TCR binding leads to misidentification
+- This mechanistic approach provides clear biological interpretation of each stochastic step
 
 ### SAMP Production
 - Activated Tregs produce SAMPs at their location
@@ -825,10 +852,10 @@ Read from `lhs_parameters_della.csv` (Latin Hypercube Sampling):
 
 **Discrimination:**
 - `treg_discrimination_efficiency` - Treg ability to distinguish commensals from pathogens (0-1)
-- `mac_discrimination_efficiency` - Derived from scenario and Treg discrimination (when `macspec_on > 0`)
+- `rat_com_pat_threshold` - **DEPRECATED** - No longer used in stochastic model (kept in parameter file for backward compatibility)
+- `mac_discrimination_efficiency` - Derived from scenario (when `macspec_on > 0`)
   - If `macspec_on = 1`: `mac_discrimination_efficiency = treg_discrimination_efficiency`
   - If `macspec_on = 2`: `mac_discrimination_efficiency = 1.0` (perfect)
-- `mac_rat_com_pat_threshold` - Threshold for macrophage discrimination (set equal to `rat_com_pat_threshold`)
 
 **Recruitment:**
 - `recruitment_rate_danger` - Macrophage recruitment rate from borders proportional to danger signal (0-0.5) (NEW)
@@ -1112,22 +1139,41 @@ All functions are vectorized for batch operations where possible. Fallback R imp
 
 ## Document Metadata
 
-**Version:** 2.2 (Comprehensive Update)
+**Version:** 3.0 (Stochastic Two-Step Implementation)
 **Date:** 2025-12-17
 **Primary Changes:**
-- Detailed clarification of Treg discrimination logic with code examples
-- Comprehensive macrophage discrimination documentation with danger-biased logic
-- Added neutral zone concept for discrimination thresholds
-- Clarified blended perception approach for antigen recognition
-- Added `max_total_phagocytes` parameter documentation
-- Verified all parameters match current implementation
-- Enhanced biological interpretation sections
+- **MAJOR CHANGE:** Replaced blended perception with stochastic two-step process for discrimination
+- Documented new antigen presentation → identification → activation logic for Tregs
+- Documented new antigen selection → identification → polarization logic for macrophages
+- Removed threshold-based macrophage discrimination (now uses direct binary identification)
+- Marked `rat_com_pat_threshold` and `mac_rat_com_pat_threshold` as DEPRECATED
+- Added comprehensive biological interpretation of two-step stochastic process
+- Clarified separation of antigen presentation vs. TCR/PRR recognition
+- Enhanced mechanistic interpretation (MHC processing, TCR binding, PRR integration)
 
-**Corresponds to:** `DLL_datagen_abm.R` and `MISC/RUN_REPS_CPP_ABM_PAMPS.R`
+**Corresponds to:** `DLL_datagen_abm.R` and `MISC/RUN_REPS_CPP_ABM_PAMPS.R` (after "stoch" commit)
 
 **Note on Discrimination Implementation:**
-Both Tregs and macrophages (when `macspec_on > 0`) use a **blended perception approach** for antigen discrimination. The perceived commensal ratio is calculated as:
+Both Tregs and macrophages (when `macspec_on > 0`) use a **stochastic two-step process** for antigen discrimination:
+
+**Step 1: Antigen Selection**
 ```r
-perceived_ratio = discrimination_efficiency * true_ratio + (1 - discrimination_efficiency) * runif(1)
+commensal_presented = runif(1) < (num_commensal / total_bacteria)
 ```
-This interpolates between perfect recognition (efficiency = 1) and random guessing (efficiency = 0), providing a computationally efficient model of imperfect antigen identification.
+- Stochastic draw based on actual bacterial composition
+- Models which antigen is processed and presented (MHC for Tregs, PRRs for macrophages)
+
+**Step 2: Antigen Identification**
+```r
+if (commensal_presented) {
+  correctly_identifies = runif(1) < discrimination_efficiency
+} else {
+  incorrectly_identifies_as_commensal = runif(1) < (1 - discrimination_efficiency)
+}
+```
+- Models TCR specificity (Tregs) or PRR pattern recognition accuracy (macrophages)
+- Perfect discrimination (efficiency=1): Always identifies correctly
+- No discrimination (efficiency=0): Random identification
+- Intermediate: Probabilistic errors
+
+This mechanistic approach separates presentation from recognition, providing clear biological interpretation at each step.
