@@ -347,8 +347,8 @@ if(length(loop_over)>0){
         processed_indices      = c(processed_indices, i)
       }
     }
-    # Save after every 10 parameter sets (if total is > 10)
-    if(length(inds2read) > 10 && i_idx %% 10 == 0){
+    # Save after every 10 parameter sets (if total is > 10) or save all (if total is <= 10)
+    if((length(inds2read) > 10 && i_idx %% 10 == 0) || i_idx==length(loop_over)){
       message("Saving intermediate results after ", i_idx, " parameter sets...")
       
       # Update the list of read indices

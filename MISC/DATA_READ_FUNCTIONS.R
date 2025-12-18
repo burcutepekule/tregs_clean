@@ -1,4 +1,65 @@
-
+compute_oscillation_metrics = function(x) {
+  x = na.omit(x)
+  if (length(x) < 20) {
+    return(list(
+      acf_peak_lag = NA,
+      acf_peak_value = NA,
+      acf_regularity = NA,
+      spectral_concentration = NA,
+      spectral_sharpness = NA
+    ))
+  }
+  
+  # === ACF metrics ===
+  acf_result = acf(x, lag.max = floor(length(x)/2), plot = FALSE)
+  acf_vals = as.numeric(acf_result$acf[-1])
+  
+  # Find all positive peaks in ACF
+  peaks_acf = which(diff(sign(diff(acf_vals))) == -2) + 1
+  positive_peaks = peaks_acf[acf_vals[peaks_acf] > 0]
+  
+  if (length(positive_peaks) > 0) {
+    first_peak_idx = positive_peaks[1]
+    acf_peak_lag = first_peak_idx
+    acf_peak_value = acf_vals[first_peak_idx]
+  } else {
+    acf_peak_lag = NA
+    acf_peak_value = 0
+  }
+  
+  # === ACF regularity ===
+  if (length(positive_peaks) >= 3) {
+    acf_intervals = diff(positive_peaks)
+    acf_regularity = sd(acf_intervals) / mean(acf_intervals)
+  } else {
+    acf_regularity = NA
+  }
+  
+  # === Spectral metrics ===
+  spec_result = spectrum(x, plot = FALSE, detrend = TRUE, taper = 0.1)
+  power = spec_result$spec
+  
+  spectral_concentration = max(power) / sum(power)
+  
+  max_idx = which.max(power)
+  window_start = max(1, max_idx - 2)
+  window_end = min(length(power), max_idx + 2)
+  neighborhood = power[window_start:window_end]
+  neighborhood_mean = mean(neighborhood[neighborhood != max(power)])
+  if (is.na(neighborhood_mean) || neighborhood_mean == 0) {
+    spectral_sharpness = NA
+  } else {
+    spectral_sharpness = max(power) / neighborhood_mean
+  }
+  
+  return(list(
+    acf_peak_lag = acf_peak_lag,
+    acf_peak_value = acf_peak_value,
+    acf_regularity = acf_regularity,
+    spectral_concentration = spectral_concentration,
+    spectral_sharpness = spectral_sharpness
+  ))
+}
 
 # Function to calculate Cohen's d
 cohens_d = function(x, y) {

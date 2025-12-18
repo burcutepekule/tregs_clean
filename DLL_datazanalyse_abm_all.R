@@ -1,9 +1,9 @@
 rm(list=ls())
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = 25*25*0.25
-M1_M2_diff     = 1
-filter_control = 1
+tol_in_p       = 25*25*0.05
+M1_M2_diff     = 0
+filter_control = 0
 labels_on      = 1
 score_type     = 'epithelial' # or 'pathogenic' or 'both'
 # score_type     = 'pathogen' # or 'pathogenic' or 'both'
@@ -13,8 +13,8 @@ data_suffix    = '' #
 
 ### THIS IS FOR PARAMETERS
 inj_type= 'sterile' 
-inj_type= 'pathogenic'
-inj_type= 'pooled'
+# inj_type= 'pathogenic'
+# inj_type= 'pooled'
 
 analysis_pick  = 2 #2, 5, 8?
 

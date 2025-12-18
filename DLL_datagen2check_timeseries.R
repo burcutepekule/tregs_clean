@@ -10,9 +10,17 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
+evo_selected = readRDS('evo_selected.rds')
+
+
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over    = c(37301)
+loop_over    = evo_selected$param_set_id
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+
+params_df$treg_discrimination_efficiency = 1
+params_df$SAMPs_decay
+params_df$activation_threshold_SAMPs
+
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -27,7 +35,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 5
-t_max      = 2000
+t_max      = 250
 
 plot_on    = 0
 plot_every = 10
@@ -56,6 +64,7 @@ max_cell_value_PAMPs = 1
 lim_ROS  = max_cell_value_ROS
 lim_DAMP = max_cell_value_DAMPs
 lim_SAMP = max_cell_value_SAMPs
+lim_PAMP = max_cell_value_PAMPs
 ## PLOTTING
 
 act_radius_ROS   = 1
@@ -104,9 +113,9 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
-results = c()
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
+  results = c()
   
   for (scenario_ind in c(3, 5)){
     # for (scenario_ind in c(3, 9, 11)){
@@ -140,51 +149,37 @@ for(param_set_id_use in loop_over){
     
     cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
   }
+  
+  variables = c("epithelial_score")
+  
+  data_long = results %>%
+    dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+  
+  p_e = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+    geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
+    facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+    scale_color_manual(values = agent_colors) +
+    theme_minimal() +
+    labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+  
+  variables = c("pathogen")
+  
+  data_long = results %>%
+    dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+  
+  p_p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+    geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
+    facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
+    scale_color_manual(values = agent_colors) +
+    theme_minimal() +
+    labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+  
+  graphics.off()
+  p_all=plot_grid(p_e, p_p, ncol = 1)
+  print(p_all)
+  
+  browser()
 }
 
-variables = c("epithelial_score")
-
-data_long = results %>%
-  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
-  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-
-p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
-  geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
-  scale_color_manual(values = agent_colors) +
-  theme_minimal() +
-  labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
-
-print(p)
-
-variables = c("phagocyte_M1")
-
-data_long = results %>%
-  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
-  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-
-p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
-  geom_line(alpha = max(0.5/num_reps,.1), linewidth = 1) +
-  geom_smooth(aes(group = variable, color = variable), method = "loess", se = TRUE, 
-              linewidth = 1.5) +
-  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
-  scale_color_manual(values = agent_colors) +
-  theme_minimal() +
-  labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
-
-print(p)
-
-variables = c("pathogen")
-
-data_long = results %>%
-  dplyr::select(t, control, sterile, tregs_on, macspec_on, randomize_tregs, rep_id, all_of(variables)) %>%
-  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-
-p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
-  geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-  facet_grid(randomize_tregs ~ control + macspec_on + sterile + tregs_on , labeller = label_both) +
-  scale_color_manual(values = agent_colors) +
-  theme_minimal() +
-  labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
-
-print(p)

@@ -1,0 +1,161 @@
+rm(list=ls())
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(readr)  # For read_csv
+library(stringr)
+library(zoo)
+library(scales)
+library(ggrepel)
+library(ggsignif)
+
+jsd_th         = 0.3
+tol_in_e       = 125*0.25
+tol_in_p       = 25*25*0.05
+mult           = 1
+filter_control = 0
+labels_on      = 1
+score_type     = 'pathogen'
+data_suffix    = '_ros_vs_ctrl' #
+
+source("./MISC/PLOT_FUNCTIONS_ABM.R")
+source("./MISC/DATA_READ_FUNCTIONS.R")
+
+df_params       = read_csv('./lhs_parameters_della.csv', show_col_types = FALSE)
+df_results_keep = readRDS(paste0('./data_cpp_read_abm',data_suffix,'.rds'))
+length(unique(df_results_keep$param_set_id))
+
+# --- filter for complete # of reps 
+reps_df       = as.data.frame(table(df_results_keep$param_set_id))
+if(data_suffix == '_ros_vs_ctrl'){
+  keep_param_id = reps_df %>% dplyr::filter(Freq==40) %>% dplyr::pull(Var1) # 40 = 10 reps per scenario, 2 scenarios x 2 times recording for epithelial and pathogen scores 
+}else{
+  keep_param_id = reps_df %>% dplyr::filter(Freq==100) %>% dplyr::pull(Var1) # 100 = 10 reps per scenario, 5 scenarios x 2 times recording for epithelial and pathogen scores 
+}
+df_results = df_results_keep %>% filter(param_set_id %in% keep_param_id)
+length(unique(df_results$param_set_id))
+
+#----- filter based on ss_start, it cannot be too large otherwise not much to compare!
+ss_start_threshold = 4500
+param_id_all_below = df_results %>%
+  dplyr::group_by(param_set_id) %>%
+  dplyr::summarise(all_below = all(ss_start < ss_start_threshold), .groups = "drop") %>%
+  dplyr::filter(all_below) %>%
+  dplyr::pull(param_set_id)
+length(param_id_all_below)/length(unique(df_results$param_set_id)) # >99%!
+df_results = df_results %>% dplyr::filter(param_set_id %in% param_id_all_below)
+max(df_results$ss_start)<ss_start_threshold # TRUE, sanity check
+unique(table(df_results$param_set_id)) #2000, sanity check
+length(unique(df_results$param_set_id))
+
+df_comparisons = distinct(df_results %>% dplyr::select(
+  param_set_id, injury_type,
+  # Mean scores
+  mean_ctrl_pathogen_e,
+  mean_tregs_off_pathogen_e,
+  mean_ctrl_pathogen_p,
+  mean_tregs_off_pathogen_p
+))
+df_comparisons_keep = df_comparisons
+
+# ============= FILTER BASED ON CONTROL ====================================================
+df_comparisons_ctrl_test = df_comparisons_keep %>% dplyr::filter(injury_type=='pathogenic') %>%
+  dplyr::mutate(diff_ctrl_vs_tregs_off = mean_ctrl_pathogen_p-mean_tregs_off_pathogen_p)
+df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id','diff_ctrl_vs_tregs_off','mean_ctrl_pathogen_p','mean_tregs_off_pathogen_p')]
+df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, distinct(df_results[c('param_set_id','d_ctrl_vs_tregs_off_pathogen_p')]), by='param_set_id')
+
+df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
+  dplyr::mutate(ros_better = ifelse(abs(d_ctrl_vs_tregs_off_pathogen_p)>=jsd_th 
+                                    & diff_ctrl_vs_tregs_off>tol_in_p, 1, 
+                                    ifelse(abs(d_ctrl_vs_tregs_off_pathogen_p)>=jsd_th 
+                                           & diff_ctrl_vs_tregs_off < -1*tol_in_p,-1,0))) # has to be positive, control should have more pathogens
+
+df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
+  dplyr::mutate(ros_needed = ifelse(mean_ctrl_pathogen_p>tol_in_p
+                                    & mean_tregs_off_pathogen_p<tol_in_p, 1, 0)) # has to be positive, control should have more pathogens
+
+df_params_merged = merge(df_params, df_comparisons_ctrl_test_simple[c('param_set_id','ros_better','ros_needed')], by='param_set_id')
+table(df_params_merged$ros_better)
+
+if(mult==1){
+  df_params_merged = df_params_merged %>% dplyr::mutate(macrophage_mult = activity_ROS_M1_baseline*add_ROS*activation_threshold_danger)
+}
+
+source('~/Dropbox/tregs_clean/MISC/LOAD_PARAM_VECTOR_ROS.R')
+
+df_plot_params = df_params_merged %>%
+  dplyr::select(ros_needed, ros_better, all_of(param_names)) %>%
+  pivot_longer(cols = -c(ros_needed, ros_better), names_to = "parameter", values_to = "value") %>%
+  mutate(
+    param_order = match(parameter, param_names),
+    parameter_labeled = paste0(sprintf("%02d", param_order), ". ", parameter),
+    parameter_labeled = factor(parameter_labeled, 
+                               levels = paste0(sprintf("%02d", 1:length(param_names)), ". ", param_names))
+  )
+
+
+df_plot_params = df_plot_params %>% dplyr::mutate(ros_needed=ifelse(ros_needed==0,'ros not needed','ros needed'))
+df_plot_params = df_plot_params %>% dplyr::mutate(ros_better=ifelse(ros_better==1,'ros better',
+                                                                    ifelse(ros_better==-1,'ros worse','ros dm')))
+
+p_params = ggplot(df_plot_params, aes(x = ros_needed, y = value, fill = ros_needed)) +
+  geom_violin(alpha = 0.2, trim = TRUE) +
+  geom_boxplot(width = 0.2, alpha = 0.8, outlier.shape = NA) +
+  facet_wrap(~parameter, scales = "free_y", ncol = 4) + # ordered alphabetically (easier to compare among inj types.)
+  scale_fill_manual(values = c(
+    "ros not needed" = "pink",
+    "ros needed" = "lightblue"
+  )) +
+  scale_y_continuous(expand = expansion(mult = c(0.00, 0.10))) +  # Add this line
+  geom_signif(
+    comparisons = list(c("ros not needed", "ros needed")),
+    test = "t.test",
+    test.args = list(var.equal = FALSE),   # Welch t-test
+    map_signif_level = TRUE,
+    textsize = 5,
+    step_increase = 0.1,
+    tip_length = 0.02
+  )+
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(size = 12)
+  ) +
+  labs(title = "Top Parameters Distinguishing Effect Regions",
+       x = "", y = "Parameter Value")
+
+print(p_params)
+
+ggsave(
+  filename = paste0("./PARAMS_ROS.png"),
+  plot = p_params,
+  width = 18,
+  height = 20,
+  dpi = 300,
+  bg='white'
+)
+
+dev.off()
+
+###############################################################################
+inj_type = 'pathogenic' # that's anyway the only inj_type we run ctrl vs ros
+jensen_distance ='ctrl_vs_tregs_off'
+
+
+df_lda  = df_params_merged %>% dplyr::select(all_of(param_names), ros_needed)
+classes = unique(df_lda$ros_needed)
+
+colnames(df_lda)[25]='diff_better_cohens' # so that scripts below can work
+
+# Choose confidence levels for visualization
+level_plus1  = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
+level_minus1 = 0.75 # pick from c(0.50, 0.75, 0.90, 0.95, 0.99)
+violin_on    = 1
+if(sum(classes)==1){ 
+  source('./MISC/PLS_DA_2classes_0p1.R')
+}else if(sum(classes)==-1){
+  source('./MISC/PLS_DA_2classes_0n1.R')
+}else{
+  source('./MISC/PLS_DA_3classes.R')
+}

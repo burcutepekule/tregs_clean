@@ -117,6 +117,10 @@ scenarios_df_ctrl = expand.grid(
 )
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
+##### JUST TO PRESELECT THE PARAMETER SETS BASED ON THE ONES THAT NEED ROS
+scenarios_df = scenarios_df[c(1,2),]
+##### JUST TO PRESELECT THE PARAMETER SETS BASED ON THE ONES THAT NEED ROS
+
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 

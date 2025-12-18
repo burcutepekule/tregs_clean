@@ -29,7 +29,8 @@ if(M1_M2_diff==1){
     "active_age_limit",
     "cc_phagocyte",
     "treg_discrimination_efficiency",
-    "activity_engulf_M1_M2_diff"
+    "activity_engulf_M1_M2_diff",
+    "recruitment_rate_danger"
   )
 }else{
   param_names = c(
@@ -60,6 +61,7 @@ if(M1_M2_diff==1){
     # "rate_leak_commensal_baseline", #remove, same for all 
     "active_age_limit",
     "cc_phagocyte",
-    "treg_discrimination_efficiency"
+    "treg_discrimination_efficiency",
+    "recruitment_rate_danger"
   )
 }

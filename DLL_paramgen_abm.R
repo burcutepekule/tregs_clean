@@ -28,13 +28,13 @@ param_bounds = list(
   activation_threshold_danger = c(0, 2), # because we sum DAMPs and PAMPs now, it should double!
   activation_threshold_SAMPs  = c(0, 1),
   activity_engulf_M0_baseline = c(0.05, 0.05), #FIXED
-  activity_engulf_M1_baseline = c(0.05, 0.75),
+  activity_engulf_M1_baseline = c(0.05, 0.50),
   # activity_engulf_M2_baseline = c(0.05, 0.75),
   activity_ROS_M1_baseline    = c(0, 1),
   cc_phagocyte     = c(3, 30), # discrete parameter, will be rounded
   active_age_limit = c(3, 30), # discrete parameter, will be rounded
   treg_discrimination_efficiency = c(0, 1),
-  recruitment_rate_danger = c(0, 0.1)  # Macrophage recruitment rate from borders (proportional to danger signal)
+  recruitment_rate_danger = c(0, 0.25)  # Macrophage recruitment rate from borders (proportional to danger signal)
 )
 
 param_names = names(param_bounds)
@@ -56,7 +56,7 @@ names(lhs_samples) = param_names
 for (param in param_names) {
   param_min = param_bounds[[param]][1]
   param_max = param_bounds[[param]][2]
-  lhs_samples[[param]] = lhs_samples[[param]] * (param_max - param_min) + param_min
+  lhs_samples[[param]] = lhs_samples[[param]]*(param_max - param_min) + param_min
 }
 
 # Round the discrete parameter
@@ -66,7 +66,7 @@ lhs_samples$cc_phagocyte     = round(lhs_samples$cc_phagocyte)
 lhs_samples$activity_engulf_M2_baseline = lhs_samples$activity_engulf_M1_baseline # let's make this equal to make it easier to compare
 param_names = c(param_names, 'activity_engulf_M2_baseline')
 
-lhs_samples = lhs_samples %>% dplyr::filter(cc_phagocyte<=active_age_limit) # otherwise having a registry longer than the active age doesn't make sense
+# lhs_samples = lhs_samples %>% dplyr::filter(cc_phagocyte<=active_age_limit) # otherwise having a registry longer than the active age doesn't make sense
 lhs_samples = lhs_samples[1:(n_samples/10),]
 
 # Add parameter set ID
