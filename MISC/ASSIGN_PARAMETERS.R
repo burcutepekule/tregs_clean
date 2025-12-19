@@ -20,6 +20,9 @@ if(control==1){
 }else{
   add_ROS = param_set_use$add_ROS
   activity_ROS_M1_baseline = param_set_use$activity_ROS_M1_baseline
+  if(ros_level==1){
+    add_ROS = 1 #max
+  }
 }
 
 add_DAMPs = param_set_use$add_DAMPs
@@ -49,6 +52,7 @@ activity_ROS_M2_baseline = 0
 rate_leak_commensal_injury   = param_set_use$rate_leak_commensal_injury
 rate_leak_commensal_baseline = param_set_use$rate_leak_commensal_baseline
 rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, param_set_use$rate_leak_pathogen_injury)
+rate_leak_pathogen_injury = pat_level*rate_leak_pathogen_injury #1, 2, 3
 
 # Phagocyte parameters
 active_age_limit = as.integer(param_set_use$active_age_limit)

@@ -1,3 +1,89 @@
+steady_state_idx = function(x, k = 50, tail_frac = 0.25, min_run = 20) {
+  
+  n = length(x)
+  tail_n = ceiling(n * tail_frac)
+  
+  tail_mean = mean(tail(x, tail_n))
+  tail_sd = sd(tail(x, tail_n))
+  
+  signal_range = diff(range(x))
+  
+  if (signal_range < 1e-10) return(1L)
+  
+  tol_mean = max(0.5 * tail_sd, 0.05 * abs(tail_mean), 0.01 * signal_range)
+  tol_sd = max(0.5 * tail_sd, 0.05 * abs(tail_mean), 0.01 * signal_range)
+  
+  m = zoo::rollapply(x, k, mean, align = "right", fill = NA)
+  s = zoo::rollapply(x, k, sd, align = "right", fill = NA)
+  sl = zoo::rollapply(x, k, function(v) mean(diff(v)), align = "right", fill = NA)
+  
+  mean_ok = abs(m - tail_mean) < tol_mean
+  sd_ok = abs(s - tail_sd) < tol_sd
+  
+  slope_tol = 0.01 * signal_range / k
+  slope_ok = abs(sl) < slope_tol
+  
+  close_enough = abs(m - tail_mean) < 0.1 * signal_range
+  
+  # Relaxed SD check: within 2x of tail_sd OR sd is small relative to signal
+  sd_relaxed = s < max(2 * tail_sd, 0.05 * signal_range)
+  
+  ok = (mean_ok & sd_ok) | (slope_ok & sd_relaxed & close_enough)
+  ok[is.na(ok)] = FALSE
+  
+  runs = rle(ok)
+  run_ends = cumsum(runs$lengths)
+  run_starts = c(1, head(run_ends, -1) + 1)
+  
+  good_runs = which(runs$values & runs$lengths >= min_run)
+  
+  if (length(good_runs) == 0) return(NA_integer_)
+  
+  run_starts[good_runs[1]]
+}
+
+steady_state_idx_slow = function(x, k = 50, tail_frac = 0.25, min_run = 20) {
+  
+  n = length(x)
+  tail_n = ceiling(n * tail_frac)
+  
+  tail_mean = mean(tail(x, tail_n))
+  tail_sd = sd(tail(x, tail_n))
+  
+  # Signal range for scaling tolerances
+  signal_range = diff(range(x))
+  
+  tol_mean = max(0.5 * tail_sd, 0.05 * abs(tail_mean))
+  tol_sd = max(0.5 * tail_sd, 0.05 * abs(tail_mean))
+  
+  m = zoo::rollapply(x, k, mean, align = "right", fill = NA)
+  s = zoo::rollapply(x, k, sd, align = "right", fill = NA)
+  sl = zoo::rollapply(x, k, function(v) coef(lm(v ~ seq_along(v)))[2], align = "right", fill = NA)
+  
+  mean_ok = abs(m - tail_mean) < tol_mean
+  sd_ok = abs(s - tail_sd) < tol_sd
+  
+  # Slope tolerance - signal has stopped changing meaningfully
+  slope_tol = 0.01 * signal_range / k
+  slope_ok = abs(sl) < slope_tol
+  
+  # Relaxed mean criterion - within 10% of signal range from tail mean
+  close_enough = abs(m - tail_mean) < 0.1 * signal_range
+  
+  ok = (mean_ok & sd_ok) | (slope_ok & sd_ok & close_enough)
+  ok[is.na(ok)] = FALSE
+  
+  runs = rle(ok)
+  run_ends = cumsum(runs$lengths)
+  run_starts = c(1, head(run_ends, -1) + 1)
+  
+  good_runs = which(runs$values & runs$lengths >= min_run)
+  
+  if (length(good_runs) == 0) return(NA_integer_)
+  
+  run_starts[good_runs[1]]
+}
+
 compute_oscillation_metrics = function(x) {
   x = na.omit(x)
   if (length(x) < 20) {
@@ -178,8 +264,9 @@ calculate_js_divergence = function(vec1, vec2, n_bins = NULL, method = "sturges"
   return(c(js_div, n_bins))
 }
 
-steady_state_idx = function(x, k = 20, tail_frac = 0.25,
-                            tol_abs = 0.05*(150-25),     # 2.5 units
+### note that the tolerance values are adjusted for epithelial score range 
+steady_state_idx_old = function(x, k = 20, tail_frac = 0.25,
+                            tol_abs = 0.05*(150-25), # 2.5 units
                             tol_sd  = 0.02*(150-25),# 1.25 units
                             tol_slope = 0.005*(150-25))  # 0.125/step
 {

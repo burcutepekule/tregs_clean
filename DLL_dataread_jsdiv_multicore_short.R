@@ -41,11 +41,11 @@ pathogenic_comparison_keep = c()
 path = "/Users/burcutepekule/Desktop/sim_abm/"
 # Control
 files_1_0_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_1_sterile_0_macspec_0_tregs_0_trnd_0.rds$", full.names = TRUE)
-# === STERILE
+# === PATHOGENIC
 # Test (with ROS)
 files_0_0_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_trnd_0.rds$", full.names = TRUE)
 files_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_trnd_0.rds$", full.names = TRUE)
-# === PATHOGENIC
+# === STERILE
 # Test (with ROS)
 files_0_1_0_0_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_0_tregs_0_trnd_0.rds$", full.names = TRUE)
 files_0_1_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_1_macspec_0_tregs_1_trnd_0.rds$", full.names = TRUE)
@@ -128,7 +128,9 @@ if(length(loop_over)>0){
         results_0_1_0_0_0, results_0_1_0_1_0
       )
       
-      full_data_comparison = results %>% dplyr::select(param_set_id, control, sterile, macspec_on, tregs_on, randomize_tregs, rep_id, t, time_ss, epithelial_score, pathogen)
+      full_data_comparison = results %>% dplyr::select(param_set_id, control, sterile, macspec_on, 
+                                                       tregs_on, randomize_tregs, rep_id, t, 
+                                                       time_ss_e, time_ss_p, epithelial_score, pathogen)
       min_reps  = min(full_data_comparison$rep_id)
       max_reps  = max(full_data_comparison$rep_id)
       t_max_ind = max(full_data_comparison$t)
@@ -162,7 +164,7 @@ if(length(loop_over)>0){
       for (rep in min_reps:max_reps) {
         
         #### CONTROL
-        # sterile_0 (no pathogen)
+        # (pathogenic injury w/o ROS)
         full_data_comparison_scores_1_0_0_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==1 & sterile==0 & macspec_on==0 & tregs_on==0 & randomize_tregs==0)
         
         #### Pathogenic (sterile_0) - Test with ROS
@@ -178,63 +180,82 @@ if(length(loop_over)>0){
         full_data_comparison_scores_0_1_0_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==1 & macspec_on==0 & tregs_on==1 & randomize_tregs==0)
 
         # --- Steady-state detection ---
-        time_ss_1_0_0_0_0 = unique(full_data_comparison_scores_1_0_0_0_0$time_ss)
-        time_ss_0_0_0_0_0 = unique(full_data_comparison_scores_0_0_0_0_0$time_ss)
-        time_ss_0_0_0_1_0 = unique(full_data_comparison_scores_0_0_0_1_0$time_ss)
-        time_ss_0_1_0_0_0 = unique(full_data_comparison_scores_0_1_0_0_0$time_ss)
-        time_ss_0_1_0_1_0 = unique(full_data_comparison_scores_0_1_0_1_0$time_ss)
+        time_ss_1_0_0_0_0_e = unique(full_data_comparison_scores_1_0_0_0_0$time_ss_e)
+        time_ss_1_0_0_0_0_p = unique(full_data_comparison_scores_1_0_0_0_0$time_ss_p)
+        
+        time_ss_0_0_0_0_0_e = unique(full_data_comparison_scores_0_0_0_0_0$time_ss_e)
+        time_ss_0_0_0_0_0_p = unique(full_data_comparison_scores_0_0_0_0_0$time_ss_p)
+        
+        time_ss_0_0_0_1_0_e = unique(full_data_comparison_scores_0_0_0_1_0$time_ss_e)
+        time_ss_0_0_0_1_0_p = unique(full_data_comparison_scores_0_0_0_1_0$time_ss_p)
+        
+        time_ss_0_1_0_0_0_e = unique(full_data_comparison_scores_0_1_0_0_0$time_ss_e)
+        time_ss_0_1_0_0_0_p = unique(full_data_comparison_scores_0_1_0_0_0$time_ss_p)
+        
+        time_ss_0_1_0_1_0_e = unique(full_data_comparison_scores_0_1_0_1_0$time_ss_e)
+        time_ss_0_1_0_1_0_p = unique(full_data_comparison_scores_0_1_0_1_0$time_ss_p)
         
         time_ss_vec = c(
-          time_ss_1_0_0_0_0,
-          time_ss_0_0_0_0_0, time_ss_0_0_0_1_0,
-          time_ss_0_1_0_0_0, time_ss_0_1_0_1_0
+          time_ss_1_0_0_0_0_e, time_ss_1_0_0_0_0_p, 
+          time_ss_0_0_0_0_0_e, time_ss_0_0_0_0_0_p,
+          time_ss_0_0_0_1_0_e, time_ss_0_0_0_1_0_p,
+          time_ss_0_1_0_0_0_e, time_ss_0_1_0_0_0_p,
+          time_ss_0_1_0_1_0_e, time_ss_0_1_0_1_0_p
         )
         
         if(!any(is.na(time_ss_vec))){
           
           # ==== PATHOGEN ABUNDANCE
           # Control
-          scores_1_0_0_0_0_p = full_data_comparison_scores_1_0_0_0_0$pathogen[time_ss_1_0_0_0_0:t_max_ind]
+          scores_1_0_0_0_0_p = full_data_comparison_scores_1_0_0_0_0$pathogen[time_ss_1_0_0_0_0_p:t_max_ind]
 
           # Pathogenic (sterile_0)
-          scores_0_0_0_0_0_p = full_data_comparison_scores_0_0_0_0_0$pathogen[time_ss_0_0_0_0_0:t_max_ind]
-          scores_0_0_0_1_0_p = full_data_comparison_scores_0_0_0_1_0$pathogen[time_ss_0_0_0_1_0:t_max_ind]
+          scores_0_0_0_0_0_p = full_data_comparison_scores_0_0_0_0_0$pathogen[time_ss_0_0_0_0_0_p:t_max_ind]
+          scores_0_0_0_1_0_p = full_data_comparison_scores_0_0_0_1_0$pathogen[time_ss_0_0_0_1_0_p:t_max_ind]
 
-          # Sterile (sterile_1)
-          scores_0_1_0_0_0_p = full_data_comparison_scores_0_1_0_0_0$pathogen[time_ss_0_1_0_0_0:t_max_ind]
-          scores_0_1_0_1_0_p = full_data_comparison_scores_0_1_0_1_0$pathogen[time_ss_0_1_0_1_0:t_max_ind]
+          # Sterile (sterile_1) - should be 0 anyway
+          scores_0_1_0_0_0_p = full_data_comparison_scores_0_1_0_0_0$pathogen[time_ss_0_1_0_0_0_p:t_max_ind]
+          scores_0_1_0_1_0_p = full_data_comparison_scores_0_1_0_1_0$pathogen[time_ss_0_1_0_1_0_p:t_max_ind]
+          
+          # Compute oscillation metrics for each signal
+          osc_1_0_0_0_0_p = compute_oscillation_metrics(scores_1_0_0_0_0_p)
+          osc_0_0_0_0_0_p = compute_oscillation_metrics(scores_0_0_0_0_0_p)
+          osc_0_0_0_1_0_p = compute_oscillation_metrics(scores_0_0_0_1_0_p)
+          osc_0_1_0_0_0_p = compute_oscillation_metrics(scores_0_1_0_0_0_p)
+          osc_0_1_0_1_0_p = compute_oscillation_metrics(scores_0_1_0_1_0_p)
           
           # Accumulate scores
           scores_1_0_0_0_0_p_keep = c(scores_1_0_0_0_0_p_keep, scores_1_0_0_0_0_p)
-
           scores_0_0_0_0_0_p_keep = c(scores_0_0_0_0_0_p_keep, scores_0_0_0_0_0_p)
           scores_0_0_0_1_0_p_keep = c(scores_0_0_0_1_0_p_keep, scores_0_0_0_1_0_p)
-
           scores_0_1_0_0_0_p_keep = c(scores_0_1_0_0_0_p_keep, scores_0_1_0_0_0_p)
           scores_0_1_0_1_0_p_keep = c(scores_0_1_0_1_0_p_keep, scores_0_1_0_1_0_p)
           
           
           # ==== EPITHELIAL SCORE
           # Control
-          scores_1_0_0_0_0_e = full_data_comparison_scores_1_0_0_0_0$epithelial_score[time_ss_1_0_0_0_0:t_max_ind]
+          scores_1_0_0_0_0_e = full_data_comparison_scores_1_0_0_0_0$epithelial_score[time_ss_1_0_0_0_0_e:t_max_ind]
 
           # Pathogenic (sterile_0)
-          scores_0_0_0_0_0_e = full_data_comparison_scores_0_0_0_0_0$epithelial_score[time_ss_0_0_0_0_0:t_max_ind]
-          scores_0_0_0_1_0_e = full_data_comparison_scores_0_0_0_1_0$epithelial_score[time_ss_0_0_0_1_0:t_max_ind]
+          scores_0_0_0_0_0_e = full_data_comparison_scores_0_0_0_0_0$epithelial_score[time_ss_0_0_0_0_0_e:t_max_ind]
+          scores_0_0_0_1_0_e = full_data_comparison_scores_0_0_0_1_0$epithelial_score[time_ss_0_0_0_1_0_e:t_max_ind]
 
-          
           # Sterile (sterile_1)
-          scores_0_1_0_0_0_e = full_data_comparison_scores_0_1_0_0_0$epithelial_score[time_ss_0_1_0_0_0:t_max_ind]
-          scores_0_1_0_1_0_e = full_data_comparison_scores_0_1_0_1_0$epithelial_score[time_ss_0_1_0_1_0:t_max_ind]
-
+          scores_0_1_0_0_0_e = full_data_comparison_scores_0_1_0_0_0$epithelial_score[time_ss_0_1_0_0_0_e:t_max_ind]
+          scores_0_1_0_1_0_e = full_data_comparison_scores_0_1_0_1_0$epithelial_score[time_ss_0_1_0_1_0_e:t_max_ind]
           
+          # Compute oscillation metrics for each signal
+          osc_1_0_0_0_0_e = compute_oscillation_metrics(scores_1_0_0_0_0_e)
+          osc_0_0_0_0_0_e = compute_oscillation_metrics(scores_0_0_0_0_0_e)
+          osc_0_0_0_1_0_e = compute_oscillation_metrics(scores_0_0_0_1_0_e)
+          osc_0_1_0_0_0_e = compute_oscillation_metrics(scores_0_1_0_0_0_e)
+          osc_0_1_0_1_0_e = compute_oscillation_metrics(scores_0_1_0_1_0_e)
+          
+
           # Accumulate scores
           scores_1_0_0_0_0_e_keep = c(scores_1_0_0_0_0_e_keep, scores_1_0_0_0_0_e)
-
           scores_0_0_0_0_0_e_keep = c(scores_0_0_0_0_0_e_keep, scores_0_0_0_0_0_e)
           scores_0_0_0_1_0_e_keep = c(scores_0_0_0_1_0_e_keep, scores_0_0_0_1_0_e)
-
-          
           scores_0_1_0_0_0_e_keep = c(scores_0_1_0_0_0_e_keep, scores_0_1_0_0_0_e)
           scores_0_1_0_1_0_e_keep = c(scores_0_1_0_1_0_e_keep, scores_0_1_0_1_0_e)
  
@@ -245,30 +266,34 @@ if(length(loop_over)>0){
             replicate_id = rep,
             control      = c(1, 0, 0, 0, 0,
                              1, 0, 0, 0, 0),
-            injury_type  = c("pathogenic",
-                             "pathogenic", "pathogenic",
-                             "sterile", "sterile",
-                             "pathogenic",
-                             "pathogenic", "pathogenic",
-                             "sterile", "sterile"),
+            injury_type  = c("pathogenic","pathogenic", "pathogenic","sterile", "sterile",
+                             "pathogenic","pathogenic", "pathogenic","sterile", "sterile"),
+            score_type  = c("epithelium", "epithelium","epithelium", "epithelium","epithelium", 
+                            "pathogen", "pathogen","pathogen","pathogen","pathogen"),
             macspec_on   = c(0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0),
             tregs_on     = c(0, 0, 1, 0, 1,
                              0, 0, 1, 0, 1),
             tregs_rnd    = c(0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0),
-            ss_start     = c(time_ss_1_0_0_0_0, 
-                             time_ss_0_0_0_0_0, time_ss_0_0_0_1_0,
-                             time_ss_0_1_0_0_0, time_ss_0_1_0_1_0,
-                             time_ss_1_0_0_0_0, 
-                             time_ss_0_0_0_0_0, time_ss_0_0_0_1_0,
-                             time_ss_0_1_0_0_0, time_ss_0_1_0_1_0),
-            mean_score   = c(mean(scores_1_0_0_0_0_e),
-                             mean(scores_0_0_0_0_0_e), mean(scores_0_0_0_1_0_e),
-                             mean(scores_0_1_0_0_0_e), mean(scores_0_1_0_1_0_e),
-                             mean(scores_1_0_0_0_0_p),
-                             mean(scores_0_0_0_0_0_p), mean(scores_0_0_0_1_0_p),
-                             mean(scores_0_1_0_0_0_p), mean(scores_0_1_0_1_0_p))
+            ss_start     = c(time_ss_1_0_0_0_0_e, time_ss_0_0_0_0_0_e, time_ss_0_0_0_1_0_e,time_ss_0_1_0_0_0_e, time_ss_0_1_0_1_0_e,
+                             time_ss_1_0_0_0_0_p, time_ss_0_0_0_0_0_p, time_ss_0_0_0_1_0_p,time_ss_0_1_0_0_0_p, time_ss_0_1_0_1_0_p),
+            mean_score   = c(mean(scores_1_0_0_0_0_e), mean(scores_0_0_0_0_0_e), mean(scores_0_0_0_1_0_e),mean(scores_0_1_0_0_0_e), mean(scores_0_1_0_1_0_e),
+                             mean(scores_1_0_0_0_0_p), mean(scores_0_0_0_0_0_p), mean(scores_0_0_0_1_0_p),mean(scores_0_1_0_0_0_p), mean(scores_0_1_0_1_0_p)),
+            sd_score   = c(sd(scores_1_0_0_0_0_e), sd(scores_0_0_0_0_0_e), sd(scores_0_0_0_1_0_e),sd(scores_0_1_0_0_0_e), sd(scores_0_1_0_1_0_e),
+                           sd(scores_1_0_0_0_0_p), sd(scores_0_0_0_0_0_p), sd(scores_0_0_0_1_0_p),sd(scores_0_1_0_0_0_p), sd(scores_0_1_0_1_0_p)),
+            # Oscillation metrics
+            acf_peak_lag   = c(osc_1_0_0_0_0_e$acf_peak_lag, osc_0_0_0_0_0_e$acf_peak_lag, osc_0_0_0_1_0_e$acf_peak_lag, osc_0_1_0_0_0_e$acf_peak_lag, osc_0_1_0_1_0_e$acf_peak_lag,   
+                             osc_1_0_0_0_0_p$acf_peak_lag, osc_0_0_0_0_0_p$acf_peak_lag, osc_0_0_0_1_0_p$acf_peak_lag, osc_0_1_0_0_0_p$acf_peak_lag, osc_0_1_0_1_0_p$acf_peak_lag),
+            acf_peak_val   = c(osc_1_0_0_0_0_e$acf_peak_value, osc_0_0_0_0_0_e$acf_peak_value, osc_0_0_0_1_0_e$acf_peak_value, osc_0_1_0_0_0_e$acf_peak_value, osc_0_1_0_1_0_e$acf_peak_value,   
+                             osc_1_0_0_0_0_p$acf_peak_value, osc_0_0_0_0_0_p$acf_peak_value, osc_0_0_0_1_0_p$acf_peak_value, osc_0_1_0_0_0_p$acf_peak_value, osc_0_1_0_1_0_p$acf_peak_value),
+            spec_conc      = c(osc_1_0_0_0_0_e$spectral_concentration, osc_0_0_0_0_0_e$spectral_concentration, osc_0_0_0_1_0_e$spectral_concentration, osc_0_1_0_0_0_e$spectral_concentration, osc_0_1_0_1_0_e$spectral_concentration,   
+                             osc_1_0_0_0_0_p$spectral_concentration, osc_0_0_0_0_0_p$spectral_concentration, osc_0_0_0_1_0_p$spectral_concentration, osc_0_1_0_0_0_p$spectral_concentration, osc_0_1_0_1_0_p$spectral_concentration),
+            spec_sharp     = c(osc_1_0_0_0_0_e$spectral_sharpness, osc_0_0_0_0_0_e$spectral_sharpness, osc_0_0_0_1_0_e$spectral_sharpness, osc_0_1_0_0_0_e$spectral_sharpness, osc_0_1_0_1_0_e$spectral_sharpness,   
+                             osc_1_0_0_0_0_p$spectral_sharpness, osc_0_0_0_0_0_p$spectral_sharpness, osc_0_0_0_1_0_p$spectral_sharpness, osc_0_1_0_0_0_p$spectral_sharpness, osc_0_1_0_1_0_p$spectral_sharpness),
+            acf_regularity = c(osc_1_0_0_0_0_e$acf_regularity, osc_0_0_0_0_0_e$acf_regularity, osc_0_0_0_1_0_e$acf_regularity, osc_0_1_0_0_0_e$acf_regularity, osc_0_1_0_1_0_e$acf_regularity,   
+                               osc_1_0_0_0_0_p$acf_regularity, osc_0_0_0_0_0_p$acf_regularity, osc_0_0_0_1_0_p$acf_regularity, osc_0_1_0_0_0_p$acf_regularity, osc_0_1_0_1_0_p$acf_regularity)
+            
           )
           
           # Append to global results
@@ -348,7 +373,9 @@ if(length(loop_over)>0){
       }
     }
     # Save after every 10 parameter sets (if total is > 10) or save all (if total is <= 10)
-    if((length(inds2read) > 10 && i_idx %% 10 == 0) || i_idx==length(loop_over)){
+    # if((length(inds2read) > 10 && i_idx %% 10 == 0) || i_idx==length(loop_over)){
+    if((length(inds2read) > (10*n2) && i_idx %% (10*n2) == 0) || i_idx==length(loop_over)){ #10*n2 to break sync between multiple cores
+      
       message("Saving intermediate results after ", i_idx, " parameter sets...")
       
       # Update the list of read indices

@@ -79,6 +79,7 @@ if(n1==1){
   loop_over = chunks[[n2]]
 }
 
+
 if(length(loop_over)>0){
   # Track indices that have been successfully processed
   processed_indices = c()
@@ -134,31 +135,34 @@ if(length(loop_over)>0){
         # tregs OFF
         full_data_comparison_scores_0_0_0_0_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & randomize_tregs==0)
         
-        # --- Steady-state detection ---
-        time_ss_1_0_0_0_0 = unique(full_data_comparison_scores_1_0_0_0_0$time_ss)
-        time_ss_0_0_0_0_0 = unique(full_data_comparison_scores_0_0_0_0_0$time_ss)
+        # --- Steady-state detection --- redo it
+        time_ss_1_0_0_0_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_1_0_0_0_0$epithelial_score))
+        time_ss_1_0_0_0_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_1_0_0_0_0$pathogen))
+        
+        time_ss_0_0_0_0_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0$epithelial_score))
+        time_ss_0_0_0_0_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0$pathogen))
         
         time_ss_vec = c(
-          time_ss_1_0_0_0_0,
-          time_ss_0_0_0_0_0
+          time_ss_1_0_0_0_0_e, time_ss_1_0_0_0_0_p,
+          time_ss_0_0_0_0_0_e, time_ss_0_0_0_0_0_p
         )
         
         if(!any(is.na(time_ss_vec))){
           
           # ==== PATHOGEN ABUNDANCE
           # Control
-          scores_1_0_0_0_0_p = full_data_comparison_scores_1_0_0_0_0$pathogen[time_ss_1_0_0_0_0:t_max_ind]
+          scores_1_0_0_0_0_p = full_data_comparison_scores_1_0_0_0_0$pathogen[time_ss_1_0_0_0_0_p:t_max_ind]
           # Pathogenic (sterile_0)
-          scores_0_0_0_0_0_p = full_data_comparison_scores_0_0_0_0_0$pathogen[time_ss_0_0_0_0_0:t_max_ind]
+          scores_0_0_0_0_0_p = full_data_comparison_scores_0_0_0_0_0$pathogen[time_ss_0_0_0_0_0_p:t_max_ind]
           # Accumulate scores
           scores_1_0_0_0_0_p_keep = c(scores_1_0_0_0_0_p_keep, scores_1_0_0_0_0_p)
           scores_0_0_0_0_0_p_keep = c(scores_0_0_0_0_0_p_keep, scores_0_0_0_0_0_p)
           
           # ==== EPITHELIAL SCORE
           # Control
-          scores_1_0_0_0_0_e = full_data_comparison_scores_1_0_0_0_0$epithelial_score[time_ss_1_0_0_0_0:t_max_ind]
+          scores_1_0_0_0_0_e = full_data_comparison_scores_1_0_0_0_0$epithelial_score[time_ss_1_0_0_0_0_e:t_max_ind]
           # Pathogenic (sterile_0)
-          scores_0_0_0_0_0_e = full_data_comparison_scores_0_0_0_0_0$epithelial_score[time_ss_0_0_0_0_0:t_max_ind]
+          scores_0_0_0_0_0_e = full_data_comparison_scores_0_0_0_0_0$epithelial_score[time_ss_0_0_0_0_0_e:t_max_ind]
           # Accumulate scores
           scores_1_0_0_0_0_e_keep = c(scores_1_0_0_0_0_e_keep, scores_1_0_0_0_0_e)
           scores_0_0_0_0_0_e_keep = c(scores_0_0_0_0_0_e_keep, scores_0_0_0_0_0_e)
@@ -182,10 +186,10 @@ if(length(loop_over)>0){
             macspec_on   = c(0, 0, 0, 0),
             tregs_on     = c(0, 0, 0, 0),
             tregs_rnd    = c(0, 0, 0, 0),
-            ss_start     = c(time_ss_1_0_0_0_0, 
-                             time_ss_0_0_0_0_0,
-                             time_ss_1_0_0_0_0, 
-                             time_ss_0_0_0_0_0),
+            ss_start     = c(time_ss_1_0_0_0_0_e, 
+                             time_ss_0_0_0_0_0_e,
+                             time_ss_1_0_0_0_0_p, 
+                             time_ss_0_0_0_0_0_p),
             mean_score   = c(mean(scores_1_0_0_0_0_e),
                              mean(scores_0_0_0_0_0_e),
                              mean(scores_1_0_0_0_0_p),
@@ -260,7 +264,9 @@ if(length(loop_over)>0){
       }
     }
     # Save after every 10 parameter sets (if total is > 10) or save all (if total is <= 10)
-    if((length(inds2read) > 100 && i_idx %% 100 == 0) || i_idx==length(loop_over)){
+    # if((length(inds2read) > 10 && i_idx %% 10 == 0) || i_idx==length(loop_over)){
+    if((length(inds2read) > (10*n2) && i_idx %% (10*n2) == 0) || i_idx==length(loop_over)){ #10*n2 to break sync between multiple cores
+      
       message("Saving intermediate results after ", i_idx, " parameter sets...")
       
       # Update the list of read indices
@@ -285,7 +291,7 @@ if(length(loop_over)>0){
       all_comparison_results = data.frame()
       processed_indices = c()
       
-      message("Intermediate save complete with 10 more param_ids.")
+      message(paste0("Intermediate save complete with ",10*n2," more param_ids."))
     }
   }
   

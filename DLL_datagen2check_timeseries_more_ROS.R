@@ -11,19 +11,21 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 evo_selected = readRDS('evo_selected.rds')
-params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 loop_over_all= evo_selected$param_set_id
-loop_over_all= c(8401)
 
-# params_df_pick = params_df %>% dplyr::filter(param_set_id==18007)
-# 
+# loop_over_all= c(2716)
+loop_over_all= c(2721)
+
+
+params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+
+# params_df_pick = params_df %>% dplyr::filter(param_set_id==2716)
 # params_long_pick = params_df_pick %>%
 #   pivot_longer(
 #     cols = -param_set_id,  # keep param_set_id as identifier
 #     names_to = "parameter",
 #     values_to = "value"
 #   )
-
 
 # split_equal = function(x, n_chunks) {
 #   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
@@ -35,11 +37,15 @@ loop_over_all= c(8401)
 # 
 # chunks    = split_equal(loop_over_all, n1)
 # loop_over = chunks[[n2]]
-loop_over = loop_over_all
 
-params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+loop_over = loop_over_all
+params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
 params_df$treg_discrimination_efficiency = 1
+params_df$rat_com_pat_threshold          = 0.25
+# params_df$SAMPs_decay                    = 0.75
+# params_df$add_SAMPs                      = 0.75
+
 # # ==== I mean they are not optimal of course, one can always find the optimal config for tregs to be most useful
 # params_df$SAMPs_decay
 # params_df$activation_threshold_SAMPs
@@ -57,8 +63,8 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-num_reps   = 10
-t_max      = 5000
+num_reps   = 5
+t_max      = 1000
 
 plot_on    = 0
 plot_every = 10
@@ -116,7 +122,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0, 1),
   # randomize_tregs = c(0),
   # macspec_on      = c(0, 1, 2),
-  ros_level       = c(0, 1)
+  ros_level       = c(0, 1),
+  pat_level       = c(0, 1)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -128,7 +135,8 @@ scenarios_df_ctrl = expand.grid(
   allow_tregs     = c(0),
   # randomize_tregs = c(0),
   # macspec_on      = c(0),
-  ros_level       = c(0)
+  ros_level       = c(0),
+  pat_level       = c(0)
 )
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
@@ -142,10 +150,8 @@ for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   results = c()
   
-  # for (scenario_ind in c(3, 5, 7)){
-  # for (scenario_ind in 1:5){
-  for (scenario_ind in c(2,3)){
-    
+  # for (scenario_ind in 1:9){
+  for (scenario_ind in 9){
     
     sterile         = 0
     randomize_tregs = 0
@@ -153,13 +159,10 @@ for(param_set_id_use in loop_over){
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     control         = scenarios_df[scenario_ind,]$control
     ros_level       = scenarios_df[scenario_ind,]$ros_level
-    
-    if(ros_level==1){
-      param_set_use$add_ROS = 1
-    }
-    
+    pat_level       = scenarios_df[scenario_ind,]$pat_level
+
     source("./MISC/ASSIGN_PARAMETERS.R")
-    
+
     cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
                ' - scenario ', scenario_ind, '/', nrow(scenarios_df)))
     
@@ -173,7 +176,7 @@ for(param_set_id_use in loop_over){
     # ========================================================================
     source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
     longitudinal_df_keep$ros_level = ros_level
-    
+    longitudinal_df_keep$pat_level = pat_level
     
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
@@ -186,37 +189,59 @@ for(param_set_id_use in loop_over){
   variables = c("epithelial_score")
   
   data_long = results %>%
-    dplyr::select(t, control, tregs_on, ros_level, rep_id, all_of(variables)) %>%
-    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+    dplyr::select(t, control, tregs_on, ros_level, pat_level, rep_id, all_of(variables)) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value") %>%
+    mutate(control = factor(control, levels = c(1, 0))) # to plot control=1 first
   
   p_e = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-    facet_grid(ros_level ~ control + tregs_on , labeller = label_both) +
+    facet_grid(ros_level ~ control + pat_level + tregs_on, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
-    labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+    theme(
+      # legend.position = "none", #turn legend off
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      strip.text = element_text(size = 16),
+      plot.title = element_text(size = 20),
+      plot.subtitle = element_text(size = 16),
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16)
+    )+
+    labs(title = "", x = "Time", y = "Count", color = "Agent") 
+  # labs(title = paste0(variables, " dynamics"), x = "Time", y = "Count", color = "Agent") 
   
   variables = c("pathogen")
   
   data_long = results %>%
-    dplyr::select(t, control, tregs_on, ros_level, rep_id, all_of(variables)) %>%
-    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+    dplyr::select(t, control, tregs_on, ros_level, pat_level, rep_id, all_of(variables)) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")%>%
+    mutate(control = factor(control, levels = c(1, 0))) # to plot control=1 first
   
   p_p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-    facet_grid(ros_level ~ control + tregs_on , labeller = label_both) +
+    facet_grid(ros_level ~ control + pat_level + tregs_on, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
-    labs(title = paste0(variables, " Dynamics"), x = "Time", y = "Count", color = "Agent")
+    theme(
+      # legend.position = "none", #turn legend off
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      strip.text = element_text(size = 16),
+      plot.title = element_text(size = 20),
+      plot.subtitle = element_text(size = 16),
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16)
+    )+
+    labs(title = "", x = "Time", y = "Count", color = "Agent") 
+    # labs(title = paste0(variables, " dynamics"), x = "Time", y = "Count", color = "Agent") 
   
   graphics.off()
-  title_grob = ggdraw() + draw_label(paste0(param_set_id_use), fontface = "bold")
-  p_all = plot_grid(title_grob, p_e, p_p, ncol = 1, rel_heights = c(0.1, 1, 1))
+  title_grob = ggdraw() + draw_label(paste0("param_set_id: ",param_set_id_use), fontface = "bold", size = 20)
+  p_all = plot_grid(title_grob, p_e, p_p, ncol = 1, rel_heights = c(0.05, 1, 1))
 
   ggsave(
     filename = paste0("./more_ros/param_set_id_",param_set_id_use,".png"),
     plot = p_all,
-    width = 14,
+    width = 22,
     height = 14,
     dpi = 300,
     bg='white'

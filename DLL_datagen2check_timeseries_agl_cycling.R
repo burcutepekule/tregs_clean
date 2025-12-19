@@ -5,8 +5,9 @@ library(zoo)
 library(cowplot)
 library(av)
 library(ggplot2)
-source('./DLL_datazanalyse_abm_agl_and_cycling.R')
+library(changepoint)
 
+# source('./DLL_datazanalyse_abm_agl_and_cycling.R')
 
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
@@ -15,8 +16,46 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 params_df      = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 df_agl_cycling_osc  = readRDS('df_agl_cycling_osc.rds')
 df_agl_cycling_nosc = readRDS('df_agl_cycling_nosc.rds')
+
+# make two columns of ss_start out of one
+df_agl_cycling_osc = df_agl_cycling_osc %>%
+  dplyr::select(param_set_id, score_type, mean_ss_start) %>%
+  pivot_wider(
+    names_from = score_type,
+    values_from = mean_ss_start,
+    names_prefix = "mean_ss_start_"
+  ) %>%
+  rename(
+    mean_ss_start_e = mean_ss_start_epithelium,
+    mean_ss_start_p = mean_ss_start_pathogen
+  ) %>%
+  left_join(
+    df_agl_cycling_osc %>% 
+      dplyr::select(-score_type, -mean_ss_start) %>% 
+      distinct(),
+    by = "param_set_id"
+  )
+
+df_agl_cycling_nosc = df_agl_cycling_nosc %>%
+  dplyr::select(param_set_id, score_type, mean_ss_start) %>%
+  pivot_wider(
+    names_from = score_type,
+    values_from = mean_ss_start,
+    names_prefix = "mean_ss_start_"
+  ) %>%
+  rename(
+    mean_ss_start_e = mean_ss_start_epithelium,
+    mean_ss_start_p = mean_ss_start_pathogen
+  ) %>%
+  left_join(
+    df_agl_cycling_nosc %>% 
+      dplyr::select(-score_type, -mean_ss_start) %>% 
+      distinct(),
+    by = "param_set_id"
+  )
+
 loop_over_df        = na.omit(rbind(df_agl_cycling_osc, df_agl_cycling_nosc))
-loop_over_df        = loop_over_df %>% dplyr::filter(mean_ss_start<250) 
+loop_over_df        = loop_over_df %>% dplyr::filter(mean_ss_start_e<250 & mean_ss_start_p<250)  
 
 loop_over_df_osc    = loop_over_df %>% dplyr::filter(oscillator_type=='oscillating')
 loop_over_df_nosc   = loop_over_df %>% dplyr::filter(oscillator_type=='not oscillating')
@@ -24,10 +63,12 @@ loop_over_df_nosc   = loop_over_df %>% dplyr::filter(oscillator_type=='not oscil
 n_check             = dim(loop_over_df_osc)[1]
 loop_over_df        = na.omit(rbind(loop_over_df_osc[1:n_check,], loop_over_df_nosc[1:n_check,]))
 
-loop_over_all   = loop_over_df$param_set_id
-loop_over_label = loop_over_df$oscillator_type
-loop_over_label = gsub('not oscillating', 'not_oscillating', loop_over_label)
-loop_over_ss    = loop_over_df$mean_ss_start
+loop_over_all        = loop_over_df$param_set_id
+loop_over_label_type = loop_over_df$oscillator_type
+loop_over_label_type = gsub('not oscillating', 'not_oscillating', loop_over_label_type)
+loop_over_label_src  = loop_over_df$oscillating_source
+loop_over_ss_e       = loop_over_df$mean_ss_start_e
+loop_over_ss_p       = loop_over_df$mean_ss_start_p
 
 ## =============================================================================
 # split_equal = function(x, n_chunks) {
@@ -40,7 +81,9 @@ loop_over_ss    = loop_over_df$mean_ss_start
 # 
 # chunks    = split_equal(loop_over_all, n1)
 # loop_over = chunks[[n2]]
+
 loop_over    = loop_over_all
+loop_over    = 3409
 ## =============================================================================
 
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
@@ -58,7 +101,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-num_reps   = 10
+num_reps   = 5
 t_max      = 750
 
 plot_on    = 0
@@ -184,11 +227,11 @@ for(param_set_id_use in loop_over){
   
   variables = c("epithelial_score")
   
-  data_long = results %>%
+  data_long_e = results %>%
     dplyr::select(t, control, tregs_on, ros_level, rep_id, all_of(variables)) %>%
     pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
   
-  p_e = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+  p_e = ggplot(data_long_e, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
     facet_grid(ros_level ~ control + tregs_on , labeller = label_both) +
     scale_color_manual(values = agent_colors) +
@@ -197,11 +240,11 @@ for(param_set_id_use in loop_over){
   
   variables = c("pathogen")
   
-  data_long = results %>%
+  data_long_p = results %>%
     dplyr::select(t, control, tregs_on, ros_level, rep_id, all_of(variables)) %>%
     pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
   
-  p_p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
+  p_p = ggplot(data_long_p, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
     facet_grid(ros_level ~ control + tregs_on , labeller = label_both) +
     scale_color_manual(values = agent_colors) +
@@ -212,17 +255,19 @@ for(param_set_id_use in loop_over){
   
   ind=which(loop_over==param_set_id_use)
   
-  ss_plot_on = loop_over_ss[ind]
-  p_p = p_p + geom_vline(xintercept = ss_plot_on, linetype = "dashed", color = "magenta")
-  p_e = p_e + geom_vline(xintercept = ss_plot_on, linetype = "dashed", color = "magenta")
+  ss_plot_on_p = loop_over_ss_p[ind]
+  ss_plot_on_e = loop_over_ss_p[ind]
   
-  title_grob = ggdraw() + draw_label(paste0("param_set_id_",param_set_id_use,"_agl_",param_set_use$active_age_limit," ",loop_over_label[ind]), fontface = "bold")
+  p_p = p_p + geom_vline(xintercept = ss_plot_on_p, linetype = "dashed", color = "magenta", linewidth=2)
+  p_e = p_e + geom_vline(xintercept = ss_plot_on_e, linetype = "dashed", color = "magenta", linewidth=2)
+  
+  title_grob = ggdraw() + draw_label(paste0("param_set_id: ",param_set_id_use," agl: ",param_set_use$active_age_limit," type: ",loop_over_label_type[ind]," src: ",loop_over_label_src[ind]), fontface = "bold")
   p_all = plot_grid(title_grob, p_e, p_p, ncol = 1, rel_heights = c(0.1, 1, 1))
 
   ggsave(
-    filename = paste0("./agl_cycling/param_set_id_",param_set_id_use,"_",loop_over_label[ind],".png"),
+    filename = paste0("./agl_cycling/",loop_over_label_type[ind],"_param_set_id_",param_set_id_use,".png"),
     plot = p_all,
-    width = 14,
+    width = 26,
     height = 14,
     dpi = 300,
     bg='white'

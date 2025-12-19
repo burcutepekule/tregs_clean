@@ -37,17 +37,15 @@ df_results = df_results_keep %>% filter(param_set_id %in% keep_param_id)
 length(unique(df_results$param_set_id))
 
 #----- filter based on ss_start, it cannot be too large otherwise not much to compare!
-ss_start_threshold = 4500
+ss_start_threshold = 4500 # used to be 4500, just for simulation purposes to save time
 param_id_all_below = df_results %>%
   dplyr::group_by(param_set_id) %>%
   dplyr::summarise(all_below = all(ss_start < ss_start_threshold), .groups = "drop") %>%
   dplyr::filter(all_below) %>%
   dplyr::pull(param_set_id)
-length(param_id_all_below)/length(unique(df_results$param_set_id)) # >99%!
 df_results = df_results %>% dplyr::filter(param_set_id %in% param_id_all_below)
-max(df_results$ss_start)<ss_start_threshold # TRUE, sanity check
-unique(table(df_results$param_set_id)) #2000, sanity check
-length(unique(df_results$param_set_id))
+num_params = length(unique(df_results$param_set_id))
+
 
 df_comparisons = distinct(df_results %>% dplyr::select(
   param_set_id, injury_type,

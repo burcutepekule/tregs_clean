@@ -579,6 +579,8 @@ for (reps_in in 0:(num_reps-1)){
     # ========================================================================
     phagocyte_positions = paste(phagocyte_x, phagocyte_y, sep = "_")
 
+    phagocytes_that_engulfed = rep(FALSE, length(phagocyte_x))
+    
     for (i in 1:length(phagocyte_x)) {
       px = phagocyte_x[i]
       py = phagocyte_y[i]
@@ -600,6 +602,8 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_bacteria_registry[i, ],
               rep(-1, length(indices_to_engulf))
             )
+            
+            phagocytes_that_engulfed[i] = TRUE
 
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             pathogens_killed_by_Mac[phagocyte_phenotype_index] =
@@ -625,15 +629,32 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_bacteria_registry[i, ],
               rep(1, length(indices_to_engulf))
             )
-
+            
+            phagocytes_that_engulfed[i] = TRUE
+  
             phagocyte_phenotype_index = phagocyte_phenotype[i] + 1
             commensals_killed_by_Mac[phagocyte_phenotype_index] =
               commensals_killed_by_Mac[phagocyte_phenotype_index] + length(indices_to_engulf)
           }
         }
       }
+      
     }
 
+    # ========================================================================
+    # SHIFT REGISTRY FOR PHAGOCYTES THAT DIDN'T ENGULF (AGING MEMORY)
+    # ========================================================================
+    phagocytes_to_shift = which(!phagocytes_that_engulfed)
+    if (length(phagocytes_to_shift) > 0) {
+      for (i in phagocytes_to_shift) {
+        # Shift registry without adding new bacteria (insert 0 = empty)
+        phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
+          phagocyte_bacteria_registry[i, ],
+          numeric(0)  # Empty vector = shift only, no insertion
+        )
+      }
+    }
+    
     # ========================================================================
     # CALCULATE COUNTS FROM REGISTRY
     # ========================================================================
@@ -776,6 +797,8 @@ for (reps_in in 0:(num_reps-1)){
   longitudinal_df$sterile = sterile
   longitudinal_df$macspec_on = macspec_on
   longitudinal_df$tregs_on = allow_tregs
+  longitudinal_df$ros_level = ros_level
+  longitudinal_df$pat_level = pat_level
   longitudinal_df$randomize_tregs = randomize_tregs
   longitudinal_df$param_set_id = param_set_use$param_set_id
   longitudinal_df$rep_id = reps_in
@@ -788,19 +811,24 @@ for (reps_in in 0:(num_reps-1)){
                                                         2*epithelial_inj_4+
                                                         1*epithelial_inj_5)
 
-  longitudinal_df$time_ss = steady_state_idx(longitudinal_df$epithelial_score)
-
+  # moved from one time_ss based only on epithelial_score to two time_ss for both signals
+  longitudinal_df$time_ss_e = steady_state_idx(longitudinal_df$epithelial_score)
+  longitudinal_df$time_ss_p = steady_state_idx(longitudinal_df$pathogen)
+  
   longitudinal_df = longitudinal_df %>%
     dplyr::select(t,
                   control,
                   sterile,
                   tregs_on,
+                  ros_level,
+                  pat_level,
                   macspec_on,
                   randomize_tregs,
                   param_set_id,
                   rep_id,
                   epithelial_score,
-                  time_ss,
+                  time_ss_e,
+                  time_ss_p,
                   everything())
 
   longitudinal_df_keep = rbind(longitudinal_df_keep, longitudinal_df)

@@ -96,12 +96,15 @@ cat("  n_tregs:", n_tregs, "\n\n")
 
 scenarios_df = expand.grid(
   control         = c(0),
-  sterile         = c(0, 1),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0, 1),
   # randomize_tregs = c(0, 1),
   randomize_tregs = c(0),
   # macspec_on      = c(0, 1, 2)
-  macspec_on      = c(0)
+  macspec_on      = c(0),
+  ros_level       = c(0, 1),
+  pat_level       = c(1, 2, 3)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
 scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -113,13 +116,11 @@ scenarios_df_ctrl = expand.grid(
   sterile         = c(0),
   allow_tregs     = c(0),
   randomize_tregs = c(0),
-  macspec_on      = c(0)
+  macspec_on      = c(0),
+  ros_level       = c(0),
+  pat_level       = c(1)
 )
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
-
-##### JUST TO PRESELECT THE PARAMETER SETS BASED ON THE ONES THAT NEED ROS
-scenarios_df = scenarios_df[c(1,2),]
-##### JUST TO PRESELECT THE PARAMETER SETS BASED ON THE ONES THAT NEED ROS
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
@@ -138,9 +139,11 @@ for(param_set_id_use in loop_over){
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
     macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     control         = scenarios_df[scenario_ind,]$control
+    ros_level       = scenarios_df[scenario_ind,]$ros_level
+    pat_level       = scenarios_df[scenario_ind,]$pat_level
     
     source("./MISC/ASSIGN_PARAMETERS.R")
-    
+ 
     cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
                ' - scenario ', scenario_ind, '/', nrow(scenarios_df)))
 
@@ -152,7 +155,6 @@ for(param_set_id_use in loop_over){
     # ========================================================================
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
-    # source("./MISC/RUN_REPS_CPP_ABM.R")
     source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
     
     scenario_end_time = Sys.time()
@@ -165,6 +167,8 @@ for(param_set_id_use in loop_over){
                                          '_sterile_',sterile,
                                          '_macspec_',macspec_on,
                                          '_tregs_',allow_tregs,
+                                         '_ros_level_',ros_level,
+                                         '_pat_level_',pat_level,
                                          '_trnd_',randomize_tregs,'.rds'))
     
   }
