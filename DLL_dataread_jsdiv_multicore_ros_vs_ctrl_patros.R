@@ -665,6 +665,36 @@ if(length(loop_over)>0){
         # Control vs ros_level=1, pat_level=3, tregs=1
         all_comparison_results_reps$d_ctrl_vs_ros1_pat3_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
 
+        # ====== EPITHELIAL SCORE
+        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
+        # ros_level=0, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
+        # ros_level=0, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        # ros_level=0, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ===== PATHOGEN ABUNDANCE
+        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
+        # ros_level=0, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
+        # ros_level=0, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        # ros_level=0, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
         # ====== Mean scores - epithelial score
         # Control
         all_comparison_results_reps$mean_ctrl_e = mean(scores_1_0_0_0_0_1_0_e_keep)
