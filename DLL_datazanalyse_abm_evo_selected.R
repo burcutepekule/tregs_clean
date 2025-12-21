@@ -80,60 +80,99 @@ df_comparisons = distinct(df_results %>% dplyr::select(
 
 df_comparisons_keep = df_comparisons
 
-# ============= FILTER BASED ON CONTROL ====================================================
-df_comparisons_p = df_comparisons_keep %>% dplyr::filter(injury_type=='pathogenic') %>%
-  dplyr::mutate(diff_ros0_vs_ros1_pat1_tregs_off_p = mean_ros0_pat1_treg0_p-mean_ros1_pat1_treg0_p, # if this is higher, more pathogens when no ROS, thus ROS is BETTER
-                diff_ros1_pat2_vs_pat1_tregs_off_p = mean_ros1_pat2_treg0_p-mean_ros1_pat1_treg0_p, # if this is higher, ROS_1 level is not enough for pat 2 level
-                diff_ros2_pat2_vs_pat1_tregs_off_p = mean_ros2_pat2_treg0_p-mean_ros1_pat1_treg0_p,
-                diff_ros1_pat3_vs_pat1_tregs_off_p = mean_ros1_pat3_treg0_p-mean_ros1_pat1_treg0_p, 
-                diff_ros2_pat3_vs_pat1_tregs_off_p = mean_ros2_pat3_treg0_p-mean_ros1_pat1_treg0_p,
-                diff_ros1_pat3_vs_pat2_tregs_off_p = mean_ros1_pat3_treg0_p-mean_ros1_pat2_treg0_p, 
-                diff_ros2_pat3_vs_pat2_tregs_off_p = mean_ros2_pat3_treg0_p-mean_ros1_pat2_treg0_p
-                )
+# ============= HELPER FUNCTION: Define "infection under control" ====================================================
+# Infection is under control when:
+# 1. Epithelial health is approximately 150 (threshold: > 149)
+# 2. Pathogen load is approximately 0 (threshold: < 1)
+is_under_control <- function(epithelial_health, pathogen_load) {
+  return(epithelial_health > 149 & pathogen_load < 1)
+}
 
+# ============= STEP 1: Filter for evolutionary need for ROS ====================================================
+# Rule 1: Without ROS (ros_0, treg0_), even the lowest pathogen level (pat1_) should:
+#   a) Cause significant injury to epithelium (ros0_pat1 NOT under control)
+#   b) Have higher pathogen burden than ros1_pat1 case (ros1_pat1 should be better)
 
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test[c('param_set_id',
-                                                             'diff_ros0_vs_ros1_pat1_tregs_off_p',
-                                                             'diff_ros0_vs_ros1_pat1_tregs_off_e',
-                                                             'mean_ros0_pat1_treg0_p',
-                                                             'mean_ros0_pat1_treg0_e',
-                                                             'mean_ros1_pat1_treg0_p',
-                                                             'mean_ros1_pat1_treg0_e')]
+df_step1 = df_comparisons_keep %>%
+  dplyr::filter(injury_type == 'pathogenic') %>%
+  dplyr::mutate(
+    # Check if ros0_pat1_treg0 is NOT under control (infection causes damage)
+    ros0_pat1_not_controlled = !is_under_control(mean_ros0_pat1_treg0_e, mean_ros0_pat1_treg0_p),
+    # Check if ros1_pat1_treg0 is better (lower pathogen, higher epithelial health)
+    ros1_better_than_ros0 = (mean_ros1_pat1_treg0_p < mean_ros0_pat1_treg0_p) &
+                            (mean_ros1_pat1_treg0_e > mean_ros0_pat1_treg0_e)
+  ) %>%
+  dplyr::filter(ros0_pat1_not_controlled & ros1_better_than_ros0)
 
-df_comparisons_ctrl_test_simple = merge(df_comparisons_ctrl_test_simple, 
-                                        distinct(df_results[c('param_set_id',
-                                                              'd_ros0_pat1_treg0_vs_ros1_pat1_treg0_p',
-                                                              'd_ros0_pat1_treg0_vs_ros1_pat1_treg0_e')]), by='param_set_id')
+cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 
+# ============= STEP 2: Split into resistance levels ====================================================
+# Identify two groups based on how much ROS is needed (still no tregs, treg0_):
 
-### what is the idea here? ROS should be needed for the LOWEST pathogen level, that's for sure. But maybe that amount of ROS 
-### is not enough for the second or third level?
+# reslevel_1: ros1_ controls pat1_ but NOT pat2_
+df_reslevel_1 = df_step1 %>%
+  dplyr::mutate(
+    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
+    ros1_pat2_not_controlled = !is_under_control(mean_ros1_pat2_treg0_e, mean_ros1_pat2_treg0_p)
+  ) %>%
+  dplyr::filter(ros1_pat1_controlled & ros1_pat2_not_controlled) %>%
+  dplyr::mutate(resistance_level = "reslevel_1")
 
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
-  dplyr::mutate(ros_better_p = ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p)>=jsd_th 
-                                    & diff_ros0_vs_ros1_pat1_tregs_off_p>tol_in_p, 1, 
-                                    ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p)>=jsd_th 
-                                           & diff_ros0_vs_ros1_pat1_tregs_off_p < -1*tol_in_p,-1,0)))
+cat("  reslevel_1 (ros1 controls pat1, but not pat2):", nrow(df_reslevel_1), "parameter sets\n")
 
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
-  dplyr::mutate(ros_better_e = ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e)>=jsd_th 
-                                    & diff_ros0_vs_ros1_pat1_tregs_off_e>tol_in_e, -1, 
-                                    ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e)>=jsd_th 
-                                           & diff_ros0_vs_ros1_pat1_tregs_off_e < -1*tol_in_e,1,0)))
+# reslevel_2: ros1_ controls both pat1_ AND pat2_ but NOT pat3_
+df_reslevel_2 = df_step1 %>%
+  dplyr::mutate(
+    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
+    ros1_pat2_controlled = is_under_control(mean_ros1_pat2_treg0_e, mean_ros1_pat2_treg0_p),
+    ros1_pat3_not_controlled = !is_under_control(mean_ros1_pat3_treg0_e, mean_ros1_pat3_treg0_p)
+  ) %>%
+  dplyr::filter(ros1_pat1_controlled & ros1_pat2_controlled & ros1_pat3_not_controlled) %>%
+  dplyr::mutate(resistance_level = "reslevel_2")
 
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
-  dplyr::mutate(ros_not_enough_pat2_p = ifelse(abs(d_ros1_pat1_treg0_vs_ros1_pat2_treg0_p)>=jsd_th 
-                                      & diff_ros0_vs_ros1_pat1_tregs_off_p>tol_in_p, 1, 
-                                      ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p)>=jsd_th 
-                                             & diff_ros0_vs_ros1_pat1_tregs_off_p < -1*tol_in_p,-1,0)))
+cat("  reslevel_2 (ros1 controls pat1 & pat2, but not pat3):", nrow(df_reslevel_2), "parameter sets\n")
 
-df_comparisons_ctrl_test_simple = df_comparisons_ctrl_test_simple %>% 
-  dplyr::mutate(ros_not_enough_pat2_e = ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e)>=jsd_th 
-                                      & diff_ros0_vs_ros1_pat1_tregs_off_e>tol_in_e, -1, 
-                                      ifelse(abs(d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e)>=jsd_th 
-                                             & diff_ros0_vs_ros1_pat1_tregs_off_e < -1*tol_in_e,1,0)))
+# ============= STEP 3: Identify evolutionary advantage of Tregs ====================================================
+# 3.1: Within reslevel_1, tregs (treg1) should enable ros2_ to control pat2_ and/or pat3_
+df_reslevel_1_with_treg_advantage = df_reslevel_1 %>%
+  dplyr::mutate(
+    ros2_treg1_controls_pat2 = is_under_control(mean_ros2_pat2_treg1_e, mean_ros2_pat2_treg1_p),
+    ros2_treg1_controls_pat3 = is_under_control(mean_ros2_pat3_treg1_e, mean_ros2_pat3_treg1_p),
+    # Tregs provide advantage if ros2+treg1 controls either pat2 or pat3 (or both)
+    treg_advantage = ros2_treg1_controls_pat2 | ros2_treg1_controls_pat3
+  ) %>%
+  dplyr::filter(treg_advantage)
 
-df_comparisons_ctrl_test_simple_selected = df_comparisons_ctrl_test_simple %>% dplyr::filter(ros_better_e+ros_better_p==2)
-df_comparisons_ctrl_test_simple_selected = df_comparisons_ctrl_test_simple_selected %>% dplyr::filter(mean_ros1_pat1_treg0_e>149)
-saveRDS(df_comparisons_ctrl_test_simple_selected,'evo_selected.rds')
-dim(df_comparisons_ctrl_test_simple_selected)[1]
+cat("  reslevel_1 with Treg advantage:", nrow(df_reslevel_1_with_treg_advantage), "parameter sets\n")
+
+# 3.2: Within reslevel_2, tregs (treg1) should enable ros2_ to control pat3_
+df_reslevel_2_with_treg_advantage = df_reslevel_2 %>%
+  dplyr::mutate(
+    ros2_treg1_controls_pat3 = is_under_control(mean_ros2_pat3_treg1_e, mean_ros2_pat3_treg1_p),
+    treg_advantage = ros2_treg1_controls_pat3
+  ) %>%
+  dplyr::filter(treg_advantage)
+
+cat("  reslevel_2 with Treg advantage:", nrow(df_reslevel_2_with_treg_advantage), "parameter sets\n")
+
+# ============= COMBINE AND SAVE RESULTS ====================================================
+# Combine both resistance levels that show evolutionary selection for Tregs
+df_evo_selected = bind_rows(
+  df_reslevel_1_with_treg_advantage,
+  df_reslevel_2_with_treg_advantage
+)
+
+cat("\nTotal evolutionarily selected parameter sets:", nrow(df_evo_selected), "\n")
+
+# Save results
+saveRDS(df_evo_selected, 'evo_selected.rds')
+
+# Also save separate files for each resistance level for further analysis
+saveRDS(df_reslevel_1_with_treg_advantage, 'evo_selected_reslevel_1.rds')
+saveRDS(df_reslevel_2_with_treg_advantage, 'evo_selected_reslevel_2.rds')
+
+# Print summary statistics
+cat("\n=== SUMMARY ===\n")
+cat("Resistance Level 1:", nrow(df_reslevel_1_with_treg_advantage), "sets\n")
+cat("Resistance Level 2:", nrow(df_reslevel_2_with_treg_advantage), "sets\n")
+cat("Total selected:", nrow(df_evo_selected), "sets\n")
