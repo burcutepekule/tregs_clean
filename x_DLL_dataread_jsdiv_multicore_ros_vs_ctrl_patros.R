@@ -1,0 +1,843 @@
+rm(list=ls())
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(readr)  # For read_csv
+library(stringr)
+library(zoo)
+library(philentropy)
+
+# Get the directory of the current script
+get_script_dir = function() {
+  # Try rstudioapi first (works in RStudio)
+  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+    return(dirname(rstudioapi::getSourceEditorContext()$path))
+  }
+  # Try commandArgs (works with Rscript)
+  args = commandArgs(trailingOnly = FALSE)
+  file_arg = grep("--file=", args, value = TRUE)
+  if (length(file_arg) > 0) {
+    return(dirname(normalizePath(sub("--file=", "", file_arg))))
+  }
+  # Try sys.frame (works with source())
+  if (!is.null(sys.frame(1)$ofile)) {
+    return(dirname(sys.frame(1)$ofile))
+  }
+  # Fallback to current working directory
+  return(getwd())
+}
+
+setwd(get_script_dir())
+source("./MISC/PLOT_FUNCTIONS_ABM.R")
+source("./MISC/DATA_READ_FUNCTIONS.R")
+
+# Load files
+results_merged             = c()
+sterile_comparison_keep    = c()
+pathogenic_comparison_keep = c()
+
+
+path = "/Users/burcutepekule/Desktop/sim_abm/"
+# File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
+
+# Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+files_1_0_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
+
+# Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+# ros_level=0, pat_level=1, tregs=0
+files_0_0_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
+# ros_level=0, pat_level=1, tregs=1
+files_0_0_0_1_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=1, tregs=0
+files_0_0_0_0_1_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=1, tregs=1
+files_0_0_0_1_1_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
+# ros_level=0, pat_level=2, tregs=0
+files_0_0_0_0_0_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
+# ros_level=0, pat_level=2, tregs=1
+files_0_0_0_1_0_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=2, tregs=0
+files_0_0_0_0_1_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=2, tregs=1
+files_0_0_0_1_1_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
+# ros_level=0, pat_level=3, tregs=0
+files_0_0_0_0_0_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
+# ros_level=0, pat_level=3, tregs=1
+files_0_0_0_1_0_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=3, tregs=0
+files_0_0_0_0_1_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
+# ros_level=1, pat_level=3, tregs=1
+files_0_0_0_1_1_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
+
+indices_1_0_0_0_0_1_0 = str_extract(basename(files_1_0_0_0_0_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_1_0 = str_extract(basename(files_0_0_0_0_0_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_1_0 = str_extract(basename(files_0_0_0_1_0_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_1_0 = str_extract(basename(files_0_0_0_0_1_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_1_0 = str_extract(basename(files_0_0_0_1_1_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_2_0 = str_extract(basename(files_0_0_0_0_0_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_2_0 = str_extract(basename(files_0_0_0_1_0_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_2_0 = str_extract(basename(files_0_0_0_0_1_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_2_0 = str_extract(basename(files_0_0_0_1_1_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_3_0 = str_extract(basename(files_0_0_0_0_0_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_3_0 = str_extract(basename(files_0_0_0_1_0_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_3_0 = str_extract(basename(files_0_0_0_0_1_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_3_0 = str_extract(basename(files_0_0_0_1_1_3_0), "\\d+") |> as.numeric()
+
+indices = Reduce(intersect, list(
+  indices_1_0_0_0_0_1_0,
+  indices_0_0_0_0_0_1_0,
+  indices_0_0_0_1_0_1_0,
+  indices_0_0_0_0_1_1_0,
+  indices_0_0_0_1_1_1_0,
+  indices_0_0_0_0_0_2_0,
+  indices_0_0_0_1_0_2_0,
+  indices_0_0_0_0_1_2_0,
+  indices_0_0_0_1_1_2_0,
+  indices_0_0_0_0_0_3_0,
+  indices_0_0_0_1_0_3_0,
+  indices_0_0_0_0_1_3_0,
+  indices_0_0_0_1_1_3_0
+))
+
+# Initialize an empty results dataframe before the loop
+all_comparison_results = data.frame()
+
+if(file.exists('./ids_read_abm_ros_vs_ctrl_patros.rds')){
+  inds_read = readRDS('./ids_read_abm_ros_vs_ctrl_patros.rds')
+}else{
+  inds_read = c()
+}
+
+inds2read = sort(setdiff(indices,inds_read))
+length(inds2read)
+
+split_equal = function(x, n_chunks) {
+  split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
+}
+
+# args   = commandArgs(trailingOnly = TRUE)
+# n1     = as.integer(args[1])
+# n2     = as.integer(args[2])
+
+
+n1 = 1
+n2 = 1
+
+
+if(n1==1){
+  loop_over = inds2read
+}else{
+  chunks    = split_equal(inds2read, n1)
+  loop_over = chunks[[n2]]
+}
+
+if(length(loop_over)>0){
+  # Track indices that have been successfully processed
+  processed_indices = c()
+
+  for (i_idx in seq_along(loop_over)){
+
+    i = loop_over[i_idx]
+    message("Processing param_set_", i)
+    # Check file sizes for this parameter set
+    files_to_check = c(
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds')
+    )
+    if(any(file.info(files_to_check)$size<100000)){
+      processed_indices      = c(processed_indices, i) #add and skip
+      message("Skipped one")
+    }else{
+      # Control file: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+      results_1_0_0_0_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
+
+      # Test files: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+      # ros_level=0, pat_level=1, tregs=0
+      results_0_0_0_0_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
+      # ros_level=0, pat_level=1, tregs=1
+      results_0_0_0_1_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'))
+      # ros_level=1, pat_level=1, tregs=0
+      results_0_0_0_0_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'))
+      # ros_level=1, pat_level=1, tregs=1
+      results_0_0_0_1_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'))
+      # ros_level=0, pat_level=2, tregs=0
+      results_0_0_0_0_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'))
+      # ros_level=0, pat_level=2, tregs=1
+      results_0_0_0_1_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'))
+      # ros_level=1, pat_level=2, tregs=0
+      results_0_0_0_0_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'))
+      # ros_level=1, pat_level=2, tregs=1
+      results_0_0_0_1_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'))
+      # ros_level=0, pat_level=3, tregs=0
+      results_0_0_0_0_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'))
+      # ros_level=0, pat_level=3, tregs=1
+      results_0_0_0_1_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'))
+      # ros_level=1, pat_level=3, tregs=0
+      results_0_0_0_0_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'))
+      # ros_level=1, pat_level=3, tregs=1
+      results_0_0_0_1_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds'))
+
+      results = rbind(
+        results_1_0_0_0_0_1_0,
+        results_0_0_0_0_0_1_0,
+        results_0_0_0_1_0_1_0,
+        results_0_0_0_0_1_1_0,
+        results_0_0_0_1_1_1_0,
+        results_0_0_0_0_0_2_0,
+        results_0_0_0_1_0_2_0,
+        results_0_0_0_0_1_2_0,
+        results_0_0_0_1_1_2_0,
+        results_0_0_0_0_0_3_0,
+        results_0_0_0_1_0_3_0,
+        results_0_0_0_0_1_3_0,
+        results_0_0_0_1_1_3_0
+      )
+
+      full_data_comparison = results %>% dplyr::select(param_set_id, control, sterile, macspec_on, tregs_on, randomize_tregs, 
+                                                       ros_level, pat_level, rep_id, t, time_ss_e, time_ss_p, epithelial_score, pathogen)
+      min_reps  = min(full_data_comparison$rep_id)
+      max_reps  = max(full_data_comparison$rep_id)
+      t_max_ind = max(full_data_comparison$t)
+
+      # ====== PATHOGEN
+      # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+      scores_1_0_0_0_0_1_0_p_keep = c()
+
+      # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+      # ros_level=0, pat_level=1, tregs=0
+      scores_0_0_0_0_0_1_0_p_keep = c()
+      # ros_level=0, pat_level=1, tregs=1
+      scores_0_0_0_1_0_1_0_p_keep = c()
+      # ros_level=1, pat_level=1, tregs=0
+      scores_0_0_0_0_1_1_0_p_keep = c()
+      # ros_level=1, pat_level=1, tregs=1
+      scores_0_0_0_1_1_1_0_p_keep = c()
+      # ros_level=0, pat_level=2, tregs=0
+      scores_0_0_0_0_0_2_0_p_keep = c()
+      # ros_level=0, pat_level=2, tregs=1
+      scores_0_0_0_1_0_2_0_p_keep = c()
+      # ros_level=1, pat_level=2, tregs=0
+      scores_0_0_0_0_1_2_0_p_keep = c()
+      # ros_level=1, pat_level=2, tregs=1
+      scores_0_0_0_1_1_2_0_p_keep = c()
+      # ros_level=0, pat_level=3, tregs=0
+      scores_0_0_0_0_0_3_0_p_keep = c()
+      # ros_level=0, pat_level=3, tregs=1
+      scores_0_0_0_1_0_3_0_p_keep = c()
+      # ros_level=1, pat_level=3, tregs=0
+      scores_0_0_0_0_1_3_0_p_keep = c()
+      # ros_level=1, pat_level=3, tregs=1
+      scores_0_0_0_1_1_3_0_p_keep = c()
+
+      # === EPITHELIUM
+      # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+      scores_1_0_0_0_0_1_0_e_keep = c()
+
+      # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+      # ros_level=0, pat_level=1, tregs=0
+      scores_0_0_0_0_0_1_0_e_keep = c()
+      # ros_level=0, pat_level=1, tregs=1
+      scores_0_0_0_1_0_1_0_e_keep = c()
+      # ros_level=1, pat_level=1, tregs=0
+      scores_0_0_0_0_1_1_0_e_keep = c()
+      # ros_level=1, pat_level=1, tregs=1
+      scores_0_0_0_1_1_1_0_e_keep = c()
+      # ros_level=0, pat_level=2, tregs=0
+      scores_0_0_0_0_0_2_0_e_keep = c()
+      # ros_level=0, pat_level=2, tregs=1
+      scores_0_0_0_1_0_2_0_e_keep = c()
+      # ros_level=1, pat_level=2, tregs=0
+      scores_0_0_0_0_1_2_0_e_keep = c()
+      # ros_level=1, pat_level=2, tregs=1
+      scores_0_0_0_1_1_2_0_e_keep = c()
+      # ros_level=0, pat_level=3, tregs=0
+      scores_0_0_0_0_0_3_0_e_keep = c()
+      # ros_level=0, pat_level=3, tregs=1
+      scores_0_0_0_1_0_3_0_e_keep = c()
+      # ros_level=1, pat_level=3, tregs=0
+      scores_0_0_0_0_1_3_0_e_keep = c()
+      # ros_level=1, pat_level=3, tregs=1
+      scores_0_0_0_1_1_3_0_e_keep = c()
+
+      all_comparison_results_reps = data.frame()
+
+      for (rep in min_reps:max_reps) {
+
+        #### CONTROL: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+        full_data_comparison_scores_1_0_0_0_0_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==1 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==1 & randomize_tregs==0)
+
+        #### Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+        # ros_level=0, pat_level=1, tregs=0
+        full_data_comparison_scores_0_0_0_0_0_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==1 & randomize_tregs==0)
+        # ros_level=0, pat_level=1, tregs=1
+        full_data_comparison_scores_0_0_0_1_0_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==0 & pat_level==1 & randomize_tregs==0)
+        # ros_level=1, pat_level=1, tregs=0
+        full_data_comparison_scores_0_0_0_0_1_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==1 & randomize_tregs==0)
+        # ros_level=1, pat_level=1, tregs=1
+        full_data_comparison_scores_0_0_0_1_1_1_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==1 & pat_level==1 & randomize_tregs==0)
+        # ros_level=0, pat_level=2, tregs=0
+        full_data_comparison_scores_0_0_0_0_0_2_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==2 & randomize_tregs==0)
+        # ros_level=0, pat_level=2, tregs=1
+        full_data_comparison_scores_0_0_0_1_0_2_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==0 & pat_level==2 & randomize_tregs==0)
+        # ros_level=1, pat_level=2, tregs=0
+        full_data_comparison_scores_0_0_0_0_1_2_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==2 & randomize_tregs==0)
+        # ros_level=1, pat_level=2, tregs=1
+        full_data_comparison_scores_0_0_0_1_1_2_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==1 & pat_level==2 & randomize_tregs==0)
+        # ros_level=0, pat_level=3, tregs=0
+        full_data_comparison_scores_0_0_0_0_0_3_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==3 & randomize_tregs==0)
+        # ros_level=0, pat_level=3, tregs=1
+        full_data_comparison_scores_0_0_0_1_0_3_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==0 & pat_level==3 & randomize_tregs==0)
+        # ros_level=1, pat_level=3, tregs=0
+        full_data_comparison_scores_0_0_0_0_1_3_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==3 & randomize_tregs==0)
+        # ros_level=1, pat_level=3, tregs=1
+        full_data_comparison_scores_0_0_0_1_1_3_0 = full_data_comparison %>% dplyr::filter(rep_id==rep & control==0 & sterile==0 & macspec_on==0 & tregs_on==1 & ros_level==1 & pat_level==3 & randomize_tregs==0)
+
+        
+        # --- Steady-state detection --- actually NO need to redo it
+        # as.numeric(steady_state_idx(full_data_comparison_scores_1_0_0_0_0_1_0$epithelial_score)) would be equal to 
+        # unique(full_data_comparison_scores_1_0_0_0_0_1_0$time_ss_e) but it doesn't really take up much time
+        
+        # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+        time_ss_1_0_0_0_0_1_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_1_0_0_0_0_1_0$epithelial_score))
+        time_ss_1_0_0_0_0_1_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_1_0_0_0_0_1_0$pathogen))
+
+        # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+        # ros_level=0, pat_level=1, tregs=0
+        time_ss_0_0_0_0_0_1_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_1_0$epithelial_score))
+        time_ss_0_0_0_0_0_1_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_1_0$pathogen))
+        # ros_level=0, pat_level=1, tregs=1
+        time_ss_0_0_0_1_0_1_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_1_0$epithelial_score))
+        time_ss_0_0_0_1_0_1_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_1_0$pathogen))
+        # ros_level=1, pat_level=1, tregs=0
+        time_ss_0_0_0_0_1_1_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_1_0$epithelial_score))
+        time_ss_0_0_0_0_1_1_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_1_0$pathogen))
+        # ros_level=1, pat_level=1, tregs=1
+        time_ss_0_0_0_1_1_1_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_1_0$epithelial_score))
+        time_ss_0_0_0_1_1_1_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_1_0$pathogen))
+        # ros_level=0, pat_level=2, tregs=0
+        time_ss_0_0_0_0_0_2_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_2_0$epithelial_score))
+        time_ss_0_0_0_0_0_2_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_2_0$pathogen))
+        # ros_level=0, pat_level=2, tregs=1
+        time_ss_0_0_0_1_0_2_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_2_0$epithelial_score))
+        time_ss_0_0_0_1_0_2_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_2_0$pathogen))
+        # ros_level=1, pat_level=2, tregs=0
+        time_ss_0_0_0_0_1_2_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_2_0$epithelial_score))
+        time_ss_0_0_0_0_1_2_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_2_0$pathogen))
+        # ros_level=1, pat_level=2, tregs=1
+        time_ss_0_0_0_1_1_2_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_2_0$epithelial_score))
+        time_ss_0_0_0_1_1_2_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_2_0$pathogen))
+        # ros_level=0, pat_level=3, tregs=0
+        time_ss_0_0_0_0_0_3_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_3_0$epithelial_score))
+        time_ss_0_0_0_0_0_3_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_0_3_0$pathogen))
+        # ros_level=0, pat_level=3, tregs=1
+        time_ss_0_0_0_1_0_3_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_3_0$epithelial_score))
+        time_ss_0_0_0_1_0_3_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_0_3_0$pathogen))
+        # ros_level=1, pat_level=3, tregs=0
+        time_ss_0_0_0_0_1_3_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_3_0$epithelial_score))
+        time_ss_0_0_0_0_1_3_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_0_1_3_0$pathogen))
+        # ros_level=1, pat_level=3, tregs=1
+        time_ss_0_0_0_1_1_3_0_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_3_0$epithelial_score))
+        time_ss_0_0_0_1_1_3_0_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_0_0_1_1_3_0$pathogen))
+
+        time_ss_vec = c(
+          time_ss_1_0_0_0_0_1_0_e, time_ss_1_0_0_0_0_1_0_p,
+          time_ss_0_0_0_0_0_1_0_e, time_ss_0_0_0_0_0_1_0_p,
+          time_ss_0_0_0_1_0_1_0_e, time_ss_0_0_0_1_0_1_0_p,
+          time_ss_0_0_0_0_1_1_0_e, time_ss_0_0_0_0_1_1_0_p,
+          time_ss_0_0_0_1_1_1_0_e, time_ss_0_0_0_1_1_1_0_p,
+          time_ss_0_0_0_0_0_2_0_e, time_ss_0_0_0_0_0_2_0_p,
+          time_ss_0_0_0_1_0_2_0_e, time_ss_0_0_0_1_0_2_0_p,
+          time_ss_0_0_0_0_1_2_0_e, time_ss_0_0_0_0_1_2_0_p,
+          time_ss_0_0_0_1_1_2_0_e, time_ss_0_0_0_1_1_2_0_p,
+          time_ss_0_0_0_0_0_3_0_e, time_ss_0_0_0_0_0_3_0_p,
+          time_ss_0_0_0_1_0_3_0_e, time_ss_0_0_0_1_0_3_0_p,
+          time_ss_0_0_0_0_1_3_0_e, time_ss_0_0_0_0_1_3_0_p,
+          time_ss_0_0_0_1_1_3_0_e, time_ss_0_0_0_1_1_3_0_p
+        )
+
+        if(!any(is.na(time_ss_vec))){
+
+          # ==== PATHOGEN ABUNDANCE
+          # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+          scores_1_0_0_0_0_1_0_p = full_data_comparison_scores_1_0_0_0_0_1_0$pathogen[time_ss_1_0_0_0_0_1_0_p:t_max_ind]
+
+          # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+          # ros_level=0, pat_level=1, tregs=0
+          scores_0_0_0_0_0_1_0_p = full_data_comparison_scores_0_0_0_0_0_1_0$pathogen[time_ss_0_0_0_0_0_1_0_p:t_max_ind]
+          # ros_level=0, pat_level=1, tregs=1
+          scores_0_0_0_1_0_1_0_p = full_data_comparison_scores_0_0_0_1_0_1_0$pathogen[time_ss_0_0_0_1_0_1_0_p:t_max_ind]
+          # ros_level=1, pat_level=1, tregs=0
+          scores_0_0_0_0_1_1_0_p = full_data_comparison_scores_0_0_0_0_1_1_0$pathogen[time_ss_0_0_0_0_1_1_0_p:t_max_ind]
+          # ros_level=1, pat_level=1, tregs=1
+          scores_0_0_0_1_1_1_0_p = full_data_comparison_scores_0_0_0_1_1_1_0$pathogen[time_ss_0_0_0_1_1_1_0_p:t_max_ind]
+          # ros_level=0, pat_level=2, tregs=0
+          scores_0_0_0_0_0_2_0_p = full_data_comparison_scores_0_0_0_0_0_2_0$pathogen[time_ss_0_0_0_0_0_2_0_p:t_max_ind]
+          # ros_level=0, pat_level=2, tregs=1
+          scores_0_0_0_1_0_2_0_p = full_data_comparison_scores_0_0_0_1_0_2_0$pathogen[time_ss_0_0_0_1_0_2_0_p:t_max_ind]
+          # ros_level=1, pat_level=2, tregs=0
+          scores_0_0_0_0_1_2_0_p = full_data_comparison_scores_0_0_0_0_1_2_0$pathogen[time_ss_0_0_0_0_1_2_0_p:t_max_ind]
+          # ros_level=1, pat_level=2, tregs=1
+          scores_0_0_0_1_1_2_0_p = full_data_comparison_scores_0_0_0_1_1_2_0$pathogen[time_ss_0_0_0_1_1_2_0_p:t_max_ind]
+          # ros_level=0, pat_level=3, tregs=0
+          scores_0_0_0_0_0_3_0_p = full_data_comparison_scores_0_0_0_0_0_3_0$pathogen[time_ss_0_0_0_0_0_3_0_p:t_max_ind]
+          # ros_level=0, pat_level=3, tregs=1
+          scores_0_0_0_1_0_3_0_p = full_data_comparison_scores_0_0_0_1_0_3_0$pathogen[time_ss_0_0_0_1_0_3_0_p:t_max_ind]
+          # ros_level=1, pat_level=3, tregs=0
+          scores_0_0_0_0_1_3_0_p = full_data_comparison_scores_0_0_0_0_1_3_0$pathogen[time_ss_0_0_0_0_1_3_0_p:t_max_ind]
+          # ros_level=1, pat_level=3, tregs=1
+          scores_0_0_0_1_1_3_0_p = full_data_comparison_scores_0_0_0_1_1_3_0$pathogen[time_ss_0_0_0_1_1_3_0_p:t_max_ind]
+
+          # Accumulate scores
+          scores_1_0_0_0_0_1_0_p_keep = c(scores_1_0_0_0_0_1_0_p_keep, scores_1_0_0_0_0_1_0_p)
+          scores_0_0_0_0_0_1_0_p_keep = c(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_1_0_p)
+          scores_0_0_0_1_0_1_0_p_keep = c(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p)
+          scores_0_0_0_0_1_1_0_p_keep = c(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_0_1_1_0_p)
+          scores_0_0_0_1_1_1_0_p_keep = c(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_1_1_1_0_p)
+          scores_0_0_0_0_0_2_0_p_keep = c(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_0_0_2_0_p)
+          scores_0_0_0_1_0_2_0_p_keep = c(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_1_0_2_0_p)
+          scores_0_0_0_0_1_2_0_p_keep = c(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_0_1_2_0_p)
+          scores_0_0_0_1_1_2_0_p_keep = c(scores_0_0_0_1_1_2_0_p_keep, scores_0_0_0_1_1_2_0_p)
+          scores_0_0_0_0_0_3_0_p_keep = c(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_0_0_3_0_p)
+          scores_0_0_0_1_0_3_0_p_keep = c(scores_0_0_0_1_0_3_0_p_keep, scores_0_0_0_1_0_3_0_p)
+          scores_0_0_0_0_1_3_0_p_keep = c(scores_0_0_0_0_1_3_0_p_keep, scores_0_0_0_0_1_3_0_p)
+          scores_0_0_0_1_1_3_0_p_keep = c(scores_0_0_0_1_1_3_0_p_keep, scores_0_0_0_1_1_3_0_p)
+
+          # ==== EPITHELIAL SCORE
+          # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+          scores_1_0_0_0_0_1_0_e = full_data_comparison_scores_1_0_0_0_0_1_0$epithelial_score[time_ss_1_0_0_0_0_1_0_e:t_max_ind]
+
+          # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+          # ros_level=0, pat_level=1, tregs=0
+          scores_0_0_0_0_0_1_0_e = full_data_comparison_scores_0_0_0_0_0_1_0$epithelial_score[time_ss_0_0_0_0_0_1_0_e:t_max_ind]
+          # ros_level=0, pat_level=1, tregs=1
+          scores_0_0_0_1_0_1_0_e = full_data_comparison_scores_0_0_0_1_0_1_0$epithelial_score[time_ss_0_0_0_1_0_1_0_e:t_max_ind]
+          # ros_level=1, pat_level=1, tregs=0
+          scores_0_0_0_0_1_1_0_e = full_data_comparison_scores_0_0_0_0_1_1_0$epithelial_score[time_ss_0_0_0_0_1_1_0_e:t_max_ind]
+          # ros_level=1, pat_level=1, tregs=1
+          scores_0_0_0_1_1_1_0_e = full_data_comparison_scores_0_0_0_1_1_1_0$epithelial_score[time_ss_0_0_0_1_1_1_0_e:t_max_ind]
+          # ros_level=0, pat_level=2, tregs=0
+          scores_0_0_0_0_0_2_0_e = full_data_comparison_scores_0_0_0_0_0_2_0$epithelial_score[time_ss_0_0_0_0_0_2_0_e:t_max_ind]
+          # ros_level=0, pat_level=2, tregs=1
+          scores_0_0_0_1_0_2_0_e = full_data_comparison_scores_0_0_0_1_0_2_0$epithelial_score[time_ss_0_0_0_1_0_2_0_e:t_max_ind]
+          # ros_level=1, pat_level=2, tregs=0
+          scores_0_0_0_0_1_2_0_e = full_data_comparison_scores_0_0_0_0_1_2_0$epithelial_score[time_ss_0_0_0_0_1_2_0_e:t_max_ind]
+          # ros_level=1, pat_level=2, tregs=1
+          scores_0_0_0_1_1_2_0_e = full_data_comparison_scores_0_0_0_1_1_2_0$epithelial_score[time_ss_0_0_0_1_1_2_0_e:t_max_ind]
+          # ros_level=0, pat_level=3, tregs=0
+          scores_0_0_0_0_0_3_0_e = full_data_comparison_scores_0_0_0_0_0_3_0$epithelial_score[time_ss_0_0_0_0_0_3_0_e:t_max_ind]
+          # ros_level=0, pat_level=3, tregs=1
+          scores_0_0_0_1_0_3_0_e = full_data_comparison_scores_0_0_0_1_0_3_0$epithelial_score[time_ss_0_0_0_1_0_3_0_e:t_max_ind]
+          # ros_level=1, pat_level=3, tregs=0
+          scores_0_0_0_0_1_3_0_e = full_data_comparison_scores_0_0_0_0_1_3_0$epithelial_score[time_ss_0_0_0_0_1_3_0_e:t_max_ind]
+          # ros_level=1, pat_level=3, tregs=1
+          scores_0_0_0_1_1_3_0_e = full_data_comparison_scores_0_0_0_1_1_3_0$epithelial_score[time_ss_0_0_0_1_1_3_0_e:t_max_ind]
+
+          # Accumulate scores
+          scores_1_0_0_0_0_1_0_e_keep = c(scores_1_0_0_0_0_1_0_e_keep, scores_1_0_0_0_0_1_0_e)
+          scores_0_0_0_0_0_1_0_e_keep = c(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_1_0_e)
+          scores_0_0_0_1_0_1_0_e_keep = c(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e)
+          scores_0_0_0_0_1_1_0_e_keep = c(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_0_1_1_0_e)
+          scores_0_0_0_1_1_1_0_e_keep = c(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_1_1_1_0_e)
+          scores_0_0_0_0_0_2_0_e_keep = c(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_0_0_2_0_e)
+          scores_0_0_0_1_0_2_0_e_keep = c(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_1_0_2_0_e)
+          scores_0_0_0_0_1_2_0_e_keep = c(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_0_1_2_0_e)
+          scores_0_0_0_1_1_2_0_e_keep = c(scores_0_0_0_1_1_2_0_e_keep, scores_0_0_0_1_1_2_0_e)
+          scores_0_0_0_0_0_3_0_e_keep = c(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_0_0_3_0_e)
+          scores_0_0_0_1_0_3_0_e_keep = c(scores_0_0_0_1_0_3_0_e_keep, scores_0_0_0_1_0_3_0_e)
+          scores_0_0_0_0_1_3_0_e_keep = c(scores_0_0_0_0_1_3_0_e_keep, scores_0_0_0_0_1_3_0_e)
+          scores_0_0_0_1_1_3_0_e_keep = c(scores_0_0_0_1_1_3_0_e_keep, scores_0_0_0_1_1_3_0_e)
+
+          # Compute oscillation metrics for each signal
+          # Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
+          osc_1_0_0_0_0_1_0_e = compute_oscillation_metrics(scores_1_0_0_0_0_1_0_e)
+          osc_1_0_0_0_0_1_0_p = compute_oscillation_metrics(scores_1_0_0_0_0_1_0_p)
+
+          # Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
+          # ros_level=0, pat_level=1, tregs=0
+          osc_0_0_0_0_0_1_0_e = compute_oscillation_metrics(scores_0_0_0_0_0_1_0_e)
+          osc_0_0_0_0_0_1_0_p = compute_oscillation_metrics(scores_0_0_0_0_0_1_0_p)
+          # ros_level=0, pat_level=1, tregs=1
+          osc_0_0_0_1_0_1_0_e = compute_oscillation_metrics(scores_0_0_0_1_0_1_0_e)
+          osc_0_0_0_1_0_1_0_p = compute_oscillation_metrics(scores_0_0_0_1_0_1_0_p)
+          # ros_level=1, pat_level=1, tregs=0
+          osc_0_0_0_0_1_1_0_e = compute_oscillation_metrics(scores_0_0_0_0_1_1_0_e)
+          osc_0_0_0_0_1_1_0_p = compute_oscillation_metrics(scores_0_0_0_0_1_1_0_p)
+          # ros_level=1, pat_level=1, tregs=1
+          osc_0_0_0_1_1_1_0_e = compute_oscillation_metrics(scores_0_0_0_1_1_1_0_e)
+          osc_0_0_0_1_1_1_0_p = compute_oscillation_metrics(scores_0_0_0_1_1_1_0_p)
+          # ros_level=0, pat_level=2, tregs=0
+          osc_0_0_0_0_0_2_0_e = compute_oscillation_metrics(scores_0_0_0_0_0_2_0_e)
+          osc_0_0_0_0_0_2_0_p = compute_oscillation_metrics(scores_0_0_0_0_0_2_0_p)
+          # ros_level=0, pat_level=2, tregs=1
+          osc_0_0_0_1_0_2_0_e = compute_oscillation_metrics(scores_0_0_0_1_0_2_0_e)
+          osc_0_0_0_1_0_2_0_p = compute_oscillation_metrics(scores_0_0_0_1_0_2_0_p)
+          # ros_level=1, pat_level=2, tregs=0
+          osc_0_0_0_0_1_2_0_e = compute_oscillation_metrics(scores_0_0_0_0_1_2_0_e)
+          osc_0_0_0_0_1_2_0_p = compute_oscillation_metrics(scores_0_0_0_0_1_2_0_p)
+          # ros_level=1, pat_level=2, tregs=1
+          osc_0_0_0_1_1_2_0_e = compute_oscillation_metrics(scores_0_0_0_1_1_2_0_e)
+          osc_0_0_0_1_1_2_0_p = compute_oscillation_metrics(scores_0_0_0_1_1_2_0_p)
+          # ros_level=0, pat_level=3, tregs=0
+          osc_0_0_0_0_0_3_0_e = compute_oscillation_metrics(scores_0_0_0_0_0_3_0_e)
+          osc_0_0_0_0_0_3_0_p = compute_oscillation_metrics(scores_0_0_0_0_0_3_0_p)
+          # ros_level=0, pat_level=3, tregs=1
+          osc_0_0_0_1_0_3_0_e = compute_oscillation_metrics(scores_0_0_0_1_0_3_0_e)
+          osc_0_0_0_1_0_3_0_p = compute_oscillation_metrics(scores_0_0_0_1_0_3_0_p)
+          # ros_level=1, pat_level=3, tregs=0
+          osc_0_0_0_0_1_3_0_e = compute_oscillation_metrics(scores_0_0_0_0_1_3_0_e)
+          osc_0_0_0_0_1_3_0_p = compute_oscillation_metrics(scores_0_0_0_0_1_3_0_p)
+          # ros_level=1, pat_level=3, tregs=1
+          osc_0_0_0_1_1_3_0_e = compute_oscillation_metrics(scores_0_0_0_1_1_3_0_e)
+          osc_0_0_0_1_1_3_0_p = compute_oscillation_metrics(scores_0_0_0_1_1_3_0_p)
+
+          # --- Tabulate all comparisons ---
+          comparison_results = data.frame(
+            param_set_id = i,
+            replicate_id = rep,
+            control      = c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            injury_type  = rep("pathogenic", 26),
+            score_type  = c(rep("epithelium", 13), rep("pathogen", 13)),
+            macspec_on   = rep(0, 26),
+            tregs_on     = c(0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+                             0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1),
+            tregs_rnd    = rep(0, 26),
+            ros_level    = c(0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1,
+                             0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1),
+            pat_level    = c(1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+                             1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
+            ss_start     = c(time_ss_1_0_0_0_0_1_0_e,
+                             time_ss_0_0_0_0_0_1_0_e,
+                             time_ss_0_0_0_1_0_1_0_e,
+                             time_ss_0_0_0_0_1_1_0_e,
+                             time_ss_0_0_0_1_1_1_0_e,
+                             time_ss_0_0_0_0_0_2_0_e,
+                             time_ss_0_0_0_1_0_2_0_e,
+                             time_ss_0_0_0_0_1_2_0_e,
+                             time_ss_0_0_0_1_1_2_0_e,
+                             time_ss_0_0_0_0_0_3_0_e,
+                             time_ss_0_0_0_1_0_3_0_e,
+                             time_ss_0_0_0_0_1_3_0_e,
+                             time_ss_0_0_0_1_1_3_0_e,
+                             time_ss_1_0_0_0_0_1_0_p,
+                             time_ss_0_0_0_0_0_1_0_p,
+                             time_ss_0_0_0_1_0_1_0_p,
+                             time_ss_0_0_0_0_1_1_0_p,
+                             time_ss_0_0_0_1_1_1_0_p,
+                             time_ss_0_0_0_0_0_2_0_p,
+                             time_ss_0_0_0_1_0_2_0_p,
+                             time_ss_0_0_0_0_1_2_0_p,
+                             time_ss_0_0_0_1_1_2_0_p,
+                             time_ss_0_0_0_0_0_3_0_p,
+                             time_ss_0_0_0_1_0_3_0_p,
+                             time_ss_0_0_0_0_1_3_0_p,
+                             time_ss_0_0_0_1_1_3_0_p),
+            mean_score   = c(mean(scores_1_0_0_0_0_1_0_e),
+                             mean(scores_0_0_0_0_0_1_0_e),
+                             mean(scores_0_0_0_1_0_1_0_e),
+                             mean(scores_0_0_0_0_1_1_0_e),
+                             mean(scores_0_0_0_1_1_1_0_e),
+                             mean(scores_0_0_0_0_0_2_0_e),
+                             mean(scores_0_0_0_1_0_2_0_e),
+                             mean(scores_0_0_0_0_1_2_0_e),
+                             mean(scores_0_0_0_1_1_2_0_e),
+                             mean(scores_0_0_0_0_0_3_0_e),
+                             mean(scores_0_0_0_1_0_3_0_e),
+                             mean(scores_0_0_0_0_1_3_0_e),
+                             mean(scores_0_0_0_1_1_3_0_e),
+                             mean(scores_1_0_0_0_0_1_0_p),
+                             mean(scores_0_0_0_0_0_1_0_p),
+                             mean(scores_0_0_0_1_0_1_0_p),
+                             mean(scores_0_0_0_0_1_1_0_p),
+                             mean(scores_0_0_0_1_1_1_0_p),
+                             mean(scores_0_0_0_0_0_2_0_p),
+                             mean(scores_0_0_0_1_0_2_0_p),
+                             mean(scores_0_0_0_0_1_2_0_p),
+                             mean(scores_0_0_0_1_1_2_0_p),
+                             mean(scores_0_0_0_0_0_3_0_p),
+                             mean(scores_0_0_0_1_0_3_0_p),
+                             mean(scores_0_0_0_0_1_3_0_p),
+                             mean(scores_0_0_0_1_1_3_0_p)),
+            sd_score   = c(sd(scores_1_0_0_0_0_1_0_e),
+                           sd(scores_0_0_0_0_0_1_0_e),
+                           sd(scores_0_0_0_1_0_1_0_e),
+                           sd(scores_0_0_0_0_1_1_0_e),
+                           sd(scores_0_0_0_1_1_1_0_e),
+                           sd(scores_0_0_0_0_0_2_0_e),
+                           sd(scores_0_0_0_1_0_2_0_e),
+                           sd(scores_0_0_0_0_1_2_0_e),
+                           sd(scores_0_0_0_1_1_2_0_e),
+                           sd(scores_0_0_0_0_0_3_0_e),
+                           sd(scores_0_0_0_1_0_3_0_e),
+                           sd(scores_0_0_0_0_1_3_0_e),
+                           sd(scores_0_0_0_1_1_3_0_e),
+                           sd(scores_1_0_0_0_0_1_0_p),
+                           sd(scores_0_0_0_0_0_1_0_p),
+                           sd(scores_0_0_0_1_0_1_0_p),
+                           sd(scores_0_0_0_0_1_1_0_p),
+                           sd(scores_0_0_0_1_1_1_0_p),
+                           sd(scores_0_0_0_0_0_2_0_p),
+                           sd(scores_0_0_0_1_0_2_0_p),
+                           sd(scores_0_0_0_0_1_2_0_p),
+                           sd(scores_0_0_0_1_1_2_0_p),
+                           sd(scores_0_0_0_0_0_3_0_p),
+                           sd(scores_0_0_0_1_0_3_0_p),
+                           sd(scores_0_0_0_0_1_3_0_p),
+                           sd(scores_0_0_0_1_1_3_0_p)),
+            # Oscillation metrics
+            acf_peak_lag = c(osc_1_0_0_0_0_1_0_e$acf_peak_lag, osc_0_0_0_0_0_1_0_e$acf_peak_lag, osc_0_0_0_1_0_1_0_e$acf_peak_lag, osc_0_0_0_0_1_1_0_e$acf_peak_lag, osc_0_0_0_1_1_1_0_e$acf_peak_lag, osc_0_0_0_0_0_2_0_e$acf_peak_lag, osc_0_0_0_1_0_2_0_e$acf_peak_lag, osc_0_0_0_0_1_2_0_e$acf_peak_lag, osc_0_0_0_1_1_2_0_e$acf_peak_lag, osc_0_0_0_0_0_3_0_e$acf_peak_lag, osc_0_0_0_1_0_3_0_e$acf_peak_lag, osc_0_0_0_0_1_3_0_e$acf_peak_lag, osc_0_0_0_1_1_3_0_e$acf_peak_lag,
+                             osc_1_0_0_0_0_1_0_p$acf_peak_lag, osc_0_0_0_0_0_1_0_p$acf_peak_lag, osc_0_0_0_1_0_1_0_p$acf_peak_lag, osc_0_0_0_0_1_1_0_p$acf_peak_lag, osc_0_0_0_1_1_1_0_p$acf_peak_lag, osc_0_0_0_0_0_2_0_p$acf_peak_lag, osc_0_0_0_1_0_2_0_p$acf_peak_lag, osc_0_0_0_0_1_2_0_p$acf_peak_lag, osc_0_0_0_1_1_2_0_p$acf_peak_lag, osc_0_0_0_0_0_3_0_p$acf_peak_lag, osc_0_0_0_1_0_3_0_p$acf_peak_lag, osc_0_0_0_0_1_3_0_p$acf_peak_lag, osc_0_0_0_1_1_3_0_p$acf_peak_lag),
+            acf_peak_val = c(osc_1_0_0_0_0_1_0_e$acf_peak_value, osc_0_0_0_0_0_1_0_e$acf_peak_value, osc_0_0_0_1_0_1_0_e$acf_peak_value, osc_0_0_0_0_1_1_0_e$acf_peak_value, osc_0_0_0_1_1_1_0_e$acf_peak_value, osc_0_0_0_0_0_2_0_e$acf_peak_value, osc_0_0_0_1_0_2_0_e$acf_peak_value, osc_0_0_0_0_1_2_0_e$acf_peak_value, osc_0_0_0_1_1_2_0_e$acf_peak_value, osc_0_0_0_0_0_3_0_e$acf_peak_value, osc_0_0_0_1_0_3_0_e$acf_peak_value, osc_0_0_0_0_1_3_0_e$acf_peak_value, osc_0_0_0_1_1_3_0_e$acf_peak_value,
+                             osc_1_0_0_0_0_1_0_p$acf_peak_value, osc_0_0_0_0_0_1_0_p$acf_peak_value, osc_0_0_0_1_0_1_0_p$acf_peak_value, osc_0_0_0_0_1_1_0_p$acf_peak_value, osc_0_0_0_1_1_1_0_p$acf_peak_value, osc_0_0_0_0_0_2_0_p$acf_peak_value, osc_0_0_0_1_0_2_0_p$acf_peak_value, osc_0_0_0_0_1_2_0_p$acf_peak_value, osc_0_0_0_1_1_2_0_p$acf_peak_value, osc_0_0_0_0_0_3_0_p$acf_peak_value, osc_0_0_0_1_0_3_0_p$acf_peak_value, osc_0_0_0_0_1_3_0_p$acf_peak_value, osc_0_0_0_1_1_3_0_p$acf_peak_value),
+            spec_conc    = c(osc_1_0_0_0_0_1_0_e$spectral_concentration, osc_0_0_0_0_0_1_0_e$spectral_concentration, osc_0_0_0_1_0_1_0_e$spectral_concentration, osc_0_0_0_0_1_1_0_e$spectral_concentration, osc_0_0_0_1_1_1_0_e$spectral_concentration, osc_0_0_0_0_0_2_0_e$spectral_concentration, osc_0_0_0_1_0_2_0_e$spectral_concentration, osc_0_0_0_0_1_2_0_e$spectral_concentration, osc_0_0_0_1_1_2_0_e$spectral_concentration, osc_0_0_0_0_0_3_0_e$spectral_concentration, osc_0_0_0_1_0_3_0_e$spectral_concentration, osc_0_0_0_0_1_3_0_e$spectral_concentration, osc_0_0_0_1_1_3_0_e$spectral_concentration,
+                             osc_1_0_0_0_0_1_0_p$spectral_concentration, osc_0_0_0_0_0_1_0_p$spectral_concentration, osc_0_0_0_1_0_1_0_p$spectral_concentration, osc_0_0_0_0_1_1_0_p$spectral_concentration, osc_0_0_0_1_1_1_0_p$spectral_concentration, osc_0_0_0_0_0_2_0_p$spectral_concentration, osc_0_0_0_1_0_2_0_p$spectral_concentration, osc_0_0_0_0_1_2_0_p$spectral_concentration, osc_0_0_0_1_1_2_0_p$spectral_concentration, osc_0_0_0_0_0_3_0_p$spectral_concentration, osc_0_0_0_1_0_3_0_p$spectral_concentration, osc_0_0_0_0_1_3_0_p$spectral_concentration, osc_0_0_0_1_1_3_0_p$spectral_concentration),
+            spec_sharp   = c(osc_1_0_0_0_0_1_0_e$spectral_sharpness, osc_0_0_0_0_0_1_0_e$spectral_sharpness, osc_0_0_0_1_0_1_0_e$spectral_sharpness, osc_0_0_0_0_1_1_0_e$spectral_sharpness, osc_0_0_0_1_1_1_0_e$spectral_sharpness, osc_0_0_0_0_0_2_0_e$spectral_sharpness, osc_0_0_0_1_0_2_0_e$spectral_sharpness, osc_0_0_0_0_1_2_0_e$spectral_sharpness, osc_0_0_0_1_1_2_0_e$spectral_sharpness, osc_0_0_0_0_0_3_0_e$spectral_sharpness, osc_0_0_0_1_0_3_0_e$spectral_sharpness, osc_0_0_0_0_1_3_0_e$spectral_sharpness, osc_0_0_0_1_1_3_0_e$spectral_sharpness,
+                             osc_1_0_0_0_0_1_0_p$spectral_sharpness, osc_0_0_0_0_0_1_0_p$spectral_sharpness, osc_0_0_0_1_0_1_0_p$spectral_sharpness, osc_0_0_0_0_1_1_0_p$spectral_sharpness, osc_0_0_0_1_1_1_0_p$spectral_sharpness, osc_0_0_0_0_0_2_0_p$spectral_sharpness, osc_0_0_0_1_0_2_0_p$spectral_sharpness, osc_0_0_0_0_1_2_0_p$spectral_sharpness, osc_0_0_0_1_1_2_0_p$spectral_sharpness, osc_0_0_0_0_0_3_0_p$spectral_sharpness, osc_0_0_0_1_0_3_0_p$spectral_sharpness, osc_0_0_0_0_1_3_0_p$spectral_sharpness, osc_0_0_0_1_1_3_0_p$spectral_sharpness),
+            acf_regularity = c(osc_1_0_0_0_0_1_0_e$acf_regularity, osc_0_0_0_0_0_1_0_e$acf_regularity, osc_0_0_0_1_0_1_0_e$acf_regularity, osc_0_0_0_0_1_1_0_e$acf_regularity, osc_0_0_0_1_1_1_0_e$acf_regularity, osc_0_0_0_0_0_2_0_e$acf_regularity, osc_0_0_0_1_0_2_0_e$acf_regularity, osc_0_0_0_0_1_2_0_e$acf_regularity, osc_0_0_0_1_1_2_0_e$acf_regularity, osc_0_0_0_0_0_3_0_e$acf_regularity, osc_0_0_0_1_0_3_0_e$acf_regularity, osc_0_0_0_0_1_3_0_e$acf_regularity, osc_0_0_0_1_1_3_0_e$acf_regularity,
+                               osc_1_0_0_0_0_1_0_p$acf_regularity, osc_0_0_0_0_0_1_0_p$acf_regularity, osc_0_0_0_1_0_1_0_p$acf_regularity, osc_0_0_0_0_1_1_0_p$acf_regularity, osc_0_0_0_1_1_1_0_p$acf_regularity, osc_0_0_0_0_0_2_0_p$acf_regularity, osc_0_0_0_1_0_2_0_p$acf_regularity, osc_0_0_0_0_1_2_0_p$acf_regularity, osc_0_0_0_1_1_2_0_p$acf_regularity, osc_0_0_0_0_0_3_0_p$acf_regularity, osc_0_0_0_1_0_3_0_p$acf_regularity, osc_0_0_0_0_1_3_0_p$acf_regularity, osc_0_0_0_1_1_3_0_p$acf_regularity)
+          )
+
+          # # ==== interpretation
+          # # ==== acf_peak_val > 0.3–0.4 typically indicates clear oscillations (like your 39518 example)
+          # # ==== acf_peak_lag gives you the approximate period
+          # # ==== spec_conc > 0.1–0.15 suggests concentrated periodic power vs diffuse noise
+
+          # Append to global results
+          all_comparison_results_reps = bind_rows(all_comparison_results_reps, comparison_results)
+        }
+      }
+
+      if(dim(all_comparison_results_reps)[1]>0){
+        # ====== EPITHELIAL SCORE
+        # JS Divergence comparisons - Control vs each test scenario
+        # Control vs ros_level=0, pat_level=1, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat1_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_1_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=1, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat1_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=1, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat1_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_1_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=1, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat1_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=2, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat2_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=2, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat2_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=2, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat2_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=2, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat2_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=3, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat3_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=3, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat3_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=3, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat3_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=3, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat3_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ===== PATHOGEN ABUNDANCE
+        # JS Divergence comparisons - Control vs each test scenario
+        # Control vs ros_level=0, pat_level=1, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat1_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_1_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=1, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat1_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=1, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat1_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_1_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=1, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat1_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=2, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat2_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=2, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat2_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=2, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat2_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=2, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat2_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=3, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat3_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=0, pat_level=3, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros0_pat3_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=3, tregs=0
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat3_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        # Control vs ros_level=1, pat_level=3, tregs=1
+        all_comparison_results_reps$d_ctrl_vs_ros1_pat3_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ====== EPITHELIAL SCORE
+        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
+        # ros_level=0, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
+        # ros_level=0, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        # ros_level=0, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        # ros_level=1, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ===== PATHOGEN ABUNDANCE
+        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
+        # ros_level=0, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
+        # ros_level=0, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        # ros_level=0, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros0_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=1: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=2: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        # ros_level=1, pat_level=3: treg0 vs treg1
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ====== Mean scores - epithelial score
+        # Control
+        all_comparison_results_reps$mean_ctrl_e = mean(scores_1_0_0_0_0_1_0_e_keep)
+        # Test scenarios
+        all_comparison_results_reps$mean_ros0_pat1_treg0_e = mean(scores_0_0_0_0_0_1_0_e_keep)
+        all_comparison_results_reps$mean_ros0_pat1_treg1_e = mean(scores_0_0_0_1_0_1_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat1_treg0_e = mean(scores_0_0_0_0_1_1_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat1_treg1_e = mean(scores_0_0_0_1_1_1_0_e_keep)
+        all_comparison_results_reps$mean_ros0_pat2_treg0_e = mean(scores_0_0_0_0_0_2_0_e_keep)
+        all_comparison_results_reps$mean_ros0_pat2_treg1_e = mean(scores_0_0_0_1_0_2_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat2_treg0_e = mean(scores_0_0_0_0_1_2_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat2_treg1_e = mean(scores_0_0_0_1_1_2_0_e_keep)
+        all_comparison_results_reps$mean_ros0_pat3_treg0_e = mean(scores_0_0_0_0_0_3_0_e_keep)
+        all_comparison_results_reps$mean_ros0_pat3_treg1_e = mean(scores_0_0_0_1_0_3_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat3_treg0_e = mean(scores_0_0_0_0_1_3_0_e_keep)
+        all_comparison_results_reps$mean_ros1_pat3_treg1_e = mean(scores_0_0_0_1_1_3_0_e_keep)
+
+        # ====== SD - epithelial score
+        # Control
+        all_comparison_results_reps$sd_ctrl_e = sd(scores_1_0_0_0_0_1_0_e_keep)
+        # Test scenarios
+        all_comparison_results_reps$sd_ros0_pat1_treg0_e = sd(scores_0_0_0_0_0_1_0_e_keep)
+        all_comparison_results_reps$sd_ros0_pat1_treg1_e = sd(scores_0_0_0_1_0_1_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat1_treg0_e = sd(scores_0_0_0_0_1_1_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat1_treg1_e = sd(scores_0_0_0_1_1_1_0_e_keep)
+        all_comparison_results_reps$sd_ros0_pat2_treg0_e = sd(scores_0_0_0_0_0_2_0_e_keep)
+        all_comparison_results_reps$sd_ros0_pat2_treg1_e = sd(scores_0_0_0_1_0_2_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat2_treg0_e = sd(scores_0_0_0_0_1_2_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat2_treg1_e = sd(scores_0_0_0_1_1_2_0_e_keep)
+        all_comparison_results_reps$sd_ros0_pat3_treg0_e = sd(scores_0_0_0_0_0_3_0_e_keep)
+        all_comparison_results_reps$sd_ros0_pat3_treg1_e = sd(scores_0_0_0_1_0_3_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat3_treg0_e = sd(scores_0_0_0_0_1_3_0_e_keep)
+        all_comparison_results_reps$sd_ros1_pat3_treg1_e = sd(scores_0_0_0_1_1_3_0_e_keep)
+
+        # ====== Mean scores - pathogen abundance
+        # Control
+        all_comparison_results_reps$mean_ctrl_p = mean(scores_1_0_0_0_0_1_0_p_keep)
+        # Test scenarios
+        all_comparison_results_reps$mean_ros0_pat1_treg0_p = mean(scores_0_0_0_0_0_1_0_p_keep)
+        all_comparison_results_reps$mean_ros0_pat1_treg1_p = mean(scores_0_0_0_1_0_1_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat1_treg0_p = mean(scores_0_0_0_0_1_1_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat1_treg1_p = mean(scores_0_0_0_1_1_1_0_p_keep)
+        all_comparison_results_reps$mean_ros0_pat2_treg0_p = mean(scores_0_0_0_0_0_2_0_p_keep)
+        all_comparison_results_reps$mean_ros0_pat2_treg1_p = mean(scores_0_0_0_1_0_2_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat2_treg0_p = mean(scores_0_0_0_0_1_2_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat2_treg1_p = mean(scores_0_0_0_1_1_2_0_p_keep)
+        all_comparison_results_reps$mean_ros0_pat3_treg0_p = mean(scores_0_0_0_0_0_3_0_p_keep)
+        all_comparison_results_reps$mean_ros0_pat3_treg1_p = mean(scores_0_0_0_1_0_3_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat3_treg0_p = mean(scores_0_0_0_0_1_3_0_p_keep)
+        all_comparison_results_reps$mean_ros1_pat3_treg1_p = mean(scores_0_0_0_1_1_3_0_p_keep)
+
+        # ====== SD - pathogen abundance
+        # Control
+        all_comparison_results_reps$sd_ctrl_p = sd(scores_1_0_0_0_0_1_0_p_keep)
+        # Test scenarios
+        all_comparison_results_reps$sd_ros0_pat1_treg0_p = sd(scores_0_0_0_0_0_1_0_p_keep)
+        all_comparison_results_reps$sd_ros0_pat1_treg1_p = sd(scores_0_0_0_1_0_1_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat1_treg0_p = sd(scores_0_0_0_0_1_1_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat1_treg1_p = sd(scores_0_0_0_1_1_1_0_p_keep)
+        all_comparison_results_reps$sd_ros0_pat2_treg0_p = sd(scores_0_0_0_0_0_2_0_p_keep)
+        all_comparison_results_reps$sd_ros0_pat2_treg1_p = sd(scores_0_0_0_1_0_2_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat2_treg0_p = sd(scores_0_0_0_0_1_2_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat2_treg1_p = sd(scores_0_0_0_1_1_2_0_p_keep)
+        all_comparison_results_reps$sd_ros0_pat3_treg0_p = sd(scores_0_0_0_0_0_3_0_p_keep)
+        all_comparison_results_reps$sd_ros0_pat3_treg1_p = sd(scores_0_0_0_1_0_3_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat3_treg0_p = sd(scores_0_0_0_0_1_3_0_p_keep)
+        all_comparison_results_reps$sd_ros1_pat3_treg1_p = sd(scores_0_0_0_1_1_3_0_p_keep)
+
+        all_comparison_results = bind_rows(all_comparison_results, all_comparison_results_reps)
+        processed_indices      = c(processed_indices, i)
+      }
+    }
+    # Save after every 10 parameter sets (if total is > 10) or save all (if total is <= 10)
+    # if((length(inds2read) > 10 && i_idx %% 10 == 0) || i_idx==length(loop_over)){
+    if((length(inds2read) > (10*n2) && i_idx %% (10*n2) == 0) || i_idx==length(loop_over)){ #10*n2 to break sync between multiple cores
+
+      message("Saving intermediate results after ", i_idx, " parameter sets...")
+
+      # Update the list of read indices
+      if(!file.exists('./ids_read_abm_ros_vs_ctrl_patros.rds')){
+        saveRDS(processed_indices, './ids_read_abm_ros_vs_ctrl_patros.rds')
+      }else{
+        inds_read_old = readRDS('./ids_read_abm_ros_vs_ctrl_patros.rds')
+        inds_read_updated = c(inds_read_old, processed_indices)
+        saveRDS(inds_read_updated, './ids_read_abm_ros_vs_ctrl_patros.rds')
+      }
+
+      # Update the results data
+      if(!file.exists('./data_cpp_read_abm_ros_vs_ctrl_patros.rds')){
+        saveRDS(all_comparison_results, './data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+      }else{
+        all_comparison_results_old = readRDS('./data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+        all_comparison_results_combined = rbind(all_comparison_results_old, all_comparison_results)
+        saveRDS(all_comparison_results_combined, './data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+      }
+
+      # Reset for next batch
+      all_comparison_results = data.frame()
+      processed_indices = c()
+
+      message(paste0("Intermediate save complete with ",10*n2," more param_ids."))
+    }
+  }
+
+  # Final save for any remaining results
+  message("Saving final results. Total param_sets processed: ", length(inds2read))
+
+  if(!file.exists('./ids_read_abm_ros_vs_ctrl_patros.rds')){
+    saveRDS(processed_indices, './ids_read_abm_ros_vs_ctrl_patros.rds')
+  }else{
+    inds_read_old = readRDS('./ids_read_abm_ros_vs_ctrl_patros.rds')
+    inds_read_final = c(inds_read_old, processed_indices)
+    saveRDS(inds_read_final, './ids_read_abm_ros_vs_ctrl_patros.rds')
+  }
+
+  if(!file.exists('./data_cpp_read_abm_ros_vs_ctrl_patros.rds')){
+    saveRDS(all_comparison_results, './data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+  }else{
+    all_comparison_results_old = readRDS('./data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+    all_comparison_results_final = rbind(all_comparison_results_old, all_comparison_results)
+    saveRDS(all_comparison_results_final, './data_cpp_read_abm_ros_vs_ctrl_patros.rds')
+  }
+
+  # # message("Reprinting space.")
+  # sd_tol_in   = Inf
+  # jsd_th      = 0.3
+  # tol_in      = 125*0.2
+  # M1_M2_diff  = 1
+  # source('./DLL_datazanalyse_abm_regions_with_pathogenic.R')
+  # source('./DLL_datazanalyse_abm_all.R')
+
+}else{
+  message("No new pts added.")
+}
+
+
+

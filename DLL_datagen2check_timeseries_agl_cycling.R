@@ -83,7 +83,6 @@ loop_over_ss_p       = loop_over_df$mean_ss_start_p
 # loop_over = chunks[[n2]]
 
 loop_over    = loop_over_all
-loop_over    = 3409
 ## =============================================================================
 
 params_df    = params_df %>% dplyr::filter(param_set_id %in% loop_over)
@@ -156,23 +155,29 @@ cat("  n_tregs:", n_tregs, "\n\n")
 
 scenarios_df = expand.grid(
   control         = c(0),
-  # sterile         = c(0),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0, 1),
-  # randomize_tregs = c(0),
-  # macspec_on      = c(0, 1, 2),
-  ros_level       = c(0, 1)
+  # randomize_tregs = c(0, 1),
+  randomize_tregs = c(0),
+  # macspec_on      = c(0, 1, 2)
+  macspec_on      = c(0),
+  ros_level       = c(0, 1),
+  pat_level       = c(1, 2, 3)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
-# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
+scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
 scenarios_df_ctrl = expand.grid(
   control         = c(1),
-  # sterile         = c(0),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0),
-  # randomize_tregs = c(0),
-  # macspec_on      = c(0),
-  ros_level       = c(0)
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
+  ros_level       = c(0),
+  pat_level       = c(1)
 )
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
@@ -189,16 +194,13 @@ for(param_set_id_use in loop_over){
   for (scenario_ind in c(2)){
   # for (scenario_ind in 1:5){
     
-    sterile         = 0
-    randomize_tregs = 0
-    macspec_on      = 0
+    sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
+    randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
+    macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     control         = scenarios_df[scenario_ind,]$control
     ros_level       = scenarios_df[scenario_ind,]$ros_level
-    
-    if(ros_level==1){
-      param_set_use$add_ROS = 1
-    }
+    pat_level       = scenarios_df[scenario_ind,]$pat_level
     
     source("./MISC/ASSIGN_PARAMETERS.R")
     

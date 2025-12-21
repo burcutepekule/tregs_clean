@@ -12,10 +12,12 @@ library(ggsignif)
 library(ggpubr)
 
 acf_peak_val_th   = 0.5
+# acf_regularity_th = 0.03
 acf_regularity_th = 0.03
 
 score_type     = 'pathogen'
-data_suffix    = '_ros_vs_ctrl' #
+data_suffix    = '_ros_vs_ctrl_nopatlevel' #
+data_suffix    = '_ros_vs_ctrl_patros' #
 
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
@@ -26,10 +28,10 @@ df_results_keep = readRDS(paste0("./data_cpp_read_abm", data_suffix, ".rds"))
 
 # --- filter for complete # of reps 
 reps_df       = as.data.frame(table(df_results_keep$param_set_id))
-if(data_suffix == '_ros_vs_ctrl'){
+if(data_suffix == '_ros_vs_ctrl_nopatlevel'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==40) %>% dplyr::pull(Var1) # 40 = 10 reps per scenario, 2 scenarios x 2 times recording for epithelial and pathogen scores 
-}else{
-  keep_param_id = reps_df %>% dplyr::filter(Freq==100) %>% dplyr::pull(Var1) # 100 = 10 reps per scenario, 5 scenarios x 2 times recording for epithelial and pathogen scores 
+}else if(data_suffix == '_ros_vs_ctrl_patros'){
+  keep_param_id = reps_df %>% dplyr::filter(Freq==260) %>% dplyr::pull(Var1) # 260 = 10 reps per scenario, 13 scenarios x 2 times recording for epithelial and pathogen scores 
 }
 df_results = df_results_keep %>% dplyr::filter(param_set_id %in% keep_param_id)
 print(c(length(unique(df_results_keep$param_set_id)),length(unique(df_results$param_set_id))))
@@ -45,10 +47,8 @@ param_id_all_below = df_results %>%
 df_results = df_results %>% dplyr::filter(param_set_id %in% param_id_all_below)
 num_params = length(unique(df_results$param_set_id))
 
-unique(as.data.frame(table(df_results$param_set_id))[2]) # 40, sanity check!
-
 df_results_keep = df_results
-df_results      = df_results %>% dplyr::filter(control==0)
+df_results      = df_results %>% dplyr::filter(control==0 & pat_level==1 & ros_level==0 & tregs_on==0)
 df_results      = df_results %>% 
   dplyr::mutate(
     oscillating = acf_peak_val > acf_peak_val_th & acf_regularity < acf_regularity_th
@@ -60,7 +60,8 @@ majority_vote = df_results %>%
     n_true = sum(oscillating),
     n_total = n(),
     prop_true = mean(oscillating),
-    majority_oscillating = sum(oscillating) > n()/2,
+    # majority_oscillating = sum(oscillating) > n()/2,
+    majority_oscillating = sum(oscillating) > n()/4, #maybe n/2 is too strict?
     .groups = "drop"
   )
 
