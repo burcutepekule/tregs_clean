@@ -621,88 +621,216 @@ if(length(loop_over)>0){
 
       if(dim(all_comparison_results_reps)[1]>0){
         # ====== EPITHELIAL SCORE
-        # JS Divergence comparisons - Control vs each test scenario
-        # Control vs ros_level=baseline, pat_level=1, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_1_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=1, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=1, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_1_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=1, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=2, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=2, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=2, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=2, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=3, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=3, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=3, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg0_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=3, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg1_e  = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+        # JS Divergence - ALL POSSIBLE COMBINATIONS
+        # All comparisons between all 13 conditions with explicit naming
+
+        # ros0_pat1_treg0 vs all others
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_1_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat1_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat1_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat1_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat1_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat1_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat1_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_0_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat1_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros2_pat1_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat1_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros2_pat1_treg1 vs remaining
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_0_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_1_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat2_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat2_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat2_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_0_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_2_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros2_pat2_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat2_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros2_pat2_treg1 vs remaining
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros1_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_2_0_e_keep, scores_0_0_0_0_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_2_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_1_2_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_1_2_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat3_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros1_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros1_pat3_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat3_treg1_vs_ros2_pat3_treg0_e = calculate_js_divergence(scores_0_0_0_1_0_3_0_e_keep, scores_0_0_0_0_1_3_0_e_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg1_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_1_0_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+
+        # ros2_pat3_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat3_treg0_vs_ros2_pat3_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
 
         # ===== PATHOGEN ABUNDANCE
-        # JS Divergence comparisons - Control vs each test scenario
-        # Control vs ros_level=baseline, pat_level=1, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_1_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=1, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=1, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_1_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=1, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=2, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=2, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=2, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=2, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=3, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=baseline, pat_level=3, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=3, tregs=0
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg0_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
-        # Control vs ros_level=max, pat_level=3, tregs=1
-        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg1_p  = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+        # JS Divergence - ALL POSSIBLE COMBINATIONS
+        # All comparisons between all 13 conditions with explicit naming
 
-        # ====== EPITHELIAL SCORE
-        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
-        # ros_level=baseline, pat_level=1: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_1_0_e_keep, scores_0_0_0_1_0_1_0_e_keep, method = "fd")[1]
-        # ros_level=baseline, pat_level=2: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_2_0_e_keep, scores_0_0_0_1_0_2_0_e_keep, method = "fd")[1]
-        # ros_level=baseline, pat_level=3: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_0_3_0_e_keep, scores_0_0_0_1_0_3_0_e_keep, method = "fd")[1]
-        # ros_level=max, pat_level=1: treg0 vs treg1
-        all_comparison_results_reps$d_ros2_pat1_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_1_0_e_keep, scores_0_0_0_1_1_1_0_e_keep, method = "fd")[1]
-        # ros_level=max, pat_level=2: treg0 vs treg1
-        all_comparison_results_reps$d_ros2_pat2_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_2_0_e_keep, scores_0_0_0_1_1_2_0_e_keep, method = "fd")[1]
-        # ros_level=max, pat_level=3: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_e = calculate_js_divergence(scores_0_0_0_0_1_3_0_e_keep, scores_0_0_0_1_1_3_0_e_keep, method = "fd")[1]
+        # ros0_pat1_treg0 vs all others
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat1_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat1_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros0_pat1_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_1_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
 
-        # ===== PATHOGEN ABUNDANCE
-        # JS Divergence comparisons - treg0 vs treg1 for each ros/pat combination
-        # ros_level=baseline, pat_level=1: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
-        # ros_level=baseline, pat_level=2: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
-        # ros_level=baseline, pat_level=3: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
-        # ros_level=max, pat_level=1: treg0 vs treg1
-        all_comparison_results_reps$d_ros2_pat1_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
-        # ros_level=max, pat_level=2: treg0 vs treg1
-        all_comparison_results_reps$d_ros2_pat2_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
-        # ros_level=max, pat_level=3: treg0 vs treg1
-        all_comparison_results_reps$d_ros1_pat3_treg0_vs_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+        # ros1_pat1_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat1_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat1_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat1_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros1_pat1_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat1_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_0_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat1_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat1_treg1_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros2_pat1_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat1_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_1_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros2_pat1_treg1 vs remaining
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_0_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat1_treg1_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_1_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros1_pat2_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_0_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_2_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros1_pat2_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat2_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_0_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat2_treg1_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_2_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros2_pat2_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat2_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_1_2_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_2_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros2_pat2_treg1 vs remaining
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros1_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_2_0_p_keep, scores_0_0_0_0_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_2_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_1_2_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros2_pat2_treg1_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_1_2_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros1_pat3_treg0 vs remaining
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros1_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_1_0_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_0_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros1_pat3_treg1 vs remaining
+        all_comparison_results_reps$d_ros1_pat3_treg1_vs_ros2_pat3_treg0_p = calculate_js_divergence(scores_0_0_0_1_0_3_0_p_keep, scores_0_0_0_0_1_3_0_p_keep, method = "fd")[1]
+        all_comparison_results_reps$d_ros1_pat3_treg1_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_1_0_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
+
+        # ros2_pat3_treg0 vs remaining
+        all_comparison_results_reps$d_ros2_pat3_treg0_vs_ros2_pat3_treg1_p = calculate_js_divergence(scores_0_0_0_0_1_3_0_p_keep, scores_0_0_0_1_1_3_0_p_keep, method = "fd")[1]
 
         # ====== Mean scores - epithelial score
         # Control - call this ros0 for the sake of consistency! ros=1 will be baseline, ros=2 will be max ros!
