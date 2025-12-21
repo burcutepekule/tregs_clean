@@ -10,12 +10,11 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-evo_selected = readRDS('evo_selected.rds')
+reslevel_in  = 2
+evo_selected = readRDS(paste0('evo_selected_reslevel_',reslevel_in,'.rds'))
 loop_over_all= evo_selected$param_set_id
 
-# loop_over_all= c(2716)
-loop_over_all= c(2721)
-
+loop_over_all = c(1502, 51500)
 
 params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
@@ -40,11 +39,6 @@ params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
 loop_over = loop_over_all
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-
-params_df$treg_discrimination_efficiency = 1
-params_df$rat_com_pat_threshold          = 0.25
-# params_df$SAMPs_decay                    = 0.75
-# params_df$add_SAMPs                      = 0.75
 
 # # ==== I mean they are not optimal of course, one can always find the optimal config for tregs to be most useful
 # params_df$SAMPs_decay
@@ -118,25 +112,29 @@ cat("  n_tregs:", n_tregs, "\n\n")
 
 scenarios_df = expand.grid(
   control         = c(0),
-  # sterile         = c(0),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0, 1),
-  # randomize_tregs = c(0),
-  # macspec_on      = c(0, 1, 2),
-  ros_level       = c(0, 1),
-  pat_level       = c(0, 1)
+  # randomize_tregs = c(0, 1),
+  randomize_tregs = c(0),
+  # macspec_on      = c(0, 1, 2)
+  macspec_on      = c(0),
+  ros_level       = c(1, 2), # for proper labelling
+  pat_level       = c(1, 2, 3)
 )
 # DOESN'T MAKE SENSE TO RUN THIS
-# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
+scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
+scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
 scenarios_df_ctrl = expand.grid(
   control         = c(1),
-  # sterile         = c(0),
+  # sterile         = c(0, 1),
+  sterile         = c(0),
   allow_tregs     = c(0),
-  # randomize_tregs = c(0),
-  # macspec_on      = c(0),
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
   ros_level       = c(0),
-  pat_level       = c(0)
+  pat_level       = c(1)
 )
 scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
@@ -150,19 +148,18 @@ for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   results = c()
   
-  # for (scenario_ind in 1:9){
-  for (scenario_ind in 9){
+  for (scenario_ind in 1:13){
     
-    sterile         = 0
-    randomize_tregs = 0
-    macspec_on      = 0
+    sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
+    randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
+    macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     control         = scenarios_df[scenario_ind,]$control
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
-
+    
     source("./MISC/ASSIGN_PARAMETERS.R")
-
+    
     cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
                ' - scenario ', scenario_ind, '/', nrow(scenarios_df)))
     
@@ -175,8 +172,6 @@ for(param_set_id_use in loop_over){
     # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
     # ========================================================================
     source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
-    longitudinal_df_keep$ros_level = ros_level
-    longitudinal_df_keep$pat_level = pat_level
     
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
@@ -195,7 +190,7 @@ for(param_set_id_use in loop_over){
   
   p_e = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-    facet_grid(ros_level ~ control + pat_level + tregs_on, labeller = label_both) +
+    facet_grid(tregs_on ~ control + ros_level + pat_level, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
     theme(
@@ -219,7 +214,7 @@ for(param_set_id_use in loop_over){
   
   p_p = ggplot(data_long, aes(x = t, y = value, color = variable, group = rep_id)) +
     geom_line(alpha = max(1/num_reps,.1), linewidth = 1) +
-    facet_grid(ros_level ~ control + pat_level + tregs_on, labeller = label_both) +
+    facet_grid(tregs_on ~ control + ros_level + pat_level, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
     theme(
@@ -232,14 +227,14 @@ for(param_set_id_use in loop_over){
       legend.title = element_text(size = 16)
     )+
     labs(title = "", x = "Time", y = "Count", color = "Agent") 
-    # labs(title = paste0(variables, " dynamics"), x = "Time", y = "Count", color = "Agent") 
+  # labs(title = paste0(variables, " dynamics"), x = "Time", y = "Count", color = "Agent") 
   
   graphics.off()
   title_grob = ggdraw() + draw_label(paste0("param_set_id: ",param_set_id_use), fontface = "bold", size = 20)
   p_all = plot_grid(title_grob, p_e, p_p, ncol = 1, rel_heights = c(0.05, 1, 1))
-
+  
   ggsave(
-    filename = paste0("./more_ros/param_set_id_",param_set_id_use,".png"),
+    filename = paste0("./more_ros/param_set_id_",param_set_id_use,"_reslevel_",reslevel_in,".png"),
     plot = p_all,
     width = 22,
     height = 14,

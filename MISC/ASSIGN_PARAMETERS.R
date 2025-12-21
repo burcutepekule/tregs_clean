@@ -20,7 +20,7 @@ if(control==1){
 }else{
   add_ROS = param_set_use$add_ROS
   activity_ROS_M1_baseline = param_set_use$activity_ROS_M1_baseline
-  if(ros_level==1){
+  if(ros_level==2){ # this used to be ==1 (still like that in the cluster as of 21 Dec 2025)
     add_ROS = 1 #max
   }
 }

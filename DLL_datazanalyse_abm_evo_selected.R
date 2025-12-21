@@ -47,38 +47,11 @@ param_id_all_below = df_results %>%
 df_results = df_results %>% dplyr::filter(param_set_id %in% param_id_all_below)
 num_params = length(unique(df_results$param_set_id))
 
-df_comparisons = distinct(df_results %>% dplyr::select(
-  param_set_id, injury_type,
-  # Mean scores
-  mean_ros0_pat1_treg0_e, # control
-  mean_ros1_pat1_treg0_e, # ros on, pat level 1
-  mean_ros1_pat2_treg0_e, # ros on, pat level 2
-  mean_ros1_pat3_treg0_e, # ros on, pat level 3
-  mean_ros2_pat1_treg0_e, # ros harder, pat level 1
-  mean_ros2_pat2_treg0_e, # ros harder, pat level 2
-  mean_ros2_pat3_treg0_e, # ros harder, pat level 3
-  mean_ros1_pat1_treg1_e, # ros on, pat level 1, tregs on
-  mean_ros1_pat2_treg1_e, # ros on, pat level 2, tregs on
-  mean_ros1_pat3_treg1_e, # ros on, pat level 3, tregs on
-  mean_ros2_pat1_treg1_e, # ros harder, pat level 1, tregs on
-  mean_ros2_pat2_treg1_e, # ros harder, pat level 2, tregs on
-  mean_ros2_pat3_treg1_e, # ros harder, pat level 3, tregs on
-  mean_ros0_pat1_treg0_p, # control
-  mean_ros1_pat1_treg0_p, # ros on, pat level 1
-  mean_ros1_pat2_treg0_p, # ros on, pat level 2
-  mean_ros1_pat3_treg0_p, # ros on, pat level 3
-  mean_ros2_pat1_treg0_p, # ros harder, pat level 1
-  mean_ros2_pat2_treg0_p, # ros harder, pat level 2
-  mean_ros2_pat3_treg0_p, # ros harder, pat level 3
-  mean_ros1_pat1_treg1_p, # ros on, pat level 1, tregs on
-  mean_ros1_pat2_treg1_p, # ros on, pat level 2, tregs on
-  mean_ros1_pat3_treg1_p, # ros on, pat level 3, tregs on
-  mean_ros2_pat1_treg1_p, # ros harder, pat level 1, tregs on
-  mean_ros2_pat2_treg1_p, # ros harder, pat level 2, tregs on
-  mean_ros2_pat3_treg1_p  # ros harder, pat level 3, tregs on
-))
+df_comparisons = df_results %>% dplyr::select(
+  param_set_id, injury_type, 
+  starts_with("d_ros"), starts_with("mean_ros"))
 
-df_comparisons_keep = df_comparisons
+df_comparisons_keep = distinct(df_comparisons)
 
 # ============= HELPER FUNCTION: Define "infection under control" ====================================================
 # Infection is under control when:
@@ -98,11 +71,14 @@ df_step1 = df_comparisons_keep %>%
   dplyr::mutate(
     # Check if ros0_pat1_treg0 is NOT under control (infection causes damage)
     ros0_pat1_not_controlled = !is_under_control(mean_ros0_pat1_treg0_e, mean_ros0_pat1_treg0_p),
+    # # Check if ros1_pat1_treg0 is better (lower pathogen, higher epithelial health)
+    # ros1_better_than_ros0 = ((mean_ros1_pat1_treg0_p < mean_ros0_pat1_treg0_p) & (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p) >= jsd_th) &
+    #                         ((mean_ros1_pat1_treg0_e > mean_ros0_pat1_treg0_e) & (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e) >= jsd_th)
     # Check if ros1_pat1_treg0 is better (lower pathogen, higher epithelial health)
-    ros1_better_than_ros0 = (mean_ros1_pat1_treg0_p < mean_ros0_pat1_treg0_p) &
-                            (mean_ros1_pat1_treg0_e > mean_ros0_pat1_treg0_e)
+    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p)
   ) %>%
-  dplyr::filter(ros0_pat1_not_controlled & ros1_better_than_ros0)
+  # dplyr::filter(ros0_pat1_not_controlled & ros1_better_than_ros0)
+  dplyr::filter(ros0_pat1_not_controlled & ros1_pat1_controlled)
 
 cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 
@@ -112,10 +88,11 @@ cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 # reslevel_1: ros1_ controls pat1_ but NOT pat2_
 df_reslevel_1 = df_step1 %>%
   dplyr::mutate(
-    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
-    ros1_pat2_not_controlled = !is_under_control(mean_ros1_pat2_treg0_e, mean_ros1_pat2_treg0_p)
+    ros1_pat2_worse = ((mean_ros1_pat2_treg0_p-mean_ros1_pat1_treg0_p) >= tol_in_p) &
+                      ((mean_ros1_pat2_treg0_e-mean_ros1_pat1_treg0_e) < -1*tol_in_e) 
+    
   ) %>%
-  dplyr::filter(ros1_pat1_controlled & ros1_pat2_not_controlled) %>%
+  dplyr::filter(ros1_pat2_worse) %>%
   dplyr::mutate(resistance_level = "reslevel_1")
 
 cat("  reslevel_1 (ros1 controls pat1, but not pat2):", nrow(df_reslevel_1), "parameter sets\n")
@@ -123,11 +100,12 @@ cat("  reslevel_1 (ros1 controls pat1, but not pat2):", nrow(df_reslevel_1), "pa
 # reslevel_2: ros1_ controls both pat1_ AND pat2_ but NOT pat3_
 df_reslevel_2 = df_step1 %>%
   dplyr::mutate(
-    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
-    ros1_pat2_controlled = is_under_control(mean_ros1_pat2_treg0_e, mean_ros1_pat2_treg0_p),
-    ros1_pat3_not_controlled = !is_under_control(mean_ros1_pat3_treg0_e, mean_ros1_pat3_treg0_p)
+    ros1_pat2_worse = ((mean_ros1_pat2_treg0_p-mean_ros1_pat1_treg0_p) >= tol_in_p) &
+                      ((mean_ros1_pat2_treg0_e-mean_ros1_pat1_treg0_e) < -1*tol_in_e),
+    ros1_pat3_worse = ((mean_ros1_pat3_treg0_p-mean_ros1_pat2_treg0_p) >= tol_in_p) &
+                      ((mean_ros1_pat3_treg0_e-mean_ros1_pat2_treg0_e) < -1*tol_in_e) 
   ) %>%
-  dplyr::filter(ros1_pat1_controlled & ros1_pat2_controlled & ros1_pat3_not_controlled) %>%
+  dplyr::filter(!ros1_pat2_worse & ros1_pat3_worse) %>%
   dplyr::mutate(resistance_level = "reslevel_2")
 
 cat("  reslevel_2 (ros1 controls pat1 & pat2, but not pat3):", nrow(df_reslevel_2), "parameter sets\n")
