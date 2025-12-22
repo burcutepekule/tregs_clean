@@ -203,3 +203,32 @@ ggsave(
   bg='white'
 )
 
+#######
+df_results_osc       = df_results %>% dplyr::filter(oscillating==TRUE)
+df_params_merged_osc = merge(df_params_merged, distinct(df_results_osc[c('param_set_id','acf_peak_lag')]), by='param_set_id')
+df_distinct = distinct(df_params_merged_osc[c('active_age_limit','acf_peak_lag')])
+
+cor_value = cor(df_distinct$active_age_limit, 
+                 df_distinct$acf_peak_lag, 
+                 use = "complete.obs")
+
+p_lag = ggplot(df_distinct, aes(x = active_age_limit, y = acf_peak_lag)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  annotate("text", 
+           x = Inf, y = Inf, 
+           label = paste0("R = ", round(cor_value, 3)),
+           hjust = 1.1, vjust = 1.5, 
+           size = 5, fontface = "italic") +
+  labs(x = "Active Age Limit",
+       y = "ACF Peak Lag") +
+  theme_minimal()
+
+ggsave(
+  filename = paste0("./agl_cycling/agl_cycling_peak_lag_vs_agl.png"),
+  plot = p_lag,
+  width = 6,
+  height = 5,
+  dpi = 300,
+  bg='white'
+)
