@@ -1,0 +1,103 @@
+rm(list=ls())
+library(dplyr)
+library(tidyr)
+library(lhs)
+library(readr)
+
+# Define the original parameter bounds (matching mass_simulation_LHS.py)
+# NOTE: Treg-specific parameters (rat_com_pat_threshold, diffusion_speed_SAMPs,
+# add_SAMPs, SAMPs_decay, activation_threshold_SAMPs, treg_discrimination_efficiency)
+# are excluded from LHS generation and will be optimized separately
+param_bounds = list(
+  rate_leak_pathogen_injury = c(1, 1), #FIXED
+  rate_leak_commensal_injury = c(0.5, 0.5), #FIXED
+  rate_leak_commensal_baseline = c(0.05, 0.05), #FIXED
+  epith_recovery_chance = c(0.05, 0.05), #FIXED
+  th_ROS_microbe        = c(0, 0.4999),  # th_ROS_microbe should be lower than th_ROS_epith_injury
+  th_ROS_epith_injury   = c(0.5, 1), # th_ROS_microbe should be lower than th_ROS_epith_injury
+  # rat_com_pat_threshold = c(0.5, 1),  # EXCLUDED - to be optimized
+  diffusion_speed_DAMPs = c(0, 0.12),
+  diffusion_speed_PAMPs = c(0, 0.12),
+  # diffusion_speed_SAMPs = c(0, 0.12),  # EXCLUDED - to be optimized
+  diffusion_speed_ROS   = c(0, 0.12),
+  add_ROS   = c(0, 0.5),
+  add_DAMPs = c(0, 0.5),
+  # add_SAMPs = c(0, 0.5),  # EXCLUDED - to be optimized
+  add_PAMPs = c(0, 0.5),
+  ros_decay = c(0, 0.5),
+  DAMPs_decay = c(0, 0.5),
+  # SAMPs_decay = c(0, 0.5),  # EXCLUDED - to be optimized
+  PAMPs_decay = c(0, 0.5),
+  activation_threshold_danger = c(0, 2), # because we sum DAMPs and PAMPs now, it should double!
+  # activation_threshold_SAMPs  = c(0, 1),  # EXCLUDED - to be optimized
+  activity_engulf_M0_baseline = c(0.05, 0.05), #FIXED
+  activity_engulf_M1_baseline = c(0.05, 0.50),
+  # activity_engulf_M2_baseline = c(0.05, 0.75),
+  activity_ROS_M1_baseline    = c(0, 1),
+  cc_phagocyte     = c(1, 30), # discrete parameter, will be rounded
+  active_age_limit = c(1, 30), # discrete parameter, will be rounded
+  # treg_discrimination_efficiency = c(0, 1),  # EXCLUDED - to be optimized
+  recruitment_rate_danger = c(0, 0.25)  # Macrophage recruitment rate from borders (proportional to danger signal)
+)
+
+# Define Treg-specific parameter bounds separately (for optimization)
+treg_param_bounds = list(
+  rat_com_pat_threshold = c(0.5, 1),
+  diffusion_speed_SAMPs = c(0, 0.12),
+  add_SAMPs = c(0, 0.5),
+  SAMPs_decay = c(0, 0.5),
+  activation_threshold_SAMPs = c(0, 1),
+  treg_discrimination_efficiency = c(0, 1)
+)
+
+param_names = names(param_bounds)
+# Set parameters
+set.seed(123)
+n_samples = 1e6  # Total number of LHS samples to generate - make it 10 times higher for filtering later
+
+# Generate LHS samples from original bounds
+cat("Generating", n_samples, "LHS samples from original parameter bounds...\n")
+
+n_params = length(param_names)
+lhs_unit = randomLHS(n_samples, n_params)
+
+# Create dataframe for samples
+lhs_samples = as.data.frame(lhs_unit)
+names(lhs_samples) = param_names
+
+# Scale each parameter to its original bounds
+for (param in param_names) {
+  param_min = param_bounds[[param]][1]
+  param_max = param_bounds[[param]][2]
+  lhs_samples[[param]] = lhs_samples[[param]]*(param_max - param_min) + param_min
+}
+
+# Round the discrete parameter
+lhs_samples$active_age_limit = round(lhs_samples$active_age_limit)
+lhs_samples$cc_phagocyte     = round(lhs_samples$cc_phagocyte)
+# add M2
+lhs_samples$activity_engulf_M2_baseline = lhs_samples$activity_engulf_M1_baseline # let's make this equal to make it easier to compare
+param_names = c(param_names, 'activity_engulf_M2_baseline')
+
+# lhs_samples = lhs_samples %>% dplyr::filter(cc_phagocyte<=active_age_limit) # otherwise having a registry longer than the active age doesn't make sense
+lhs_samples = lhs_samples[1:(n_samples/10),]
+
+# Add parameter set ID
+lhs_samples$param_set_id = 0:(nrow(lhs_samples) - 1)
+
+# For ubelix
+# lhs_samples$param_set_id = lhs_samples$param_set_id+nrow(lhs_samples)
+
+# Reorder columns to put param_set_id first
+lhs_samples = lhs_samples[c('param_set_id', param_names)]
+
+# Export
+output_file = "./lhs_parameters_della_topt.csv"
+write.csv(lhs_samples, output_file, row.names = FALSE)
+cat("\nDataset saved to:", output_file, "\n")
+cat("Total parameter sets:", nrow(lhs_samples), "\n")
+
+# Export Treg parameter bounds for optimization
+treg_bounds_file = "./treg_param_bounds.rds"
+saveRDS(treg_param_bounds, treg_bounds_file)
+cat("Treg parameter bounds saved to:", treg_bounds_file, "\n")
