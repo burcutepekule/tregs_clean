@@ -10,13 +10,14 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-reslevel_in  = 2
-evo_selected = readRDS(paste0('evo_selected_reslevel_',reslevel_in,'.rds'))
-loop_over_all= evo_selected$param_set_id
+reslevel_in     = 1
+loop_over_all   = readRDS(paste0('evo_selected_reslevel_',reslevel_in,'.rds'))
 
-loop_over_all = c(1502, 51500)
+params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
-params_df    = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+df_results_keep = readRDS(paste0('./data_cpp_read_abm','_ros_vs_ctrl_patros','.rds'))
+df_results_pick = df_results_keep %>% dplyr::filter(param_set_id %in% loop_over_all)
+df_results_pick_ss = distinct(df_results_pick[c('param_set_id','ss_start')])
 
 # params_df_pick = params_df %>% dplyr::filter(param_set_id==2716)
 # params_long_pick = params_df_pick %>%
@@ -58,7 +59,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 5
-t_max      = 1000
+t_max      = 5000
 
 plot_on    = 0
 plot_every = 10

@@ -57,7 +57,7 @@ df_comparisons_keep = distinct(df_comparisons)
 # Infection is under control when:
 # 1. Epithelial health is approximately 150 (threshold: > 149)
 # 2. Pathogen load is approximately 0 (threshold: < 1)
-is_under_control <- function(epithelial_health, pathogen_load) {
+is_under_control = function(epithelial_health, pathogen_load) {
   return(epithelial_health > 149 & pathogen_load < 1)
 }
 
@@ -70,17 +70,15 @@ df_step1 = df_comparisons_keep %>%
   dplyr::filter(injury_type == 'pathogenic') %>%
   dplyr::mutate(
     # Check if ros0_pat1_treg0 is NOT under control (infection causes damage)
-    ros0_pat1_not_controlled = !is_under_control(mean_ros0_pat1_treg0_e, mean_ros0_pat1_treg0_p),
-    # # Check if ros1_pat1_treg0 is better (lower pathogen, higher epithelial health)
-    # ros1_better_than_ros0 = ((mean_ros1_pat1_treg0_p < mean_ros0_pat1_treg0_p) & (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p) >= jsd_th) &
-    #                         ((mean_ros1_pat1_treg0_e > mean_ros0_pat1_treg0_e) & (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e) >= jsd_th)
-    # Check if ros1_pat1_treg0 is better (lower pathogen, higher epithelial health)
-    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p)
+    ros0_pat1_controlled = is_under_control(mean_ros0_pat1_treg0_e, mean_ros0_pat1_treg0_p),
+    ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
+    ros1_sigdiff_ros0    = (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p >= jsd_th & d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e >= jsd_th )
   ) %>%
-  # dplyr::filter(ros0_pat1_not_controlled & ros1_better_than_ros0)
-  dplyr::filter(ros0_pat1_not_controlled & ros1_pat1_controlled)
+  dplyr::filter(!ros0_pat1_controlled & ros1_pat1_controlled)
 
 cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
+evo_selected_reslevel_0_ids = sort(df_step1$param_set_id)
+saveRDS(evo_selected_reslevel_0_ids, 'evo_selected_reslevel_0.rds')
 
 # ============= STEP 2: Split into resistance levels ====================================================
 # Identify two groups based on how much ROS is needed (still no tregs, treg0_):
@@ -88,34 +86,35 @@ cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 # reslevel_1: ros1_ controls pat1_ but NOT pat2_
 df_reslevel_1 = df_step1 %>%
   dplyr::mutate(
-    ros1_pat2_worse = ((mean_ros1_pat2_treg0_p-mean_ros1_pat1_treg0_p) >= tol_in_p) &
-                      ((mean_ros1_pat2_treg0_e-mean_ros1_pat1_treg0_e) < -1*tol_in_e) 
-    
+    ros1_pat2_worse = 
+      # (mean_ros1_pat2_treg0_p>mean_ros1_pat1_treg0_p & d_ros1_pat1_treg0_vs_ros1_pat2_treg0_p >= jsd_th &
+      # mean_ros1_pat2_treg0_e<mean_ros1_pat1_treg0_e & d_ros1_pat1_treg0_vs_ros1_pat2_treg0_e >= jsd_th)
+      (mean_ros1_pat2_treg0_p>mean_ros1_pat1_treg0_p &
+         mean_ros1_pat2_treg0_e<mean_ros1_pat1_treg0_e)
   ) %>%
   dplyr::filter(ros1_pat2_worse) %>%
   dplyr::mutate(resistance_level = "reslevel_1")
-
 cat("  reslevel_1 (ros1 controls pat1, but not pat2):", nrow(df_reslevel_1), "parameter sets\n")
 
-# reslevel_2: ros1_ controls both pat1_ AND pat2_ but NOT pat3_
-df_reslevel_2 = df_step1 %>%
+# reslevel_2: ros1_ controls pat2_ but NOT pat3_
+df_step2 = df_step1 %>% dplyr::filter(!(param_set_id %in% df_reslevel_1$param_set_id))
+df_reslevel_2 = df_step2 %>%
   dplyr::mutate(
-    ros1_pat2_worse = ((mean_ros1_pat2_treg0_p-mean_ros1_pat1_treg0_p) >= tol_in_p) &
-                      ((mean_ros1_pat2_treg0_e-mean_ros1_pat1_treg0_e) < -1*tol_in_e),
-    ros1_pat3_worse = ((mean_ros1_pat3_treg0_p-mean_ros1_pat2_treg0_p) >= tol_in_p) &
-                      ((mean_ros1_pat3_treg0_e-mean_ros1_pat2_treg0_e) < -1*tol_in_e) 
+    ros1_pat3_worse =       
+      (mean_ros1_pat3_treg0_p>mean_ros1_pat2_treg0_p &
+         mean_ros1_pat3_treg0_e<mean_ros1_pat2_treg0_e)
+    
   ) %>%
-  dplyr::filter(!ros1_pat2_worse & ros1_pat3_worse) %>%
+  dplyr::filter(ros1_pat3_worse) %>%
   dplyr::mutate(resistance_level = "reslevel_2")
-
-cat("  reslevel_2 (ros1 controls pat1 & pat2, but not pat3):", nrow(df_reslevel_2), "parameter sets\n")
+cat("  reslevel_2 (ros1 controls pat2, but not pat3):", nrow(df_reslevel_2), "parameter sets\n")
 
 # ============= STEP 3: Identify evolutionary advantage of Tregs ====================================================
 # 3.1: Within reslevel_1, tregs (treg1) should enable ros2_ to control pat2_ and/or pat3_
 df_reslevel_1_with_treg_advantage = df_reslevel_1 %>%
   dplyr::mutate(
-    ros2_treg1_controls_pat2 = is_under_control(mean_ros2_pat2_treg1_e, mean_ros2_pat2_treg1_p),
-    ros2_treg1_controls_pat3 = is_under_control(mean_ros2_pat3_treg1_e, mean_ros2_pat3_treg1_p),
+    ros2_treg1_controls_pat2 = (mean_ros2_pat2_treg0_p>mean_ros2_pat2_treg1_p & mean_ros2_pat2_treg0_e<mean_ros2_pat2_treg1_e),
+    ros2_treg1_controls_pat3 = (mean_ros2_pat3_treg0_p>mean_ros2_pat3_treg1_p & mean_ros2_pat3_treg0_e<mean_ros2_pat3_treg1_e),
     # Tregs provide advantage if ros2+treg1 controls either pat2 or pat3 (or both)
     treg_advantage = ros2_treg1_controls_pat2 | ros2_treg1_controls_pat3
   ) %>%
@@ -126,7 +125,7 @@ cat("  reslevel_1 with Treg advantage:", nrow(df_reslevel_1_with_treg_advantage)
 # 3.2: Within reslevel_2, tregs (treg1) should enable ros2_ to control pat3_
 df_reslevel_2_with_treg_advantage = df_reslevel_2 %>%
   dplyr::mutate(
-    ros2_treg1_controls_pat3 = is_under_control(mean_ros2_pat3_treg1_e, mean_ros2_pat3_treg1_p),
+    ros2_treg1_controls_pat3 = (mean_ros2_pat3_treg0_p>mean_ros2_pat3_treg1_p & mean_ros2_pat3_treg0_e<mean_ros2_pat3_treg1_e),
     treg_advantage = ros2_treg1_controls_pat3
   ) %>%
   dplyr::filter(treg_advantage)
@@ -146,8 +145,8 @@ cat("\nTotal evolutionarily selected parameter sets:", nrow(df_evo_selected), "\
 saveRDS(df_evo_selected, 'evo_selected.rds')
 
 # Also save separate files for each resistance level for further analysis
-saveRDS(df_reslevel_1_with_treg_advantage, 'evo_selected_reslevel_1.rds')
-saveRDS(df_reslevel_2_with_treg_advantage, 'evo_selected_reslevel_2.rds')
+saveRDS(df_reslevel_1_with_treg_advantage$param_set_id, 'evo_selected_reslevel_1.rds')
+saveRDS(df_reslevel_2_with_treg_advantage$param_set_id, 'evo_selected_reslevel_2.rds')
 
 # Print summary statistics
 cat("\n=== SUMMARY ===\n")
