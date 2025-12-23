@@ -13,7 +13,13 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 cat("Loading base parameters and Treg parameter bounds...\n")
-params_df = read.csv("./lhs_parameters_della_topt.csv", stringsAsFactors = FALSE)
+params_df_old = read.csv("./lhs_parameters_della_topt.csv", stringsAsFactors = FALSE)
+
+params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+evo_selected_reslevel_0_ids = readRDS('evo_selected_reslevel_0.rds')
+params_df = params_df %>% dplyr::filter(param_set_id %in% evo_selected_reslevel_0_ids)
+params_df = params_df[colnames(params_df_old)]
+
 treg_param_bounds = readRDS("./treg_param_bounds.rds")
 
 cat("Loaded", nrow(params_df), "parameter sets\n")
@@ -23,15 +29,18 @@ cat("Treg parameters to optimize:", paste(names(treg_param_bounds), collapse=", 
 # COMMAND LINE ARGUMENTS
 # ============================================================================
 
-args = commandArgs(trailingOnly = TRUE)
-if (length(args) >= 2) {
-  param_set_id_use = as.integer(args[1])
-  scenario_ind_use = as.integer(args[2])
-} else {
-  # Default for testing
-  param_set_id_use = 0
-  scenario_ind_use = 2
-}
+# args = commandArgs(trailingOnly = TRUE)
+# if (length(args) >= 2) {
+#   param_set_id_use = as.integer(args[1])
+#   scenario_ind_use = as.integer(args[2])
+# } else {
+#   # Default for testing
+#   param_set_id_use = 0
+#   scenario_ind_use = 2
+# }
+
+param_set_id_use = 1401
+scenario_ind_use = 2
 
 # ============================================================================
 # FIXED PARAMETERS (same as DLL_datagen_abm.R)
@@ -39,8 +48,8 @@ if (length(args) >= 2) {
 
 plot_on    = 0
 plot_every = 0
-t_max      = 500
-num_reps   = 10
+t_max      = 5000
+num_reps   = 100
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)

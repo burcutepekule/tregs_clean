@@ -10,14 +10,14 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-reslevel_in     = 1
+reslevel_in     = 0
 loop_over_all   = readRDS(paste0('evo_selected_reslevel_',reslevel_in,'.rds'))
+loop_over_all   = 96101
 
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
-df_results_keep = readRDS(paste0('./data_cpp_read_abm','_ros_vs_ctrl_patros','.rds'))
-df_results_pick = df_results_keep %>% dplyr::filter(param_set_id %in% loop_over_all)
-df_results_pick_ss = distinct(df_results_pick[c('param_set_id','ss_start')])
+# df_results_keep = readRDS(paste0('./data_cpp_read_abm','_ros_vs_ctrl_patros','.rds'))
+# df_results_pick = df_results_keep %>% dplyr::filter(param_set_id %in% loop_over_all)
 
 # params_df_pick = params_df %>% dplyr::filter(param_set_id==2716)
 # params_long_pick = params_df_pick %>%
@@ -40,6 +40,13 @@ df_results_pick_ss = distinct(df_results_pick[c('param_set_id','ss_start')])
 
 loop_over = loop_over_all
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+
+params_df$activity_engulf_M1_baseline = 0.2
+params_df$activity_engulf_M2_baseline = 0.2
+
+# ### make it equal to 96101 in terms of tregs? 
+# params_df$activation_threshold_SAMPs = 0.0224
+# params_df$add_SAMPs = 0.0243
 
 # # ==== I mean they are not optimal of course, one can always find the optimal config for tregs to be most useful
 # params_df$SAMPs_decay

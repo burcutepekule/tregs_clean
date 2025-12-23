@@ -80,6 +80,24 @@ cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 evo_selected_reslevel_0_ids = sort(df_step1$param_set_id)
 saveRDS(evo_selected_reslevel_0_ids, 'evo_selected_reslevel_0.rds')
 
+
+df_step1_treg = df_step1[c('param_set_id',
+                           'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_e',
+                           'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_e',
+                           'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_e',
+                           'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_e',
+                           'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_e',
+                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_e')]
+
+df_step1_96101   = df_step1 %>% dplyr::filter(param_set_id==96101) %>% dplyr::select(-injury_type)
+params_long_pick = df_step1_96101 %>%
+  pivot_longer(
+    cols = -param_set_id,  # keep param_set_id as identifier
+    names_to = "parameter",
+    values_to = "value"
+  )
+
+
 # ============= STEP 2: Split into resistance levels ====================================================
 # Identify two groups based on how much ROS is needed (still no tregs, treg0_):
 
@@ -153,3 +171,19 @@ cat("\n=== SUMMARY ===\n")
 cat("Resistance Level 1:", nrow(df_reslevel_1_with_treg_advantage), "sets\n")
 cat("Resistance Level 2:", nrow(df_reslevel_2_with_treg_advantage), "sets\n")
 cat("Total selected:", nrow(df_evo_selected), "sets\n")
+
+df_reslevel_1_with_treg_advantage_long = df_reslevel_1_with_treg_advantage %>%
+  dplyr::select(-resistance_level) %>%
+  pivot_longer(
+    cols = -c(param_set_id, injury_type),  # keep param_set_id as identifier
+    names_to = "parameter",
+    values_to = "value"
+  )
+
+df_params_pick = df_params %>% dplyr::filter(param_set_id %in% df_reslevel_1_with_treg_advantage$param_set_id)
+df_params_pick_long = df_params_pick %>%
+  pivot_longer(
+    cols = -param_set_id,  # keep param_set_id as identifier
+    names_to = "parameter",
+    values_to = "value"
+  )
