@@ -8,9 +8,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
-# path         = "/Users/burcutepekule/Desktop/sim_abm_10/"
 param_id_vec = 0
-# param_id_vec = 32100
 rep_ind_vec  = 0:9
 alpha_plot   = 1/length(rep_ind_vec)
 

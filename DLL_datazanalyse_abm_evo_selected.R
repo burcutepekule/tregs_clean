@@ -21,6 +21,7 @@ labels_on      = 1
 score_type     = 'pathogen'
 data_suffix    = '_ros_vs_ctrl_nopatlevel' #
 data_suffix    = '_ros_vs_ctrl_patros' #
+data_suffix    = '_patros' #
 
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
@@ -30,12 +31,15 @@ df_results_keep = readRDS(paste0('./data_cpp_read_abm',data_suffix,'.rds'))
 length(unique(df_results_keep$param_set_id))
 
 # --- filter for complete # of reps 
-reps_df       = as.data.frame(table(df_results_keep$param_set_id))
+reps_df = as.data.frame(table(df_results_keep$param_set_id))
 if(data_suffix == '_ros_vs_ctrl_nopatlevel'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==40) %>% dplyr::pull(Var1) # 40 = 10 reps per scenario, 2 scenarios x 2 times recording for epithelial and pathogen scores 
 }else if(data_suffix == '_ros_vs_ctrl_patros'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==260) %>% dplyr::pull(Var1) # 260 = 10 reps per scenario, 13 scenarios x 2 times recording for epithelial and pathogen scores 
+}else if(data_suffix == '_patros'){
+  keep_param_id = reps_df %>% dplyr::filter(Freq==180) %>% dplyr::pull(Var1) # 180 = 10 reps per scenario, 9 scenarios x 2 times recording for epithelial and pathogen scores 
 }
+
 df_results = df_results_keep %>% filter(param_set_id %in% keep_param_id)
 length(unique(df_results$param_set_id))
 
@@ -55,12 +59,14 @@ df_comparisons = df_results %>% dplyr::select(
 
 df_comparisons_keep = distinct(df_comparisons)
 
+df_results_901 = df_results %>% dplyr::filter(param_set_id==901)
+
 # ============= HELPER FUNCTION: Define "infection under control" ====================================================
 # Infection is under control when:
 # 1. Epithelial health is approximately 150 (threshold: > 149)
 # 2. Pathogen load is approximately 0 (threshold: < 1)
 is_under_control = function(epithelial_health, pathogen_load) {
-  return(epithelial_health > 149 & pathogen_load < 1)
+  return(epithelial_health > 149 & pathogen_load < 10)
 }
 
 # ============= STEP 1: Filter for evolutionary need for ROS ====================================================
@@ -68,104 +74,157 @@ is_under_control = function(epithelial_health, pathogen_load) {
 #   a) Cause significant injury to epithelium (ros0_pat1 NOT under control)
 #   b) Have higher pathogen burden than ros1_pat1 case (ros1_pat1 should be better)
 
-df_step1 = df_comparisons_keep %>%
+df_steps = df_comparisons_keep %>%
   dplyr::filter(injury_type == 'pathogenic') %>%
   dplyr::mutate(
     # Check if ros0_pat1_treg0 is NOT under control (infection causes damage)
     ros0_pat1_controlled = is_under_control(mean_ros0_pat1_treg0_e, mean_ros0_pat1_treg0_p),
     ros1_pat1_controlled = is_under_control(mean_ros1_pat1_treg0_e, mean_ros1_pat1_treg0_p),
-    ros1_sigdiff_ros0    = (d_ros0_pat1_treg0_vs_ros1_pat1_treg0_p >= jsd_th & d_ros0_pat1_treg0_vs_ros1_pat1_treg0_e >= jsd_th )
-  ) %>%
-  dplyr::filter(!ros0_pat1_controlled & ros1_pat1_controlled)
+    ros2_pat1_controlled = is_under_control(mean_ros2_pat1_treg0_e, mean_ros2_pat1_treg0_p),
+    ros0_pat2_controlled = is_under_control(mean_ros0_pat2_treg0_e, mean_ros0_pat2_treg0_p),
+    ros1_pat2_controlled = is_under_control(mean_ros1_pat2_treg0_e, mean_ros1_pat2_treg0_p),
+    ros2_pat2_controlled = is_under_control(mean_ros2_pat2_treg0_e, mean_ros2_pat2_treg0_p),
+    ros0_pat3_controlled = is_under_control(mean_ros0_pat3_treg0_e, mean_ros0_pat3_treg0_p),
+    ros1_pat3_controlled = is_under_control(mean_ros1_pat3_treg0_e, mean_ros1_pat3_treg0_p),
+    ros2_pat3_controlled = is_under_control(mean_ros2_pat3_treg0_e, mean_ros2_pat3_treg0_p)
+  ) 
 
-cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
-evo_selected_reslevel_0_ids = sort(df_step1$param_set_id)
-saveRDS(evo_selected_reslevel_0_ids, 'evo_selected_reslevel_0.rds')
+length(df_steps$param_set_id)
 
-### ======== Any treg help for other patros levels?
-df_step1_treg_jsd = df_step1[c('param_set_id',
-                           'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_e',
-                           'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_e',
-                           'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_e',
-                           'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_e',
-                           'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_e',
-                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_e',
-                           'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_p',
-                           'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_p',
-                           'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_p',
-                           'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_p',
-                           'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_p',
-                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_p')]
+df_steps_not_selected = df_steps %>% dplyr::filter(ros0_pat1_controlled & ros0_pat2_controlled & ros0_pat3_controlled)
+length(df_steps_not_selected$param_set_id)
 
-df_step1_treg_mean = df_step1[c('param_set_id',
-                               'mean_ros1_pat1_treg0_e','mean_ros1_pat1_treg1_e',
-                               'mean_ros2_pat1_treg0_e','mean_ros2_pat1_treg1_e',
-                               'mean_ros1_pat2_treg0_e','mean_ros1_pat2_treg1_e',
-                               'mean_ros2_pat2_treg0_e','mean_ros2_pat2_treg1_e',
-                               'mean_ros1_pat3_treg0_e','mean_ros1_pat3_treg1_e',
-                               'mean_ros2_pat3_treg0_e','mean_ros2_pat3_treg1_e',
-                               'mean_ros1_pat1_treg0_p','mean_ros1_pat1_treg1_p',
-                               'mean_ros2_pat1_treg0_p','mean_ros2_pat1_treg1_p',
-                               'mean_ros1_pat2_treg0_p','mean_ros1_pat2_treg1_p',
-                               'mean_ros2_pat2_treg0_p','mean_ros2_pat2_treg1_p',
-                               'mean_ros1_pat3_treg0_p','mean_ros1_pat3_treg1_p',
-                               'mean_ros2_pat3_treg0_p','mean_ros2_pat3_treg1_p')]
+df_step_pat1 = df_steps %>% dplyr::filter(!ros0_pat1_controlled)
+df_step_pat2 = df_steps %>% dplyr::filter(ros0_pat1_controlled & !ros0_pat2_controlled)
+df_step_pat3 = df_steps %>% dplyr::filter(ros0_pat1_controlled & ros0_pat2_controlled & !ros0_pat3_controlled)
 
-df_step1_treg_mean = df_step1_treg_mean %>% dplyr::rowwise() %>% dplyr::mutate(
-  diff_ros1_pat1_e = mean_ros1_pat1_treg1_e-mean_ros1_pat1_treg0_e,
-  diff_ros2_pat1_e = mean_ros2_pat1_treg1_e-mean_ros2_pat1_treg0_e,
-  diff_ros1_pat2_e = mean_ros1_pat2_treg1_e-mean_ros1_pat2_treg0_e,
-  diff_ros2_pat2_e = mean_ros2_pat2_treg1_e-mean_ros2_pat2_treg0_e,
-  diff_ros1_pat3_e = mean_ros1_pat3_treg1_e-mean_ros1_pat3_treg0_e,
-  diff_ros2_pat3_e = mean_ros2_pat3_treg1_e-mean_ros2_pat3_treg0_e,
-  diff_ros1_pat1_p = mean_ros1_pat1_treg1_p-mean_ros1_pat1_treg0_p,
-  diff_ros2_pat1_p = mean_ros2_pat1_treg1_p-mean_ros2_pat1_treg0_p,
-  diff_ros1_pat2_p = mean_ros1_pat2_treg1_p-mean_ros1_pat2_treg0_p,
-  diff_ros2_pat2_p = mean_ros2_pat2_treg1_p-mean_ros2_pat2_treg0_p,
-  diff_ros1_pat3_p = mean_ros1_pat3_treg1_p-mean_ros1_pat3_treg0_p,
-  diff_ros2_pat3_p = mean_ros2_pat3_treg1_p-mean_ros2_pat3_treg0_p
-)
+length(df_comparisons_keep$param_set_id)
+length(df_step_pat1$param_set_id) # without ROS, no level can be controlled 
+# - so minimum pathogen load to take seriously for these parameter vectors is pat level 1
+# can tregs help control pathogen level 1 to begin with? and then 2 and/or 3?
+length(df_step_pat2$param_set_id) # without ROS, only pat level 1 can be controlled, but not pat levels 2 and 3 
+# - so minimum pathogen load to take seriously for these parameter vectors is pat level 2
+# can tregs help control pathogen level 2 to begin with? and then 3?
+length(df_step_pat3$param_set_id) # without ROS, only pat levels 1 & 2 can be controlled, but not pat level 3
+# - so minimum pathogen load to take seriously for these parameter vectors is pat level 3
+# can tregs help control pathogen level 3?
 
-df_step1_treg_merged = merge(df_step1_treg_jsd, df_step1_treg_mean[c('param_set_id',
-                                              'diff_ros1_pat1_e',
-                                              'diff_ros2_pat1_e',
-                                              'diff_ros1_pat2_e',
-                                              'diff_ros2_pat2_e',
-                                              'diff_ros1_pat3_e',
-                                              'diff_ros2_pat3_e',
-                                              'diff_ros1_pat1_p',
-                                              'diff_ros2_pat1_p',
-                                              'diff_ros1_pat2_p',
-                                              'diff_ros2_pat2_p',
-                                              'diff_ros1_pat3_p',
-                                              'diff_ros2_pat3_p')], by='param_set_id')
+evo_selected_level_1_ids = sort(df_step_pat1$param_set_id)
+evo_selected_level_2_ids = sort(df_step_pat2$param_set_id)
+evo_selected_level_3_ids = sort(df_step_pat3$param_set_id)
+
+saveRDS(evo_selected_level_1_ids, 'evo_selected_level_1.rds')
+saveRDS(evo_selected_level_2_ids, 'evo_selected_level_2.rds')
+saveRDS(evo_selected_level_3_ids, 'evo_selected_level_3.rds')
+
+###### HERE - NOW I HAVE TO THINK ABOUT DIFFERENT LEVELS OF ROS WORKING OR NOT GIVEN DIFFERENT LEVELS OF PATHOGENS!
 
 
-df_step1_treg_merged = df_step1_treg_merged %>% dplyr::mutate(
-  ros1_pat1_e = ifelse(diff_ros1_pat1_e>tol_in_e & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_e>jsd_th, T, F),
-  ros2_pat1_e = ifelse(diff_ros2_pat1_e>tol_in_e & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_e>jsd_th, T, F),
-  ros1_pat2_e = ifelse(diff_ros1_pat2_e>tol_in_e & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_e>jsd_th, T, F),
-  ros2_pat2_e = ifelse(diff_ros2_pat2_e>tol_in_e & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_e>jsd_th, T, F),
-  ros1_pat3_e = ifelse(diff_ros1_pat3_e>tol_in_e & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_e>jsd_th, T, F),
-  ros2_pat3_e = ifelse(diff_ros2_pat3_e>tol_in_e & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_e>jsd_th, T, F),
-  ros1_pat1_p = ifelse(diff_ros1_pat1_p<tol_in_p & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_p>jsd_th, T, F),
-  ros2_pat1_p = ifelse(diff_ros2_pat1_p<tol_in_p & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_p>jsd_th, T, F),
-  ros1_pat2_p = ifelse(diff_ros1_pat2_p<tol_in_p & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_p>jsd_th, T, F),
-  ros2_pat2_p = ifelse(diff_ros2_pat2_p<tol_in_p & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_p>jsd_th, T, F),
-  ros1_pat3_p = ifelse(diff_ros1_pat3_p<tol_in_p & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_p>jsd_th, T, F),
-  ros2_pat3_p = ifelse(diff_ros2_pat3_p<tol_in_p & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_p>jsd_th, T, F)
-)
+## OK, find cases where
 
-df_step1_treg_merged_slim = df_step1_treg_merged[c('param_set_id',
-                                                   'ros1_pat1_e','ros2_pat1_e',
-                                                   'ros1_pat2_e','ros2_pat2_e',
-                                                   'ros1_pat3_e','ros2_pat3_e',
-                                                   'ros1_pat1_p','ros2_pat1_p',
-                                                   'ros1_pat2_p','ros2_pat2_p',
-                                                   'ros1_pat3_p','ros2_pat3_p')]
-# at least one TRUE in them?
-df_with_true = df_step1_treg_merged_slim[apply(df_step1_treg_merged_slim[, -1], 1, any), ]
+## Option 1 
+## ROS 0 (control) cannot resolve the infection for pat level 1. 
+## ROS 1 can resolve the infection for pat level 1. (Because at one point they needto be selected by evolution to continue before Tregs evolve.)
+## ROS 1 cannot resolve the infection for pat level 2. That's where the organism fails.
+## 1.a ROS 2 cannot resolve the infection for pat level 2 on its own but can resolve the infection with the help of Tregs.
+## 1.b ROS 3 cannot resolve the infection for pat level 2 on its own but can resolve the infection with the help of Tregs.
 
-saveRDS(df_with_true$param_set_id, 'evo_selected_js_based.rds')
-dim(df_with_true)
+## Option 2 
+## ROS 0 (control) cannot resolve the infection for pat level 2. 
+## ROS 1 can resolve the infection for pat level 1. (Because at one point they needto be selected by evolution to continue before Tregs evolve.)
+## ROS 1 cannot resolve the infection for pat level 2. That's where the organism fails.
+## 1.a ROS 2 cannot resolve the infection on its own but can resolve the infection with the help of Tregs.
+## 1.b ROS 3 cannot resolve the infection on its own but can resolve the infection with the help of Tregs.
 
+
+
+
+
+# 
+# ### ======== Any treg help for other patros levels?
+# df_step1_treg_jsd = df_step1[c('param_set_id',
+#                            'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_e',
+#                            'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_e',
+#                            'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_e',
+#                            'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_e',
+#                            'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_e',
+#                            'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_e',
+#                            'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_p',
+#                            'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_p',
+#                            'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_p',
+#                            'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_p',
+#                            'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_p',
+#                            'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_p')]
+# 
+# df_step1_treg_mean = df_step1[c('param_set_id',
+#                                'mean_ros1_pat1_treg0_e','mean_ros1_pat1_treg1_e',
+#                                'mean_ros2_pat1_treg0_e','mean_ros2_pat1_treg1_e',
+#                                'mean_ros1_pat2_treg0_e','mean_ros1_pat2_treg1_e',
+#                                'mean_ros2_pat2_treg0_e','mean_ros2_pat2_treg1_e',
+#                                'mean_ros1_pat3_treg0_e','mean_ros1_pat3_treg1_e',
+#                                'mean_ros2_pat3_treg0_e','mean_ros2_pat3_treg1_e',
+#                                'mean_ros1_pat1_treg0_p','mean_ros1_pat1_treg1_p',
+#                                'mean_ros2_pat1_treg0_p','mean_ros2_pat1_treg1_p',
+#                                'mean_ros1_pat2_treg0_p','mean_ros1_pat2_treg1_p',
+#                                'mean_ros2_pat2_treg0_p','mean_ros2_pat2_treg1_p',
+#                                'mean_ros1_pat3_treg0_p','mean_ros1_pat3_treg1_p',
+#                                'mean_ros2_pat3_treg0_p','mean_ros2_pat3_treg1_p')]
+# 
+# df_step1_treg_mean = df_step1_treg_mean %>% dplyr::rowwise() %>% dplyr::mutate(
+#   diff_ros1_pat1_e = mean_ros1_pat1_treg1_e-mean_ros1_pat1_treg0_e,
+#   diff_ros2_pat1_e = mean_ros2_pat1_treg1_e-mean_ros2_pat1_treg0_e,
+#   diff_ros1_pat2_e = mean_ros1_pat2_treg1_e-mean_ros1_pat2_treg0_e,
+#   diff_ros2_pat2_e = mean_ros2_pat2_treg1_e-mean_ros2_pat2_treg0_e,
+#   diff_ros1_pat3_e = mean_ros1_pat3_treg1_e-mean_ros1_pat3_treg0_e,
+#   diff_ros2_pat3_e = mean_ros2_pat3_treg1_e-mean_ros2_pat3_treg0_e,
+#   diff_ros1_pat1_p = mean_ros1_pat1_treg1_p-mean_ros1_pat1_treg0_p,
+#   diff_ros2_pat1_p = mean_ros2_pat1_treg1_p-mean_ros2_pat1_treg0_p,
+#   diff_ros1_pat2_p = mean_ros1_pat2_treg1_p-mean_ros1_pat2_treg0_p,
+#   diff_ros2_pat2_p = mean_ros2_pat2_treg1_p-mean_ros2_pat2_treg0_p,
+#   diff_ros1_pat3_p = mean_ros1_pat3_treg1_p-mean_ros1_pat3_treg0_p,
+#   diff_ros2_pat3_p = mean_ros2_pat3_treg1_p-mean_ros2_pat3_treg0_p
+# )
+# 
+# df_step1_treg_merged = merge(df_step1_treg_jsd, df_step1_treg_mean[c('param_set_id',
+#                                               'diff_ros1_pat1_e',
+#                                               'diff_ros2_pat1_e',
+#                                               'diff_ros1_pat2_e',
+#                                               'diff_ros2_pat2_e',
+#                                               'diff_ros1_pat3_e',
+#                                               'diff_ros2_pat3_e',
+#                                               'diff_ros1_pat1_p',
+#                                               'diff_ros2_pat1_p',
+#                                               'diff_ros1_pat2_p',
+#                                               'diff_ros2_pat2_p',
+#                                               'diff_ros1_pat3_p',
+#                                               'diff_ros2_pat3_p')], by='param_set_id')
+# 
+# 
+# df_step1_treg_merged = df_step1_treg_merged %>% dplyr::mutate(
+#   ros1_pat1_e = ifelse(diff_ros1_pat1_e>tol_in_e & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_e>jsd_th, T, F),
+#   ros2_pat1_e = ifelse(diff_ros2_pat1_e>tol_in_e & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_e>jsd_th, T, F),
+#   ros1_pat2_e = ifelse(diff_ros1_pat2_e>tol_in_e & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_e>jsd_th, T, F),
+#   ros2_pat2_e = ifelse(diff_ros2_pat2_e>tol_in_e & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_e>jsd_th, T, F),
+#   ros1_pat3_e = ifelse(diff_ros1_pat3_e>tol_in_e & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_e>jsd_th, T, F),
+#   ros2_pat3_e = ifelse(diff_ros2_pat3_e>tol_in_e & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_e>jsd_th, T, F),
+#   ros1_pat1_p = ifelse(diff_ros1_pat1_p<tol_in_p & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_p>jsd_th, T, F),
+#   ros2_pat1_p = ifelse(diff_ros2_pat1_p<tol_in_p & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_p>jsd_th, T, F),
+#   ros1_pat2_p = ifelse(diff_ros1_pat2_p<tol_in_p & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_p>jsd_th, T, F),
+#   ros2_pat2_p = ifelse(diff_ros2_pat2_p<tol_in_p & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_p>jsd_th, T, F),
+#   ros1_pat3_p = ifelse(diff_ros1_pat3_p<tol_in_p & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_p>jsd_th, T, F),
+#   ros2_pat3_p = ifelse(diff_ros2_pat3_p<tol_in_p & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_p>jsd_th, T, F)
+# )
+# 
+# df_step1_treg_merged_slim = df_step1_treg_merged[c('param_set_id',
+#                                                    'ros1_pat1_e','ros2_pat1_e',
+#                                                    'ros1_pat2_e','ros2_pat2_e',
+#                                                    'ros1_pat3_e','ros2_pat3_e',
+#                                                    'ros1_pat1_p','ros2_pat1_p',
+#                                                    'ros1_pat2_p','ros2_pat2_p',
+#                                                    'ros1_pat3_p','ros2_pat3_p')]
+# # at least one TRUE in them?
+# df_with_true = df_step1_treg_merged_slim[apply(df_step1_treg_merged_slim[, -1], 1, any), ]
+# 
+# saveRDS(df_with_true$param_set_id, 'evo_selected_js_based.rds')
+# dim(df_with_true)
+# 
