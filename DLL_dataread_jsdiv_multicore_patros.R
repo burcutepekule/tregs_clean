@@ -40,49 +40,31 @@ pathogenic_comparison_keep = c()
 
 path = "/Users/burcutepekule/Desktop/sim_abm/"
 # File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
+files_0_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
+files_0_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
+files_0_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
 
-# Control: control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0
-files_1_0_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
+files_1_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
+files_1_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
+files_1_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
 
-# Test scenarios: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
-# ros_level=0, pat_level=1, tregs=0
-files_0_0_0_0_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
-# ros_level=0, pat_level=1, tregs=1
-files_0_0_0_1_0_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=1, tregs=0
-files_0_0_0_0_1_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=1, tregs=1
-files_0_0_0_1_1_1_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
-# ros_level=0, pat_level=2, tregs=0
-files_0_0_0_0_0_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
-# ros_level=0, pat_level=2, tregs=1
-files_0_0_0_1_0_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=2, tregs=0
-files_0_0_0_0_1_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=2, tregs=1
-files_0_0_0_1_1_2_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
-# ros_level=0, pat_level=3, tregs=0
-files_0_0_0_0_0_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
-# ros_level=0, pat_level=3, tregs=1
-files_0_0_0_1_0_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=3, tregs=0
-files_0_0_0_0_1_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
-# ros_level=1, pat_level=3, tregs=1
-files_0_0_0_1_1_3_0 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
+files_2_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
+files_2_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
+files_2_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
 
 indices_1_0_0_0_0_1_0 = str_extract(basename(files_1_0_0_0_0_1_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_0_1_0 = str_extract(basename(files_0_0_0_0_0_1_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_0_1_0 = str_extract(basename(files_0_0_0_1_0_1_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_1_1_0 = str_extract(basename(files_0_0_0_0_1_1_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_1_1_0 = str_extract(basename(files_0_0_0_1_1_1_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_0_2_0 = str_extract(basename(files_0_0_0_0_0_2_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_0_2_0 = str_extract(basename(files_0_0_0_1_0_2_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_1_2_0 = str_extract(basename(files_0_0_0_0_1_2_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_1_2_0 = str_extract(basename(files_0_0_0_1_1_2_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_0_3_0 = str_extract(basename(files_0_0_0_0_0_3_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_0_3_0 = str_extract(basename(files_0_0_0_1_0_3_0), "\\d+") |> as.numeric()
-indices_0_0_0_0_1_3_0 = str_extract(basename(files_0_0_0_0_1_3_0), "\\d+") |> as.numeric()
-indices_0_0_0_1_1_3_0 = str_extract(basename(files_0_0_0_1_1_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_1_0 = str_extract(basename(files_0_0_0_0_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_1_0 = str_extract(basename(files_0_0_1_0_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_1_0 = str_extract(basename(files_0_0_0_1_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_1_0 = str_extract(basename(files_0_0_1_1_1_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_2_0 = str_extract(basename(files_0_0_0_0_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_2_0 = str_extract(basename(files_0_0_1_0_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_2_0 = str_extract(basename(files_0_0_0_1_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_2_0 = str_extract(basename(files_0_0_1_1_2_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_0_3_0 = str_extract(basename(files_0_0_0_0_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_0_3_0 = str_extract(basename(files_0_0_1_0_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_0_1_3_0 = str_extract(basename(files_0_0_0_1_3_0), "\\d+") |> as.numeric()
+indices_0_0_0_1_1_3_0 = str_extract(basename(files_0_0_1_1_3_0), "\\d+") |> as.numeric()
 
 indices = Reduce(intersect, list(
   indices_1_0_0_0_0_1_0,
@@ -143,18 +125,18 @@ if(length(loop_over)>0){
     # Check file sizes for this parameter set
     files_to_check = c(
       paste0(path, 'longitudinal_df_param_set_id_', i, '_control_1_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds')
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'),
+      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds')
     )
     if(any(file.info(files_to_check)$size<100000)){
       processed_indices      = c(processed_indices, i) #add and skip
@@ -165,29 +147,29 @@ if(length(loop_over)>0){
 
       # Test files: control_0_sterile_0_macspec_0_tregs_{0,1}_ros_level_{0,1}_pat_level_{1,2,3}_trnd_0
       # ros_level=0, pat_level=1, tregs=0
-      results_0_0_0_0_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
+      results_0_0_0_0_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
       # ros_level=0, pat_level=1, tregs=1
-      results_0_0_0_1_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'))
+      results_0_0_0_1_0_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_1_trnd_0.rds'))
       # ros_level=1, pat_level=1, tregs=0
-      results_0_0_0_0_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'))
+      results_0_0_0_0_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'))
       # ros_level=1, pat_level=1, tregs=1
-      results_0_0_0_1_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'))
+      results_0_0_0_1_1_1_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_1_trnd_0.rds'))
       # ros_level=0, pat_level=2, tregs=0
-      results_0_0_0_0_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'))
+      results_0_0_0_0_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'))
       # ros_level=0, pat_level=2, tregs=1
-      results_0_0_0_1_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'))
+      results_0_0_0_1_0_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_2_trnd_0.rds'))
       # ros_level=1, pat_level=2, tregs=0
-      results_0_0_0_0_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'))
+      results_0_0_0_0_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'))
       # ros_level=1, pat_level=2, tregs=1
-      results_0_0_0_1_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'))
+      results_0_0_0_1_1_2_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_2_trnd_0.rds'))
       # ros_level=0, pat_level=3, tregs=0
-      results_0_0_0_0_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'))
+      results_0_0_0_0_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'))
       # ros_level=0, pat_level=3, tregs=1
-      results_0_0_0_1_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'))
+      results_0_0_0_1_0_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_0_pat_level_3_trnd_0.rds'))
       # ros_level=1, pat_level=3, tregs=0
-      results_0_0_0_0_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'))
+      results_0_0_0_0_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'))
       # ros_level=1, pat_level=3, tregs=1
-      results_0_0_0_1_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_control_0_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds'))
+      results_0_0_0_1_1_3_0 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_1_ros_level_1_pat_level_3_trnd_0.rds'))
 
       results = rbind(
         results_1_0_0_0_0_1_0,
