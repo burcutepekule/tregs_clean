@@ -5,7 +5,6 @@
 th_ROS_microbe = param_set_use$th_ROS_microbe
 th_ROS_epith_injury = param_set_use$th_ROS_epith_injury
 epith_recovery_chance = param_set_use$epith_recovery_chance
-rat_com_pat_threshold = param_set_use$rat_com_pat_threshold
 
 # Diffusion speeds
 diffusion_speed_DAMPs = param_set_use$diffusion_speed_DAMPs
@@ -71,7 +70,6 @@ if(macspec_on == 2){# PERFECT DISCRIMINATION
   mac_discrimination_efficiency = 0 # no need to have this, shouldn't throw an error
 }
 
-mac_rat_com_pat_threshold = rat_com_pat_threshold # SAME THRESHOLD FOR COMPARISON
 recruitment_rate_danger   = param_set_use$recruitment_rate_danger
 
 # ============================================================================

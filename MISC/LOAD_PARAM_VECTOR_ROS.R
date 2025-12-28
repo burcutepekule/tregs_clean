@@ -4,7 +4,6 @@ if(mult==1){
     "th_ROS_microbe",
     "th_ROS_epith_injury", # changed from recover to injury because naming was wrong
     # "epith_recovery_chance", #remove, same for all 
-    "rat_com_pat_threshold",
     "diffusion_speed_DAMPs",
     "diffusion_speed_SAMPs",
     "diffusion_speed_PAMPs",
@@ -38,7 +37,6 @@ if(mult==1){
     "th_ROS_microbe",
     "th_ROS_epith_injury",# changed from recover to injury because naming was wrong
     # "epith_recovery_chance", #remove, same for all 
-    "rat_com_pat_threshold",
     "diffusion_speed_DAMPs",
     "diffusion_speed_SAMPs",
     "diffusion_speed_PAMPs",
