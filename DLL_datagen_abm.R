@@ -95,32 +95,26 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 
 scenarios_df = expand.grid(
-  control         = c(0),
-  # sterile         = c(0, 1),
-  sterile         = c(0),
-  allow_tregs     = c(0, 1),
-  # randomize_tregs = c(0, 1),
-  randomize_tregs = c(0),
-  # macspec_on      = c(0, 1, 2)
-  macspec_on      = c(0),
-  ros_level       = c(0, 1),
-  pat_level       = c(1, 2, 3)
-)
-# DOESN'T MAKE SENSE TO RUN THIS
-scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
-scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
-scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
-scenarios_df_ctrl = expand.grid(
-  control         = c(1),
-  # sterile         = c(0, 1),
   sterile         = c(0),
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0),
-  pat_level       = c(1)
+  ros_level       = c(0, 1, 2), # 0 is control
+  pat_level       = c(1, 2, 3, 4, 5)
 )
-scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
+# # DOESN'T MAKE SENSE TO RUN THIS
+# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
+# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
+# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
+# scenarios_df_ctrl = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(0),
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(0), # ros_level=0 makes this control
+#   pat_level       = c(1)
+# )
+# scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
@@ -138,7 +132,6 @@ for(param_set_id_use in loop_over){
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
     macspec_on      = scenarios_df[scenario_ind,]$macspec_on
-    control         = scenarios_df[scenario_ind,]$control
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
     
@@ -163,7 +156,6 @@ for(param_set_id_use in loop_over){
     cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
     
     saveRDS(longitudinal_df_keep, paste0(dir_name_data,'/longitudinal_df_param_set_id_',param_set_id_use,
-                                         '_control_',control, 
                                          '_sterile_',sterile,
                                          '_macspec_',macspec_on,
                                          '_tregs_',allow_tregs,

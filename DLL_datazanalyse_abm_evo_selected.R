@@ -12,7 +12,9 @@ library(ggsignif)
 
 jsd_th         = 0.3
 tol_in_e       = 125*0.25
-tol_in_p       = 25*25*0.05
+tol_in_p       = -1*25*25*0.05
+# tol_in_e       = 0
+# tol_in_p       = 0
 M1_M2_diff     = 0
 filter_control = 0
 labels_on      = 1
@@ -80,110 +82,90 @@ cat("After Step 1 (ROS needed for pat1):", nrow(df_step1), "parameter sets\n")
 evo_selected_reslevel_0_ids = sort(df_step1$param_set_id)
 saveRDS(evo_selected_reslevel_0_ids, 'evo_selected_reslevel_0.rds')
 
-
-df_step1_treg = df_step1[c('param_set_id',
+### ======== Any treg help for other patros levels?
+df_step1_treg_jsd = df_step1[c('param_set_id',
                            'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_e',
                            'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_e',
                            'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_e',
                            'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_e',
                            'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_e',
-                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_e')]
+                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_e',
+                           'd_ros1_pat1_treg0_vs_ros1_pat1_treg1_p',
+                           'd_ros2_pat1_treg0_vs_ros2_pat1_treg1_p',
+                           'd_ros1_pat2_treg0_vs_ros1_pat2_treg1_p',
+                           'd_ros2_pat2_treg0_vs_ros2_pat2_treg1_p',
+                           'd_ros1_pat3_treg0_vs_ros1_pat3_treg1_p',
+                           'd_ros2_pat3_treg0_vs_ros2_pat3_treg1_p')]
 
-df_step1_96101   = df_step1 %>% dplyr::filter(param_set_id==96101) %>% dplyr::select(-injury_type)
-params_long_pick = df_step1_96101 %>%
-  pivot_longer(
-    cols = -param_set_id,  # keep param_set_id as identifier
-    names_to = "parameter",
-    values_to = "value"
-  )
+df_step1_treg_mean = df_step1[c('param_set_id',
+                               'mean_ros1_pat1_treg0_e','mean_ros1_pat1_treg1_e',
+                               'mean_ros2_pat1_treg0_e','mean_ros2_pat1_treg1_e',
+                               'mean_ros1_pat2_treg0_e','mean_ros1_pat2_treg1_e',
+                               'mean_ros2_pat2_treg0_e','mean_ros2_pat2_treg1_e',
+                               'mean_ros1_pat3_treg0_e','mean_ros1_pat3_treg1_e',
+                               'mean_ros2_pat3_treg0_e','mean_ros2_pat3_treg1_e',
+                               'mean_ros1_pat1_treg0_p','mean_ros1_pat1_treg1_p',
+                               'mean_ros2_pat1_treg0_p','mean_ros2_pat1_treg1_p',
+                               'mean_ros1_pat2_treg0_p','mean_ros1_pat2_treg1_p',
+                               'mean_ros2_pat2_treg0_p','mean_ros2_pat2_treg1_p',
+                               'mean_ros1_pat3_treg0_p','mean_ros1_pat3_treg1_p',
+                               'mean_ros2_pat3_treg0_p','mean_ros2_pat3_treg1_p')]
 
-
-# ============= STEP 2: Split into resistance levels ====================================================
-# Identify two groups based on how much ROS is needed (still no tregs, treg0_):
-
-# reslevel_1: ros1_ controls pat1_ but NOT pat2_
-df_reslevel_1 = df_step1 %>%
-  dplyr::mutate(
-    ros1_pat2_worse = 
-      # (mean_ros1_pat2_treg0_p>mean_ros1_pat1_treg0_p & d_ros1_pat1_treg0_vs_ros1_pat2_treg0_p >= jsd_th &
-      # mean_ros1_pat2_treg0_e<mean_ros1_pat1_treg0_e & d_ros1_pat1_treg0_vs_ros1_pat2_treg0_e >= jsd_th)
-      (mean_ros1_pat2_treg0_p>mean_ros1_pat1_treg0_p &
-         mean_ros1_pat2_treg0_e<mean_ros1_pat1_treg0_e)
-  ) %>%
-  dplyr::filter(ros1_pat2_worse) %>%
-  dplyr::mutate(resistance_level = "reslevel_1")
-cat("  reslevel_1 (ros1 controls pat1, but not pat2):", nrow(df_reslevel_1), "parameter sets\n")
-
-# reslevel_2: ros1_ controls pat2_ but NOT pat3_
-df_step2 = df_step1 %>% dplyr::filter(!(param_set_id %in% df_reslevel_1$param_set_id))
-df_reslevel_2 = df_step2 %>%
-  dplyr::mutate(
-    ros1_pat3_worse =       
-      (mean_ros1_pat3_treg0_p>mean_ros1_pat2_treg0_p &
-         mean_ros1_pat3_treg0_e<mean_ros1_pat2_treg0_e)
-    
-  ) %>%
-  dplyr::filter(ros1_pat3_worse) %>%
-  dplyr::mutate(resistance_level = "reslevel_2")
-cat("  reslevel_2 (ros1 controls pat2, but not pat3):", nrow(df_reslevel_2), "parameter sets\n")
-
-# ============= STEP 3: Identify evolutionary advantage of Tregs ====================================================
-# 3.1: Within reslevel_1, tregs (treg1) should enable ros2_ to control pat2_ and/or pat3_
-df_reslevel_1_with_treg_advantage = df_reslevel_1 %>%
-  dplyr::mutate(
-    ros2_treg1_controls_pat2 = (mean_ros2_pat2_treg0_p>mean_ros2_pat2_treg1_p & mean_ros2_pat2_treg0_e<mean_ros2_pat2_treg1_e),
-    ros2_treg1_controls_pat3 = (mean_ros2_pat3_treg0_p>mean_ros2_pat3_treg1_p & mean_ros2_pat3_treg0_e<mean_ros2_pat3_treg1_e),
-    # Tregs provide advantage if ros2+treg1 controls either pat2 or pat3 (or both)
-    treg_advantage = ros2_treg1_controls_pat2 | ros2_treg1_controls_pat3
-  ) %>%
-  dplyr::filter(treg_advantage)
-
-cat("  reslevel_1 with Treg advantage:", nrow(df_reslevel_1_with_treg_advantage), "parameter sets\n")
-
-# 3.2: Within reslevel_2, tregs (treg1) should enable ros2_ to control pat3_
-df_reslevel_2_with_treg_advantage = df_reslevel_2 %>%
-  dplyr::mutate(
-    ros2_treg1_controls_pat3 = (mean_ros2_pat3_treg0_p>mean_ros2_pat3_treg1_p & mean_ros2_pat3_treg0_e<mean_ros2_pat3_treg1_e),
-    treg_advantage = ros2_treg1_controls_pat3
-  ) %>%
-  dplyr::filter(treg_advantage)
-
-cat("  reslevel_2 with Treg advantage:", nrow(df_reslevel_2_with_treg_advantage), "parameter sets\n")
-
-# ============= COMBINE AND SAVE RESULTS ====================================================
-# Combine both resistance levels that show evolutionary selection for Tregs
-df_evo_selected = bind_rows(
-  df_reslevel_1_with_treg_advantage,
-  df_reslevel_2_with_treg_advantage
+df_step1_treg_mean = df_step1_treg_mean %>% dplyr::rowwise() %>% dplyr::mutate(
+  diff_ros1_pat1_e = mean_ros1_pat1_treg1_e-mean_ros1_pat1_treg0_e,
+  diff_ros2_pat1_e = mean_ros2_pat1_treg1_e-mean_ros2_pat1_treg0_e,
+  diff_ros1_pat2_e = mean_ros1_pat2_treg1_e-mean_ros1_pat2_treg0_e,
+  diff_ros2_pat2_e = mean_ros2_pat2_treg1_e-mean_ros2_pat2_treg0_e,
+  diff_ros1_pat3_e = mean_ros1_pat3_treg1_e-mean_ros1_pat3_treg0_e,
+  diff_ros2_pat3_e = mean_ros2_pat3_treg1_e-mean_ros2_pat3_treg0_e,
+  diff_ros1_pat1_p = mean_ros1_pat1_treg1_p-mean_ros1_pat1_treg0_p,
+  diff_ros2_pat1_p = mean_ros2_pat1_treg1_p-mean_ros2_pat1_treg0_p,
+  diff_ros1_pat2_p = mean_ros1_pat2_treg1_p-mean_ros1_pat2_treg0_p,
+  diff_ros2_pat2_p = mean_ros2_pat2_treg1_p-mean_ros2_pat2_treg0_p,
+  diff_ros1_pat3_p = mean_ros1_pat3_treg1_p-mean_ros1_pat3_treg0_p,
+  diff_ros2_pat3_p = mean_ros2_pat3_treg1_p-mean_ros2_pat3_treg0_p
 )
 
-cat("\nTotal evolutionarily selected parameter sets:", nrow(df_evo_selected), "\n")
+df_step1_treg_merged = merge(df_step1_treg_jsd, df_step1_treg_mean[c('param_set_id',
+                                              'diff_ros1_pat1_e',
+                                              'diff_ros2_pat1_e',
+                                              'diff_ros1_pat2_e',
+                                              'diff_ros2_pat2_e',
+                                              'diff_ros1_pat3_e',
+                                              'diff_ros2_pat3_e',
+                                              'diff_ros1_pat1_p',
+                                              'diff_ros2_pat1_p',
+                                              'diff_ros1_pat2_p',
+                                              'diff_ros2_pat2_p',
+                                              'diff_ros1_pat3_p',
+                                              'diff_ros2_pat3_p')], by='param_set_id')
 
-# Save results
-saveRDS(df_evo_selected, 'evo_selected.rds')
 
-# Also save separate files for each resistance level for further analysis
-saveRDS(df_reslevel_1_with_treg_advantage$param_set_id, 'evo_selected_reslevel_1.rds')
-saveRDS(df_reslevel_2_with_treg_advantage$param_set_id, 'evo_selected_reslevel_2.rds')
+df_step1_treg_merged = df_step1_treg_merged %>% dplyr::mutate(
+  ros1_pat1_e = ifelse(diff_ros1_pat1_e>tol_in_e & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_e>jsd_th, T, F),
+  ros2_pat1_e = ifelse(diff_ros2_pat1_e>tol_in_e & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_e>jsd_th, T, F),
+  ros1_pat2_e = ifelse(diff_ros1_pat2_e>tol_in_e & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_e>jsd_th, T, F),
+  ros2_pat2_e = ifelse(diff_ros2_pat2_e>tol_in_e & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_e>jsd_th, T, F),
+  ros1_pat3_e = ifelse(diff_ros1_pat3_e>tol_in_e & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_e>jsd_th, T, F),
+  ros2_pat3_e = ifelse(diff_ros2_pat3_e>tol_in_e & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_e>jsd_th, T, F),
+  ros1_pat1_p = ifelse(diff_ros1_pat1_p<tol_in_p & d_ros1_pat1_treg0_vs_ros1_pat1_treg1_p>jsd_th, T, F),
+  ros2_pat1_p = ifelse(diff_ros2_pat1_p<tol_in_p & d_ros2_pat1_treg0_vs_ros2_pat1_treg1_p>jsd_th, T, F),
+  ros1_pat2_p = ifelse(diff_ros1_pat2_p<tol_in_p & d_ros1_pat2_treg0_vs_ros1_pat2_treg1_p>jsd_th, T, F),
+  ros2_pat2_p = ifelse(diff_ros2_pat2_p<tol_in_p & d_ros2_pat2_treg0_vs_ros2_pat2_treg1_p>jsd_th, T, F),
+  ros1_pat3_p = ifelse(diff_ros1_pat3_p<tol_in_p & d_ros1_pat3_treg0_vs_ros1_pat3_treg1_p>jsd_th, T, F),
+  ros2_pat3_p = ifelse(diff_ros2_pat3_p<tol_in_p & d_ros2_pat3_treg0_vs_ros2_pat3_treg1_p>jsd_th, T, F)
+)
 
-# Print summary statistics
-cat("\n=== SUMMARY ===\n")
-cat("Resistance Level 1:", nrow(df_reslevel_1_with_treg_advantage), "sets\n")
-cat("Resistance Level 2:", nrow(df_reslevel_2_with_treg_advantage), "sets\n")
-cat("Total selected:", nrow(df_evo_selected), "sets\n")
+df_step1_treg_merged_slim = df_step1_treg_merged[c('param_set_id',
+                                                   'ros1_pat1_e','ros2_pat1_e',
+                                                   'ros1_pat2_e','ros2_pat2_e',
+                                                   'ros1_pat3_e','ros2_pat3_e',
+                                                   'ros1_pat1_p','ros2_pat1_p',
+                                                   'ros1_pat2_p','ros2_pat2_p',
+                                                   'ros1_pat3_p','ros2_pat3_p')]
+# at least one TRUE in them?
+df_with_true = df_step1_treg_merged_slim[apply(df_step1_treg_merged_slim[, -1], 1, any), ]
 
-df_reslevel_1_with_treg_advantage_long = df_reslevel_1_with_treg_advantage %>%
-  dplyr::select(-resistance_level) %>%
-  pivot_longer(
-    cols = -c(param_set_id, injury_type),  # keep param_set_id as identifier
-    names_to = "parameter",
-    values_to = "value"
-  )
+saveRDS(df_with_true$param_set_id, 'evo_selected_js_based.rds')
+dim(df_with_true)
 
-df_params_pick = df_params %>% dplyr::filter(param_set_id %in% df_reslevel_1_with_treg_advantage$param_set_id)
-df_params_pick_long = df_params_pick %>%
-  pivot_longer(
-    cols = -param_set_id,  # keep param_set_id as identifier
-    names_to = "parameter",
-    values_to = "value"
-  )

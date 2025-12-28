@@ -793,7 +793,6 @@ for (reps_in in 0:(num_reps-1)){
   colnames(longitudinal_df) = colnames_insert
 
   longitudinal_df$t = 1:t_max
-  longitudinal_df$control = control
   longitudinal_df$sterile = sterile
   longitudinal_df$macspec_on = macspec_on
   longitudinal_df$tregs_on = allow_tregs
@@ -817,7 +816,6 @@ for (reps_in in 0:(num_reps-1)){
   
   longitudinal_df = longitudinal_df %>%
     dplyr::select(t,
-                  control,
                   sterile,
                   tregs_on,
                   ros_level,

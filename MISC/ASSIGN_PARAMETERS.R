@@ -13,17 +13,14 @@ diffusion_speed_SAMPs = param_set_use$diffusion_speed_SAMPs
 diffusion_speed_PAMPs = param_set_use$diffusion_speed_PAMPs
 diffusion_speed_ROS   = param_set_use$diffusion_speed_ROS
 
-# Signal production
-if(control==1){
-  add_ROS = 0 # to see whether infection resolves without ROS 
-  activity_ROS_M1_baseline = 0
-}else{
-  add_ROS = param_set_use$add_ROS
-  activity_ROS_M1_baseline = param_set_use$activity_ROS_M1_baseline
-  if(ros_level==2){ # this used to be ==1 (still like that in the cluster as of 21 Dec 2025)
-    add_ROS = 1 #max
-  }
-}
+# Signal production - OLD
+# if(ros_level==2){
+#   add_ROS = 1
+# }else{
+#   add_ROS = ros_level*param_set_use$add_ROS # to see whether infection resolves without ROS 
+# }
+
+add_ROS = ros_level*param_set_use$add_ROS # ros_level=0, control
 
 add_DAMPs = param_set_use$add_DAMPs
 add_SAMPs = param_set_use$add_SAMPs
@@ -47,6 +44,7 @@ activity_engulf_M2_baseline = param_set_use$activity_engulf_M2_baseline
 # ROS production activities
 activity_ROS_M0_baseline = 0
 activity_ROS_M2_baseline = 0
+activity_ROS_M1_baseline = param_set_use$activity_ROS_M1_baseline
 
 # Leak rates
 rate_leak_commensal_injury   = param_set_use$rate_leak_commensal_injury

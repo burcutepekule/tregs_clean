@@ -6,8 +6,10 @@ library(readr)
 
 # Define the original parameter bounds (matching mass_simulation_LHS.py)
 param_bounds = list(
-  rate_leak_pathogen_injury = c(1, 1), #FIXED 
-  rate_leak_commensal_injury = c(0.5, 0.5), #FIXED
+  # rate_leak_pathogen_injury    = c(1, 1), #FIXED 
+  # rate_leak_commensal_injury   = c(0.5, 0.5), #FIXED
+  rate_leak_pathogen_injury    = c(0.5, 0.5), #FIXED 
+  rate_leak_commensal_injury   = c(0.25, 0.25), #FIXED
   rate_leak_commensal_baseline = c(0.05, 0.05), #FIXED
   epith_recovery_chance = c(0.05, 0.05), #FIXED
   th_ROS_microbe        = c(0, 0.4999),  # th_ROS_microbe should be lower than th_ROS_epith_injury

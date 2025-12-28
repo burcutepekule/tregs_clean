@@ -189,7 +189,23 @@ calculate_js_divergence_simple = function(vec1, vec2, n_bins = 50) {
 
 
 calculate_js_divergence = function(vec1, vec2, n_bins = NULL, method = "sturges") {
-  
+
+  # Check for empty or invalid input vectors
+  if (length(vec1) == 0 || length(vec2) == 0) {
+    warning("Empty input vector detected, returning JS divergence of NA")
+    return(c(NA, 0))
+  }
+
+  # Remove NA values
+  vec1 = vec1[!is.na(vec1)]
+  vec2 = vec2[!is.na(vec2)]
+
+  # Check again after removing NAs
+  if (length(vec1) == 0 || length(vec2) == 0) {
+    warning("No valid data after removing NAs, returning JS divergence of NA")
+    return(c(NA, 0))
+  }
+
   # If n_bins not specified, calculate it
   if (is.null(n_bins)) {
     n1 = length(vec1)
@@ -245,22 +261,49 @@ calculate_js_divergence = function(vec1, vec2, n_bins = NULL, method = "sturges"
     # Ensure reasonable bounds
     n_bins = max(10, min(n_bins, 200))
   }
-  
+
+  # Check if the data has zero or near-zero range
+  data_min = min(c(vec1, vec2))
+  data_max = max(c(vec1, vec2))
+  data_range = data_max - data_min
+
+  # If range is zero or extremely small, the distributions are essentially identical
+  # Return JS divergence of 0
+  if (data_range == 0 || is.na(data_range) || data_range < .Machine$double.eps * 100) {
+    return(c(0, n_bins))
+  }
+
   # Create matching histograms with the same breaks
-  breaks = seq(min(c(vec1, vec2)),
-                max(c(vec1, vec2)),
-                length.out = n_bins + 1)
-  
+  breaks = seq(data_min, data_max, length.out = n_bins + 1)
+
   hist1 = hist(vec1, breaks = breaks, plot = FALSE)
   hist2 = hist(vec2, breaks = breaks, plot = FALSE)
-  
+
+  # Check if histograms are valid (non-empty counts)
+  if (sum(hist1$counts) == 0 || sum(hist2$counts) == 0) {
+    warning("Empty histogram detected, returning JS divergence of 0")
+    return(c(0, n_bins))
+  }
+
   # Convert counts to probabilities
   p = hist1$counts / sum(hist1$counts)
   q = hist2$counts / sum(hist2$counts)
-  
+
+  # Check for NaN or invalid probabilities
+  if (any(is.na(p)) || any(is.na(q)) || any(is.nan(p)) || any(is.nan(q))) {
+    warning("Invalid probability distribution detected, returning JS divergence of 0")
+    return(c(0, n_bins))
+  }
+
   # Calculate JS divergence
   js_div = suppressMessages(JSD(rbind(p, q), unit = "log2"))
-  
+
+  # Check if JS divergence is valid
+  if (is.na(js_div) || is.nan(js_div)) {
+    warning("Invalid JS divergence result, returning 0")
+    return(c(0, n_bins))
+  }
+
   return(c(js_div, n_bins))
 }
 
