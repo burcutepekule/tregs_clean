@@ -287,10 +287,9 @@ if(length(loop_over)>0){
           all_comparison_results_reps = bind_rows(all_comparison_results_reps, comparison_results)
         }
         else{
-          processed_indices = c(processed_indices, i) #add and skip
           # print(time_ss_vec)
-          message("Skipped one because of time_ss_vec, getting out of loop")
-          break
+          message("Skipping replicate ", rep, " for param_set_", i, " due to NA in time_ss_vec")
+          next
         }
       }
       
