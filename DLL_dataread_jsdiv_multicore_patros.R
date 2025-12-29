@@ -37,33 +37,32 @@ results_merged             = c()
 sterile_comparison_keep    = c()
 pathogenic_comparison_keep = c()
 
+# Define the ros and pat value ranges
+ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
 path = "/Users/burcutepekule/Desktop/sim_abm/"
+
 # File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
-files_0_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds$", full.names = TRUE)
-files_0_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds$", full.names = TRUE)
-files_0_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds$", full.names = TRUE)
-files_1_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds$", full.names = TRUE)
-files_1_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds$", full.names = TRUE)
-files_1_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds$", full.names = TRUE)
-files_2_1 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_1_trnd_0.rds$", full.names = TRUE)
-files_2_2 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_2_trnd_0.rds$", full.names = TRUE)
-files_2_3 = list.files(path, pattern = "^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_3_trnd_0.rds$", full.names = TRUE)
+# Dynamically create file lists for all ros/pat combinations
+all_files = list()
+all_indices = list()
 
-indices_0_1 = str_extract(basename(files_0_1), "\\d+") |> as.numeric()
-indices_0_2 = str_extract(basename(files_0_2), "\\d+") |> as.numeric()
-indices_0_3 = str_extract(basename(files_0_3), "\\d+") |> as.numeric()
-indices_1_1 = str_extract(basename(files_1_1), "\\d+") |> as.numeric()
-indices_1_2 = str_extract(basename(files_1_2), "\\d+") |> as.numeric()
-indices_1_3 = str_extract(basename(files_1_3), "\\d+") |> as.numeric()
-indices_2_1 = str_extract(basename(files_2_1), "\\d+") |> as.numeric()
-indices_2_2 = str_extract(basename(files_2_2), "\\d+") |> as.numeric()
-indices_2_3 = str_extract(basename(files_2_3), "\\d+") |> as.numeric()
+for (ros in ros_vals) {
+  for (pat in pat_vals) {
+    var_name = paste0("files_", ros, "_", pat)
+    pattern_str = paste0("^longitudinal_df_param_set_id_\\d+\\_sterile_0_macspec_0_tregs_0_ros_level_", ros, "_pat_level_", pat, "_trnd_0.rds$")
+    files_temp = list.files(path, pattern = pattern_str, full.names = TRUE)
+    all_files[[var_name]] = files_temp
 
-indices = Reduce(intersect, list(
-  indices_0_1, indices_0_2, indices_0_3,
-  indices_1_1, indices_1_2, indices_1_3,
-  indices_2_1, indices_2_2, indices_2_3
-))
+    # Extract indices
+    indices_name = paste0("indices_", ros, "_", pat)
+    all_indices[[indices_name]] = str_extract(basename(files_temp), "\\d+") |> as.numeric()
+  }
+}
+
+# Find common indices across all combinations
+indices = Reduce(intersect, all_indices)
 
 # Initialize an empty results dataframe before the loop
 all_comparison_results = data.frame()
@@ -103,38 +102,33 @@ if(length(loop_over)>0){
     
     i = loop_over[i_idx]
     message("Processing param_set_", i)
-    
-    files_to_check = c(
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_1_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_2_trnd_0.rds'),
-      paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_3_trnd_0.rds')
-    )
+
+    # Dynamically create file paths to check
+    files_to_check = c()
+    for (ros in ros_vals) {
+      for (pat in pat_vals) {
+        files_to_check = c(files_to_check,
+          paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds'))
+      }
+    }
+
     if(any(file.info(files_to_check)$size<100000)){
       processed_indices      = c(processed_indices, i) #add and skip
       message("Skipped one")
     }else{
-      
-      results_0_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
-      results_0_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'))
-      results_0_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'))
-      results_1_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'))
-      results_1_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'))
-      results_1_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'))
-      results_2_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_1_trnd_0.rds'))
-      results_2_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_2_trnd_0.rds'))
-      results_2_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_3_trnd_0.rds'))
-      
-      results = rbind(
-        results_0_1, results_0_2, results_0_3,
-        results_1_1, results_1_2, results_1_3,
-        results_2_1, results_2_2, results_2_3
-      )
+
+      # Dynamically read all RDS files for this parameter set
+      results_list = list()
+      for (ros in ros_vals) {
+        for (pat in pat_vals) {
+          var_name = paste0("results_", ros, "_", pat)
+          file_path = paste0(path, 'longitudinal_df_param_set_id_', i, '_sterile_0_macspec_0_tregs_0_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+          results_list[[var_name]] = readRDS(file_path)
+        }
+      }
+
+      # Combine all results
+      results = do.call(rbind, results_list)
       
       full_data_comparison = results %>% dplyr::select(param_set_id, sterile, macspec_on, tregs_on, 
                                                        randomize_tregs, ros_level, pat_level, rep_id, 
@@ -142,177 +136,142 @@ if(length(loop_over)>0){
       min_reps  = min(full_data_comparison$rep_id)
       max_reps  = max(full_data_comparison$rep_id)
       t_max_ind = max(full_data_comparison$t)
-      
-      # ====== PATHOGEN
-      # Test scenarios: sterile_0_macspec_0_tregs_0_ros_level_{0,1,2}_pat_level_{1,2,3}_trnd_0
-      scores_0_1_p_keep = c()
-      scores_0_2_p_keep = c()
-      scores_0_3_p_keep = c()
-      scores_1_1_p_keep = c()
-      scores_1_2_p_keep = c()
-      scores_1_3_p_keep = c()
-      scores_2_1_p_keep = c()
-      scores_2_2_p_keep = c()
-      scores_2_3_p_keep = c()
-      
-      # === EPITHELIUM
-      # Test scenarios: sterile_0_macspec_0_tregs_0_ros_level_{0,1,2}_pat_level_{1,2,3}_trnd_0
-      scores_0_1_e_keep = c()
-      scores_0_2_e_keep = c()
-      scores_0_3_e_keep = c()
-      scores_1_1_e_keep = c()
-      scores_1_2_e_keep = c()
-      scores_1_3_e_keep = c()
-      scores_2_1_e_keep = c()
-      scores_2_2_e_keep = c()
-      scores_2_3_e_keep = c()
+
+      # Dynamically initialize score keeping variables for all combinations
+      # PATHOGEN
+      for (ros in ros_vals) {
+        for (pat in pat_vals) {
+          assign(paste0("scores_", ros, "_", pat, "_p_keep"), c())
+        }
+      }
+
+      # EPITHELIUM
+      for (ros in ros_vals) {
+        for (pat in pat_vals) {
+          assign(paste0("scores_", ros, "_", pat, "_e_keep"), c())
+        }
+      }
       
       all_comparison_results_reps = data.frame()
       
       for (rep in min_reps:max_reps) {
-        
-        full_data_comparison_scores_0_1 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==1 & randomize_tregs==0)
-        full_data_comparison_scores_0_2 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==2 & randomize_tregs==0)
-        full_data_comparison_scores_0_3 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==0 & pat_level==3 & randomize_tregs==0)
-        full_data_comparison_scores_1_1 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==1 & randomize_tregs==0)
-        full_data_comparison_scores_1_2 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==2 & randomize_tregs==0)
-        full_data_comparison_scores_1_3 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==1 & pat_level==3 & randomize_tregs==0)
-        full_data_comparison_scores_2_1 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==2 & pat_level==1 & randomize_tregs==0)
-        full_data_comparison_scores_2_2 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==2 & pat_level==2 & randomize_tregs==0)
-        full_data_comparison_scores_2_3 = full_data_comparison %>% dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 & ros_level==2 & pat_level==3 & randomize_tregs==0)
-        
-        time_ss_0_1_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_1$epithelial_score))
-        time_ss_0_2_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_2$epithelial_score))
-        time_ss_0_3_e = as.numeric(steady_state_idx(full_data_comparison_scores_0_3$epithelial_score))
-        time_ss_1_1_e = as.numeric(steady_state_idx(full_data_comparison_scores_1_1$epithelial_score))
-        time_ss_1_2_e = as.numeric(steady_state_idx(full_data_comparison_scores_1_2$epithelial_score))
-        time_ss_1_3_e = as.numeric(steady_state_idx(full_data_comparison_scores_1_3$epithelial_score))
-        time_ss_2_1_e = as.numeric(steady_state_idx(full_data_comparison_scores_2_1$epithelial_score))
-        time_ss_2_2_e = as.numeric(steady_state_idx(full_data_comparison_scores_2_2$epithelial_score))
-        time_ss_2_3_e = as.numeric(steady_state_idx(full_data_comparison_scores_2_3$epithelial_score))
-        
-        time_ss_0_1_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_1$pathogen))
-        time_ss_0_2_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_2$pathogen))
-        time_ss_0_3_p = as.numeric(steady_state_idx(full_data_comparison_scores_0_3$pathogen))
-        time_ss_1_1_p = as.numeric(steady_state_idx(full_data_comparison_scores_1_1$pathogen))
-        time_ss_1_2_p = as.numeric(steady_state_idx(full_data_comparison_scores_1_2$pathogen))
-        time_ss_1_3_p = as.numeric(steady_state_idx(full_data_comparison_scores_1_3$pathogen))
-        time_ss_2_1_p = as.numeric(steady_state_idx(full_data_comparison_scores_2_1$pathogen))
-        time_ss_2_2_p = as.numeric(steady_state_idx(full_data_comparison_scores_2_2$pathogen))
-        time_ss_2_3_p = as.numeric(steady_state_idx(full_data_comparison_scores_2_3$pathogen))
-        
-        time_ss_vec = c(
-          time_ss_0_1_e, time_ss_0_1_p,
-          time_ss_0_2_e, time_ss_0_2_p,
-          time_ss_0_3_e, time_ss_0_3_p,
-          time_ss_1_1_e, time_ss_1_1_p,
-          time_ss_1_2_e, time_ss_1_2_p,
-          time_ss_1_3_e, time_ss_1_3_p,
-          time_ss_2_1_e, time_ss_2_1_p,
-          time_ss_2_2_e, time_ss_2_2_p,
-          time_ss_2_3_e, time_ss_2_3_p
-        )
+
+        # Dynamically filter data and compute steady states for all combinations
+        time_ss_vec = c()
+        for (ros in ros_vals) {
+          for (pat in pat_vals) {
+            # Filter data
+            var_name = paste0("full_data_comparison_scores_", ros, "_", pat)
+            assign(var_name, full_data_comparison %>%
+              dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==0 &
+                           ros_level==ros & pat_level==pat & randomize_tregs==0))
+
+            # Compute steady state for epithelial score
+            time_ss_e_var = paste0("time_ss_", ros, "_", pat, "_e")
+            time_ss_e_val = as.numeric(steady_state_idx(get(var_name)$epithelial_score))
+            assign(time_ss_e_var, time_ss_e_val)
+            time_ss_vec = c(time_ss_vec, time_ss_e_val)
+
+            # Compute steady state for pathogen
+            time_ss_p_var = paste0("time_ss_", ros, "_", pat, "_p")
+            time_ss_p_val = as.numeric(steady_state_idx(get(var_name)$pathogen))
+            assign(time_ss_p_var, time_ss_p_val)
+            time_ss_vec = c(time_ss_vec, time_ss_p_val)
+          }
+        }
         
         if(!any(is.na(time_ss_vec))){
-          
-          # ==== PATHOGEN ABUNDANCE
-          scores_0_1_p = full_data_comparison_scores_0_1$pathogen[time_ss_0_1_p:t_max_ind]
-          scores_0_2_p = full_data_comparison_scores_0_2$pathogen[time_ss_0_2_p:t_max_ind]
-          scores_0_3_p = full_data_comparison_scores_0_3$pathogen[time_ss_0_3_p:t_max_ind]
-          scores_1_1_p = full_data_comparison_scores_1_1$pathogen[time_ss_1_1_p:t_max_ind]
-          scores_1_2_p = full_data_comparison_scores_1_2$pathogen[time_ss_1_2_p:t_max_ind]
-          scores_1_3_p = full_data_comparison_scores_1_3$pathogen[time_ss_1_3_p:t_max_ind]
-          scores_2_1_p = full_data_comparison_scores_2_1$pathogen[time_ss_2_1_p:t_max_ind]
-          scores_2_2_p = full_data_comparison_scores_2_2$pathogen[time_ss_2_2_p:t_max_ind]
-          scores_2_3_p = full_data_comparison_scores_2_3$pathogen[time_ss_2_3_p:t_max_ind]
-          
-          # Accumulate scores
-          scores_0_1_p_keep = c(scores_0_1_p_keep, scores_0_1_p)
-          scores_0_2_p_keep = c(scores_0_2_p_keep, scores_0_2_p)
-          scores_0_3_p_keep = c(scores_0_3_p_keep, scores_0_3_p)
-          scores_1_1_p_keep = c(scores_1_1_p_keep, scores_1_1_p)
-          scores_1_2_p_keep = c(scores_1_2_p_keep, scores_1_2_p)
-          scores_1_3_p_keep = c(scores_1_3_p_keep, scores_1_3_p)
-          scores_2_1_p_keep = c(scores_2_1_p_keep, scores_2_1_p)
-          scores_2_2_p_keep = c(scores_2_2_p_keep, scores_2_2_p)
-          scores_2_3_p_keep = c(scores_2_3_p_keep, scores_2_3_p)
-          
-          # ==== EPITHELIAL SCORE
-          scores_0_1_e = full_data_comparison_scores_0_1$epithelial_score[time_ss_0_1_e:t_max_ind]
-          scores_0_2_e = full_data_comparison_scores_0_2$epithelial_score[time_ss_0_2_e:t_max_ind]
-          scores_0_3_e = full_data_comparison_scores_0_3$epithelial_score[time_ss_0_3_e:t_max_ind]
-          scores_1_1_e = full_data_comparison_scores_1_1$epithelial_score[time_ss_1_1_e:t_max_ind]
-          scores_1_2_e = full_data_comparison_scores_1_2$epithelial_score[time_ss_1_2_e:t_max_ind]
-          scores_1_3_e = full_data_comparison_scores_1_3$epithelial_score[time_ss_1_3_e:t_max_ind]
-          scores_2_1_e = full_data_comparison_scores_2_1$epithelial_score[time_ss_2_1_e:t_max_ind]
-          scores_2_2_e = full_data_comparison_scores_2_2$epithelial_score[time_ss_2_2_e:t_max_ind]
-          scores_2_3_e = full_data_comparison_scores_2_3$epithelial_score[time_ss_2_3_e:t_max_ind]
-          
-          # Accumulate scores
-          scores_0_1_e_keep = c(scores_0_1_e_keep, scores_0_1_e)
-          scores_0_2_e_keep = c(scores_0_2_e_keep, scores_0_2_e)
-          scores_0_3_e_keep = c(scores_0_3_e_keep, scores_0_3_e)
-          scores_1_1_e_keep = c(scores_1_1_e_keep, scores_1_1_e)
-          scores_1_2_e_keep = c(scores_1_2_e_keep, scores_1_2_e)
-          scores_1_3_e_keep = c(scores_1_3_e_keep, scores_1_3_e)
-          scores_2_1_e_keep = c(scores_2_1_e_keep, scores_2_1_e)
-          scores_2_2_e_keep = c(scores_2_2_e_keep, scores_2_2_e)
-          scores_2_3_e_keep = c(scores_2_3_e_keep, scores_2_3_e)
-          
-          # Compute oscillation metrics for each signal
 
-          osc_0_1_e = compute_oscillation_metrics(scores_0_1_e)
-          osc_0_2_e = compute_oscillation_metrics(scores_0_2_e)
-          osc_0_3_e = compute_oscillation_metrics(scores_0_3_e)
-          osc_1_1_e = compute_oscillation_metrics(scores_1_1_e)
-          osc_1_2_e = compute_oscillation_metrics(scores_1_2_e)
-          osc_1_3_e = compute_oscillation_metrics(scores_1_3_e)
-          osc_2_1_e = compute_oscillation_metrics(scores_2_1_e)
-          osc_2_2_e = compute_oscillation_metrics(scores_2_2_e)
-          osc_2_3_e = compute_oscillation_metrics(scores_2_3_e)
-          
-          osc_0_1_p = compute_oscillation_metrics(scores_0_1_p)
-          osc_0_2_p = compute_oscillation_metrics(scores_0_2_p)
-          osc_0_3_p = compute_oscillation_metrics(scores_0_3_p)
-          osc_1_1_p = compute_oscillation_metrics(scores_1_1_p)
-          osc_1_2_p = compute_oscillation_metrics(scores_1_2_p)
-          osc_1_3_p = compute_oscillation_metrics(scores_1_3_p)
-          osc_2_1_p = compute_oscillation_metrics(scores_2_1_p)
-          osc_2_2_p = compute_oscillation_metrics(scores_2_2_p)
-          osc_2_3_p = compute_oscillation_metrics(scores_2_3_p)
+          # Dynamically extract scores and accumulate them
+          for (ros in ros_vals) {
+            for (pat in pat_vals) {
+              # Get the filtered data and steady state times
+              scores_df = get(paste0("full_data_comparison_scores_", ros, "_", pat))
+              time_ss_p = get(paste0("time_ss_", ros, "_", pat, "_p"))
+              time_ss_e = get(paste0("time_ss_", ros, "_", pat, "_e"))
+
+              # Extract pathogen scores
+              scores_p_var = paste0("scores_", ros, "_", pat, "_p")
+              scores_p_val = scores_df$pathogen[time_ss_p:t_max_ind]
+              assign(scores_p_var, scores_p_val)
+
+              # Accumulate pathogen scores
+              scores_p_keep_var = paste0("scores_", ros, "_", pat, "_p_keep")
+              assign(scores_p_keep_var, c(get(scores_p_keep_var), scores_p_val))
+
+              # Extract epithelial scores
+              scores_e_var = paste0("scores_", ros, "_", pat, "_e")
+              scores_e_val = scores_df$epithelial_score[time_ss_e:t_max_ind]
+              assign(scores_e_var, scores_e_val)
+
+              # Accumulate epithelial scores
+              scores_e_keep_var = paste0("scores_", ros, "_", pat, "_e_keep")
+              assign(scores_e_keep_var, c(get(scores_e_keep_var), scores_e_val))
+            }
+          }
+
+          # Compute oscillation metrics for each signal (if needed in the future)
+          # for (ros in ros_vals) {
+          #   for (pat in pat_vals) {
+          #     osc_e_var = paste0("osc_", ros, "_", pat, "_e")
+          #     assign(osc_e_var, compute_oscillation_metrics(get(paste0("scores_", ros, "_", pat, "_e"))))
+          #
+          #     osc_p_var = paste0("osc_", ros, "_", pat, "_p")
+          #     assign(osc_p_var, compute_oscillation_metrics(get(paste0("scores_", ros, "_", pat, "_p"))))
+          #   }
+          # }
           
           # --- Tabulate all comparisons ---
+          # Dynamically build the comparison_results data frame
+          n_combinations = length(ros_vals) * length(pat_vals)
+          n_total_rows = 2 * n_combinations  # epithelium + pathogen
+
+          # Build vectors for all combinations
+          ros_vec_e = rep(ros_vals, each = length(pat_vals))
+          pat_vec_e = rep(pat_vals, times = length(ros_vals))
+          ros_vec_p = ros_vec_e
+          pat_vec_p = pat_vec_e
+
+          # Combine for epithelium and pathogen
+          ros_vec_all = c(ros_vec_e, ros_vec_p)
+          pat_vec_all = c(pat_vec_e, pat_vec_p)
+
+          # Build ss_start, mean_score, and sd_score vectors dynamically
+          ss_start_vec = c()
+          mean_score_vec = c()
+          sd_score_vec = c()
+
+          # Epithelium first
+          for (ros in ros_vals) {
+            for (pat in pat_vals) {
+              ss_start_vec = c(ss_start_vec, get(paste0("time_ss_", ros, "_", pat, "_e")))
+              mean_score_vec = c(mean_score_vec, mean(get(paste0("scores_", ros, "_", pat, "_e"))))
+              sd_score_vec = c(sd_score_vec, sd(get(paste0("scores_", ros, "_", pat, "_e"))))
+            }
+          }
+
+          # Pathogen second
+          for (ros in ros_vals) {
+            for (pat in pat_vals) {
+              ss_start_vec = c(ss_start_vec, get(paste0("time_ss_", ros, "_", pat, "_p")))
+              mean_score_vec = c(mean_score_vec, mean(get(paste0("scores_", ros, "_", pat, "_p"))))
+              sd_score_vec = c(sd_score_vec, sd(get(paste0("scores_", ros, "_", pat, "_p"))))
+            }
+          }
+
           comparison_results = data.frame(
             param_set_id = i,
             replicate_id = rep,
-            injury_type  = rep("pathogenic", 18),
-            score_type  = c(rep("epithelium", 9), rep("pathogen", 9)),
-            macspec_on   = rep(0, 18),
-            tregs_on     = rep(0, 18),
-            tregs_rnd    = rep(0, 18),
-            ros_level    = c(0, 0, 0, 1, 1, 1, 2, 2, 2,
-                             0, 0, 0, 1, 1, 1, 2, 2, 2),
-            pat_level    = c(1, 2, 3, 1, 2, 3, 1, 2, 3,
-                             1, 2, 3, 1, 2, 3, 1, 2, 3),
-            ss_start     = c(time_ss_0_1_e, time_ss_0_2_e, time_ss_0_3_e,
-                             time_ss_1_1_e, time_ss_1_2_e, time_ss_1_3_e,
-                             time_ss_2_1_e, time_ss_2_2_e, time_ss_2_3_e,
-                             time_ss_0_1_p, time_ss_0_2_p, time_ss_0_3_p,
-                             time_ss_1_1_p, time_ss_1_2_p, time_ss_1_3_p,
-                             time_ss_2_1_p, time_ss_2_2_p, time_ss_2_3_p),
-            mean_score   = c(mean(scores_0_1_e), mean(scores_0_2_e), mean(scores_0_3_e),
-                             mean(scores_1_1_e), mean(scores_1_2_e), mean(scores_1_3_e),
-                             mean(scores_2_1_e), mean(scores_2_2_e), mean(scores_2_3_e),
-                             mean(scores_0_1_p), mean(scores_0_2_p), mean(scores_0_3_p),
-                             mean(scores_1_1_p), mean(scores_1_2_p), mean(scores_1_3_p),
-                             mean(scores_2_1_p), mean(scores_2_2_p), mean(scores_2_3_p)),
-            sd_score     = c(sd(scores_0_1_e), sd(scores_0_2_e), sd(scores_0_3_e),
-                             sd(scores_1_1_e), sd(scores_1_2_e), sd(scores_1_3_e),
-                             sd(scores_2_1_e), sd(scores_2_2_e), sd(scores_2_3_e),
-                             sd(scores_0_1_p), sd(scores_0_2_p), sd(scores_0_3_p),
-                             sd(scores_1_1_p), sd(scores_1_2_p), sd(scores_1_3_p),
-                             sd(scores_2_1_p), sd(scores_2_2_p), sd(scores_2_3_p))
-            # Oscillation metrics
+            injury_type  = rep("pathogenic", n_total_rows),
+            score_type   = c(rep("epithelium", n_combinations), rep("pathogen", n_combinations)),
+            macspec_on   = rep(0, n_total_rows),
+            tregs_on     = rep(0, n_total_rows),
+            tregs_rnd    = rep(0, n_total_rows),
+            ros_level    = ros_vec_all,
+            pat_level    = pat_vec_all,
+            ss_start     = ss_start_vec,
+            mean_score   = mean_score_vec,
+            sd_score     = sd_score_vec
           )
           
           # # ==== interpretation
@@ -331,12 +290,10 @@ if(length(loop_over)>0){
       }
       
       if(dim(all_comparison_results_reps)[1]>0){
-        
+
         # JS Divergence - ALL POSSIBLE COMBINATIONS
-        # All comparisons between all 9 conditions with explicit naming
-        ros_vals = c(0, 1, 2)
-        pat_vals = c(1, 2, 3)
-        
+        # All comparisons between all conditions with explicit naming
+
         # ==== EPITHELIAL SCORE
         for (r1 in ros_vals) {
           for (p1 in pat_vals) {
@@ -369,28 +326,21 @@ if(length(loop_over)>0){
           }
         }
         
-        # ====== Mean scores - epithelial score
-        all_comparison_results_reps$mean_ros0_pat1_treg0_e = mean(scores_0_1_e_keep)
-        all_comparison_results_reps$mean_ros1_pat1_treg0_e = mean(scores_1_1_e_keep)
-        all_comparison_results_reps$mean_ros2_pat1_treg0_e = mean(scores_2_1_e_keep)
-        all_comparison_results_reps$mean_ros0_pat2_treg0_e = mean(scores_0_2_e_keep)
-        all_comparison_results_reps$mean_ros1_pat2_treg0_e = mean(scores_1_2_e_keep)
-        all_comparison_results_reps$mean_ros2_pat2_treg0_e = mean(scores_2_2_e_keep)
-        all_comparison_results_reps$mean_ros0_pat3_treg0_e = mean(scores_0_3_e_keep)
-        all_comparison_results_reps$mean_ros1_pat3_treg0_e = mean(scores_1_3_e_keep)
-        all_comparison_results_reps$mean_ros2_pat3_treg0_e = mean(scores_2_3_e_keep)
-        
-        
-        # ====== Mean scores - pathogen abundance
-        all_comparison_results_reps$mean_ros0_pat1_treg0_p = mean(scores_0_1_p_keep)
-        all_comparison_results_reps$mean_ros1_pat1_treg0_p = mean(scores_1_1_p_keep)
-        all_comparison_results_reps$mean_ros2_pat1_treg0_p = mean(scores_2_1_p_keep)
-        all_comparison_results_reps$mean_ros0_pat2_treg0_p = mean(scores_0_2_p_keep)
-        all_comparison_results_reps$mean_ros1_pat2_treg0_p = mean(scores_1_2_p_keep)
-        all_comparison_results_reps$mean_ros2_pat2_treg0_p = mean(scores_2_2_p_keep)
-        all_comparison_results_reps$mean_ros0_pat3_treg0_p = mean(scores_0_3_p_keep)
-        all_comparison_results_reps$mean_ros1_pat3_treg0_p = mean(scores_1_3_p_keep)
-        all_comparison_results_reps$mean_ros2_pat3_treg0_p = mean(scores_2_3_p_keep)
+        # ====== Mean scores - epithelial score (dynamically)
+        for (ros in ros_vals) {
+          for (pat in pat_vals) {
+            col_name = paste0("mean_ros", ros, "_pat", pat, "_treg0_e")
+            all_comparison_results_reps[[col_name]] = mean(get(paste0("scores_", ros, "_", pat, "_e_keep")))
+          }
+        }
+
+        # ====== Mean scores - pathogen abundance (dynamically)
+        for (ros in ros_vals) {
+          for (pat in pat_vals) {
+            col_name = paste0("mean_ros", ros, "_pat", pat, "_treg0_p")
+            all_comparison_results_reps[[col_name]] = mean(get(paste0("scores_", ros, "_", pat, "_p_keep")))
+          }
+        }
         
         all_comparison_results = bind_rows(all_comparison_results, all_comparison_results_reps)
         processed_indices      = c(processed_indices, i)
