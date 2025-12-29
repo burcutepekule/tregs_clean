@@ -8,9 +8,10 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
-level_in     = 1
-param_id_vec = readRDS(paste0('evo_selected_level_',level_in,'.rds'))
-rep_ind_vec  = 0:9
+# level_in     = 1
+# param_id_vec = readRDS(paste0('evo_selected_level_',level_in,'.rds'))]
+param_id_vec = 0
+rep_ind_vec  = 0:4
 alpha_plot   = 1/length(rep_ind_vec)
 
 for(param_id in param_id_vec){

@@ -28,23 +28,27 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 
 df_params       = read_csv('./lhs_parameters_della.csv', show_col_types = FALSE)
 df_results_keep = readRDS(paste0('./data_cpp_read_abm',data_suffix,'.rds'))
+unique(df_results_keep$param_set_id)
 length(unique(df_results_keep$param_set_id))
 
 # --- filter for complete # of reps 
 reps_df = as.data.frame(table(df_results_keep$param_set_id))
+reps_df$Var1 = as.numeric(as.character(reps_df$Var1))
 if(data_suffix == '_ros_vs_ctrl_nopatlevel'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==40) %>% dplyr::pull(Var1) # 40 = 10 reps per scenario, 2 scenarios x 2 times recording for epithelial and pathogen scores 
 }else if(data_suffix == '_ros_vs_ctrl_patros'){
   keep_param_id = reps_df %>% dplyr::filter(Freq==260) %>% dplyr::pull(Var1) # 260 = 10 reps per scenario, 13 scenarios x 2 times recording for epithelial and pathogen scores 
 }else if(data_suffix == '_patros'){
-  keep_param_id = reps_df %>% dplyr::filter(Freq==180) %>% dplyr::pull(Var1) # 180 = 10 reps per scenario, 9 scenarios x 2 times recording for epithelial and pathogen scores 
+  # keep_param_id = reps_df %>% dplyr::filter(Freq==1100) %>% dplyr::pull(Var1) # 1100 = 5 reps per scenario, 110 scenarios x 2 times recording for epithelial and pathogen scores
+  keep_param_id = reps_df %>% dplyr::filter(Freq > 440) %>% dplyr::pull(Var1) # 1100 = 5 reps per scenario, 110 scenarios x 2 times recording for epithelial and pathogen scores
 }
 
 df_results = df_results_keep %>% filter(param_set_id %in% keep_param_id)
 length(unique(df_results$param_set_id))
 
 #----- filter based on ss_start, it cannot be too large otherwise not much to compare!
-ss_start_threshold = 4500 # used to be 4500, just for simulation purposes to save time
+# ss_start_threshold = 4500 # used to be 4500, just for simulation purposes to save time
+ss_start_threshold = 1800 # used to be 4500, just for simulation purposes to save time
 param_id_all_below = df_results %>%
   dplyr::group_by(param_set_id) %>%
   dplyr::summarise(all_below = all(ss_start < ss_start_threshold), .groups = "drop") %>%
@@ -52,14 +56,13 @@ param_id_all_below = df_results %>%
   dplyr::pull(param_set_id)
 df_results = df_results %>% dplyr::filter(param_set_id %in% param_id_all_below)
 num_params = length(unique(df_results$param_set_id))
+print(num_params)
 
 df_comparisons = df_results %>% dplyr::select(
   param_set_id, injury_type, 
   starts_with("d_ros"), starts_with("mean_ros"))
 
 df_comparisons_keep = distinct(df_comparisons)
-
-df_results_901 = df_results %>% dplyr::filter(param_set_id==901)
 
 # ============= HELPER FUNCTION: Define "infection under control" ====================================================
 # Infection is under control when:
