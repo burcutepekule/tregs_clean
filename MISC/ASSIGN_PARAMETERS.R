@@ -19,7 +19,13 @@ diffusion_speed_ROS   = param_set_use$diffusion_speed_ROS
 #   add_ROS = ros_level*param_set_use$add_ROS # to see whether infection resolves without ROS 
 # }
 
-add_ROS = ros_level*param_set_use$add_ROS # ros_level=0, control
+# add_ROS = ros_level*param_set_use$add_ROS # ros_level=0, control
+
+# ==============================================================================
+# ====================== OVERWRITE - easiest for now
+add_ROS                   = ros_level*0.1 # ros_level=0, control, until 10, which is max 1=10*0.1
+rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, pat_level*0.1) # pat_level=1 lowest, pat_level=10, highest. 
+# ==============================================================================
 
 add_DAMPs = param_set_use$add_DAMPs
 add_SAMPs = param_set_use$add_SAMPs
@@ -48,8 +54,6 @@ activity_ROS_M1_baseline = param_set_use$activity_ROS_M1_baseline
 # Leak rates
 rate_leak_commensal_injury   = param_set_use$rate_leak_commensal_injury
 rate_leak_commensal_baseline = param_set_use$rate_leak_commensal_baseline
-rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, param_set_use$rate_leak_pathogen_injury)
-rate_leak_pathogen_injury = pat_level*rate_leak_pathogen_injury #1, 2, 3
 
 # Phagocyte parameters
 active_age_limit = as.integer(param_set_use$active_age_limit)

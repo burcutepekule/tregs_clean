@@ -58,8 +58,8 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 plot_on    = 0
 plot_every = 0
-t_max      = 5000
-num_reps   = 10
+t_max      = 2000
+num_reps   = 5
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -100,8 +100,8 @@ scenarios_df = expand.grid(
   randomize_tregs = c(0),
   macspec_on      = c(0),
   # ros_level       = c(0, 1, 2), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  ros_level       = c(0), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1, 2, 3)
+  ros_level       = c(0,1,2,3,4,5,6,7,8,9,10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1,2,3,4,5,6,7,8,9,10)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
