@@ -112,9 +112,9 @@ if(length(loop_over)>0){
       }
     }
 
-    if(any(file.info(files_to_check)$size<100000)){
-      processed_indices      = c(processed_indices, i) #add and skip
-      message("Skipped one")
+    if(any(file.info(files_to_check)$size<10000)){
+      processed_indices = c(processed_indices, i) #add and skip
+      message("Skipped one due to file size.")
     }else{
 
       # Dynamically read all RDS files for this parameter set
@@ -168,13 +168,17 @@ if(length(loop_over)>0){
 
             # Compute steady state for epithelial score
             time_ss_e_var = paste0("time_ss_", ros, "_", pat, "_e")
-            time_ss_e_val = as.numeric(steady_state_idx(get(var_name)$epithelial_score))
+            # time_ss_e_val = as.numeric(steady_state_idx(get(var_name)$epithelial_score))
+            time_ss_e_val = as.numeric(unique(get(var_name)$time_ss_e))
+            
             assign(time_ss_e_var, time_ss_e_val)
             time_ss_vec = c(time_ss_vec, time_ss_e_val)
 
             # Compute steady state for pathogen
             time_ss_p_var = paste0("time_ss_", ros, "_", pat, "_p")
-            time_ss_p_val = as.numeric(steady_state_idx(get(var_name)$pathogen))
+            # time_ss_p_val = as.numeric(steady_state_idx(get(var_name)$pathogen))
+            time_ss_p_val = as.numeric(unique(get(var_name)$time_ss_p))
+            
             assign(time_ss_p_var, time_ss_p_val)
             time_ss_vec = c(time_ss_vec, time_ss_p_val)
           }
@@ -210,12 +214,12 @@ if(length(loop_over)>0){
             }
           }
 
-          # Compute oscillation metrics for each signal (if needed in the future)
+          # Compute oscillation metrics for each signal 
           # for (ros in ros_vals) {
           #   for (pat in pat_vals) {
           #     osc_e_var = paste0("osc_", ros, "_", pat, "_e")
           #     assign(osc_e_var, compute_oscillation_metrics(get(paste0("scores_", ros, "_", pat, "_e"))))
-          #
+          # 
           #     osc_p_var = paste0("osc_", ros, "_", pat, "_p")
           #     assign(osc_p_var, compute_oscillation_metrics(get(paste0("scores_", ros, "_", pat, "_p"))))
           #   }
@@ -284,7 +288,8 @@ if(length(loop_over)>0){
         }
         else{
           processed_indices = c(processed_indices, i) #add and skip
-          message("Skipped one, getting out of loop")
+          # print(time_ss_vec)
+          message("Skipped one because of time_ss_vec, getting out of loop")
           break
         }
       }
@@ -294,37 +299,37 @@ if(length(loop_over)>0){
         # JS Divergence - ALL POSSIBLE COMBINATIONS
         # All comparisons between all conditions with explicit naming
 
-        # ==== EPITHELIAL SCORE
-        for (r1 in ros_vals) {
-          for (p1 in pat_vals) {
-            for (r2 in ros_vals) {
-              for (p2 in pat_vals) {
-                if (r1 != r2 || p1 != p2) {
-                  col_name = paste0("d_ros", r1, "_pat", p1, "_treg0_vs_ros", r2, "_pat", p2, "_treg0_e")
-                  scores1 = get(paste0("scores_", r1, "_", p1, "_e_keep"))
-                  scores2 = get(paste0("scores_", r2, "_", p2, "_e_keep"))
-                  all_comparison_results_reps[[col_name]] = calculate_js_divergence(scores1, scores2, method = "fd")[1]
-                }
-              }
-            }
-          }
-        }
-        
-        # ==== PATHOGEN ABUNDANCE
-        for (r1 in ros_vals) {
-          for (p1 in pat_vals) {
-            for (r2 in ros_vals) {
-              for (p2 in pat_vals) {
-                if (r1 != r2 || p1 != p2) {
-                  col_name = paste0("d_ros", r1, "_pat", p1, "_treg0_vs_ros", r2, "_pat", p2, "_treg0_p")
-                  scores1 = get(paste0("scores_", r1, "_", p1, "_p_keep"))
-                  scores2 = get(paste0("scores_", r2, "_", p2, "_p_keep"))
-                  all_comparison_results_reps[[col_name]] = calculate_js_divergence(scores1, scores2, method = "fd")[1]
-                }
-              }
-            }
-          }
-        }
+        # # ==== EPITHELIAL SCORE
+        # for (r1 in ros_vals) {
+        #   for (p1 in pat_vals) {
+        #     for (r2 in ros_vals) {
+        #       for (p2 in pat_vals) {
+        #         if (r1 != r2 || p1 != p2) {
+        #           col_name = paste0("d_ros", r1, "_pat", p1, "_treg0_vs_ros", r2, "_pat", p2, "_treg0_e")
+        #           scores1 = get(paste0("scores_", r1, "_", p1, "_e_keep"))
+        #           scores2 = get(paste0("scores_", r2, "_", p2, "_e_keep"))
+        #           all_comparison_results_reps[[col_name]] = calculate_js_divergence(scores1, scores2, method = "fd")[1]
+        #         }
+        #       }
+        #     }
+        #   }
+        # }
+        # 
+        # # ==== PATHOGEN ABUNDANCE
+        # for (r1 in ros_vals) {
+        #   for (p1 in pat_vals) {
+        #     for (r2 in ros_vals) {
+        #       for (p2 in pat_vals) {
+        #         if (r1 != r2 || p1 != p2) {
+        #           col_name = paste0("d_ros", r1, "_pat", p1, "_treg0_vs_ros", r2, "_pat", p2, "_treg0_p")
+        #           scores1 = get(paste0("scores_", r1, "_", p1, "_p_keep"))
+        #           scores2 = get(paste0("scores_", r2, "_", p2, "_p_keep"))
+        #           all_comparison_results_reps[[col_name]] = calculate_js_divergence(scores1, scores2, method = "fd")[1]
+        #         }
+        #       }
+        #     }
+        #   }
+        # }
         
         # ====== Mean scores - epithelial score (dynamically)
         for (ros in ros_vals) {

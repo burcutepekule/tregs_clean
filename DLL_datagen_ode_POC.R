@@ -27,7 +27,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 plot_on    = 0
 plot_every = 0
-t_max      = 500
+t_max      = 5000
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
