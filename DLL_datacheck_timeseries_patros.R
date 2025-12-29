@@ -7,6 +7,10 @@ library(ggplot2)
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
+# Define the ros and pat value ranges
+ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
 path         = "/Users/burcutepekule/Desktop/sim_abm/"
 # level_in     = 1
 # param_id_vec = readRDS(paste0('evo_selected_level_',level_in,'.rds'))]
@@ -15,22 +19,19 @@ rep_ind_vec  = 0:4
 alpha_plot   = 1/length(rep_ind_vec)
 
 for(param_id in param_id_vec){
-  
-  results_0_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_1_trnd_0.rds'))
-  results_0_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_2_trnd_0.rds'))
-  results_0_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_0_pat_level_3_trnd_0.rds'))
-  results_1_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_1_trnd_0.rds'))
-  results_1_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_2_trnd_0.rds'))
-  results_1_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_1_pat_level_3_trnd_0.rds'))
-  results_2_1 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_1_trnd_0.rds'))
-  results_2_2 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_2_trnd_0.rds'))
-  results_2_3 = readRDS(paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_2_pat_level_3_trnd_0.rds'))
-  
-  results = rbind(
-    results_0_1, results_0_2, results_0_3,
-    results_1_1, results_1_2, results_1_3,
-    results_2_1, results_2_2, results_2_3
-  )
+
+  # Dynamically read all RDS files for this parameter set
+  results_list = list()
+  for (ros in ros_vals) {
+    for (pat in pat_vals) {
+      var_name = paste0("results_", ros, "_", pat)
+      file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_0_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+      results_list[[var_name]] = readRDS(file_path)
+    }
+  }
+
+  # Combine all results
+  results = do.call(rbind, results_list)
   
   results = results %>% dplyr::filter(rep_id %in% rep_ind_vec)
 
