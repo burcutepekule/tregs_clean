@@ -39,9 +39,9 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ros_vals = sort(c(ros_vals,c(0.05,0.1,0.25,0.5,1.5,2.5,3.5,4.5)))
 # pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
-ros_vals    = c(0,0.1,0.25,0.5,1)
-pat_vals    = 1
-tregs_on_in = 0
+ros_vals    = 0
+pat_vals    = 3
+tregs_on_in = 1
 
 # Define both paths
 path  = "/Users/burcutepekule/Desktop/sim_abm/"

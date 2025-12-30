@@ -159,7 +159,7 @@ cat("  n_tregs:", n_tregs, "\n\n")
 #   allow_tregs     = c(0, 1),
 #   randomize_tregs = c(0),
 #   macspec_on      = c(0),
-#   ros_level       = c(0, 0.05, 0.1, 0.25, 0.5, seq(1,10,0.5)), 
+#   ros_level       = c(0, 0.1, 0.25, seq(0.5,10,0.5)), 
 #   pat_level       = c(1:15)
 # )
 
@@ -169,7 +169,7 @@ scenarios_df = expand.grid(
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = c(0), 
-  pat_level       = c(7)
+  pat_level       = c(3)
 )
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")

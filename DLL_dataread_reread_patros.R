@@ -287,75 +287,8 @@ for (ros in ros_vals) {
   }
 }
 
-# # For each parameter set, check if it has the CORRECT upper triangular pattern
-# df_steps$has_triangular_pattern = apply(df_steps, 1, function(row) {
-#   
-#   # Build a matrix: rows = pat_vals, cols = ros_vals
-#   control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
-#   
-#   for (i in seq_along(pat_vals)) {
-#     for (j in seq_along(ros_vals)) {
-#       pat = pat_vals[i]
-#       ros = ros_vals[j]
-#       col_name = paste0("ros", ros, "_pat", pat, "_controlled")
-#       control_matrix[i, j] = as.logical(row[[col_name]])
-#     }
-#   }
-#   
-#   # For each pat_level (row), find the MINIMUM ROS INDEX needed to control it
-#   # (First column where TRUE appears)
-#   min_ros_idx = sapply(1:nrow(control_matrix), function(i) {
-#     true_indices = which(control_matrix[i, ])
-#     if (length(true_indices) > 0) {
-#       return(min(true_indices))  # Index of first TRUE (1-based)
-#     } else {
-#       return(Inf)  # Never controlled - use Inf to indicate impossible
-#     }
-#   })
-#   
-#   # Pattern requirements:
-#   # 1. The min ROS index should INCREASE as pat level increases
-#   #    (higher pat needs higher ROS)
-#   # 2. At least some low pat levels should be controllable
-#   # 3. Ideally some high pat levels should be uncontrollable (Inf)
-#   
-#   # Count how many are controllable
-#   n_controllable = sum(is.finite(min_ros_idx))
-#   
-#   if (n_controllable < 3) {
-#     # Need at least 3 controllable pat levels to see a trend
-#     return(FALSE)
-#   }
-#   
-#   # Check if min_ros_idx is generally increasing
-#   # For finite values, check if differences are mostly positive
-#   finite_idx = which(is.finite(min_ros_idx))
-#   if (length(finite_idx) < 2) return(FALSE)
-#   
-#   min_ros_finite = min_ros_idx[finite_idx]
-#   differences = diff(min_ros_finite)
-#   
-#   # At least 70% should be non-decreasing (>= 0)
-#   # And at least some should be strictly increasing (> 0)
-#   proportion_nondecreasing = sum(differences >= 0) / length(differences)
-#   proportion_increasing = sum(differences > 0) / length(differences)
-#   
-#   # Check if first pat levels are controllable and last ones might not be
-#   first_controllable = is.finite(min_ros_idx[1])
-#   has_some_uncontrollable = any(!is.finite(min_ros_idx))
-#   
-#   # Pattern holds if:
-#   # - First pat levels are controllable
-#   # - The ROS requirement generally increases with pat level
-#   # - There's actual variation (not all the same)
-#   return(first_controllable && 
-#            proportion_nondecreasing >= 0.7 && 
-#            proportion_increasing >= 0.3)
-# })
-# 
-# 
-# row = df_steps[df_steps$param_set_id == param_id, ]
-# row_vec = unlist(row)
+row = df_steps[df_steps$param_set_id == param_id, ]
+row_vec = unlist(row)
 
 # Build the control matrix
 control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
