@@ -190,13 +190,13 @@ collapse_rate      = 0.75
 # success_duration   = 250 # used to be 30
 # success_rate       = 0.95
 
-success_threshold_e= 145 
-success_threshold_p= 15
+success_threshold_e= 150*0.75 
+success_threshold_p= 10
 success_duration   = 250 
 success_rate       = 0.95
 
 # Initialize success log file
-cat("# SPSA Success Log\n", file = paste0("./spsa_successes_", param_set_id_use, ".txt"), append = FALSE)
+cat("# SPSA Success Log\n", file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = FALSE)
 
 # ============================================================================
 # MAIN SIMULATION LOOP
@@ -279,7 +279,7 @@ for (t in 1:t_max) {
                                spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                                spsa_params$theta[4], spsa_params$theta[5])
         
-        cat(success_line, file = paste0("./spsa_successes_", param_set_id_use, ".txt"), append = TRUE)
+        cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = TRUE)
         
         # Continue optimization like a collapse (don't break)
       }

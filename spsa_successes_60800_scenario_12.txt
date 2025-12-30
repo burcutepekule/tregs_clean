@@ -1,0 +1,12 @@
+# SPSA Success Log
+t=2550 | iter=1 | score=150.0 | phase=plus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
+t=3141 | iter=1 | score=113.5 | phase=minus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
+t=3767 | iter=2 | score=117.5 | phase=plus | theta=[0.1200, 0.1361, 0.0010, 1.0000, 0.4011]
+t=4469 | iter=2 | score=114.7 | phase=minus | theta=[0.1200, 0.1361, 0.0010, 1.0000, 0.4011]
+t=5135 | iter=3 | score=119.4 | phase=minus | theta=[0.1200, 0.1597, 0.0246, 0.9811, 0.3822]
+t=5812 | iter=4 | score=117.0 | phase=plus | theta=[0.1200, 0.5000, 0.0010, 0.5390, 0.8243]
+t=6512 | iter=4 | score=114.8 | phase=minus | theta=[0.1200, 0.5000, 0.0010, 0.5390, 0.8243]
+t=7150 | iter=5 | score=143.0 | phase=minus | theta=[0.1200, 0.5000, 0.0010, 0.5235, 0.8088]
+t=7906 | iter=6 | score=109.6 | phase=plus | theta=[0.1200, 0.5000, 0.0010, 1.0000, 0.1946]
+t=8598 | iter=6 | score=113.0 | phase=minus | theta=[0.1200, 0.5000, 0.0010, 1.0000, 0.1946]
+t=9478 | iter=7 | score=135.6 | phase=minus | theta=[0.1200, 0.5000, 0.0010, 1.0000, 0.1703]

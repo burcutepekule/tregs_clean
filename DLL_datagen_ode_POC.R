@@ -12,7 +12,7 @@ source("./MISC/ODE_SYSTEM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-loop_over = 0:5
+loop_over = 6001
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # params_df$activity_engulf_M1_baseline = c(0.01, 0.02, 0.03, 0.04, 0.05, 0.06)
 
@@ -27,7 +27,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 plot_on    = 0
 plot_every = 0
-t_max      = 5000
+t_max      = 2000
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -60,8 +60,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0),
-  pat_level       = c(1,3,5,7,10)
+  ros_level       = c(0,1,2,3,4,5,6,7,8,9,10),
+  pat_level       = c(1,2,3,4,5,6,7,8,9,10)
 )
 
 # ============================================================================
@@ -114,7 +114,7 @@ for(param_set_id_use in loop_over){
   
   p_e = ggplot(data_long, aes(x = t, y = value, color = variable)) +
     geom_line(alpha = 1, linewidth = 1) +
-    facet_grid(tregs_on ~ ros_level + pat_level, labeller = label_both) +
+    facet_grid(pat_level ~ ros_level, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
     theme(
@@ -137,7 +137,7 @@ for(param_set_id_use in loop_over){
   
   p_p = ggplot(data_long, aes(x = t, y = value, color = variable)) +
     geom_line(alpha = 1, linewidth = 1) +
-    facet_grid(tregs_on ~ ros_level + pat_level, labeller = label_both) +
+    facet_grid(pat_level ~ ros_level, labeller = label_both) +
     scale_color_manual(values = agent_colors) +
     theme_minimal() +
     theme(
@@ -161,6 +161,24 @@ for(param_set_id_use in loop_over){
     plot = p_all,
     width = 22,
     height = 14,
+    dpi = 300,
+    bg='white'
+  )
+  
+  ggsave(
+    filename = paste0("./more_ros/param_set_id_",param_set_id_use,"_e.png"),
+    plot = p_e,
+    width = 14,
+    height = 12,
+    dpi = 300,
+    bg='white'
+  )
+  
+  ggsave(
+    filename = paste0("./more_ros/param_set_id_",param_set_id_use,"_p.png"),
+    plot = p_p,
+    width = 14,
+    height = 12,
     dpi = 300,
     bg='white'
   )

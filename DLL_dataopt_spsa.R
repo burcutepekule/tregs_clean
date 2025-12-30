@@ -10,9 +10,7 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-reslevel_in     = 0
-loop_over_all   = readRDS('evo_selected_js_based.rds')
-loop_over_all   = 8100
+loop_over_all   = 60800
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
 loop_over = loop_over_all
@@ -43,7 +41,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 10000000
+t_max      = 10000
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
 n_tregs         = round(grid_size*grid_size*0.20)
@@ -87,11 +85,11 @@ cat("  n_tregs:", n_tregs, "\n\n")
 
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(0, 1),
+  allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 1, 2), 
-  pat_level       = c(1, 2, 3)
+  ros_level       = c(1, 1.5, 2, 2.5, 3), 
+  pat_level       = c(10, 11, 12)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -118,8 +116,8 @@ for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   results = c()
   
-  # for (scenario_ind in 1:dim(scenarios_df)[1]){
-  for (scenario_ind in 13){
+  for (scenario_ind in 1:dim(scenarios_df)[1]){
+  # for (scenario_ind in 13){
     
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs

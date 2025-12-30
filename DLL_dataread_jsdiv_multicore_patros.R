@@ -213,7 +213,7 @@ if(length(loop_over)>0){
               assign(scores_e_keep_var, c(get(scores_e_keep_var), scores_e_val))
             }
           }
-
+          
           # Compute oscillation metrics for each signal 
           # for (ros in ros_vals) {
           #   for (pat in pat_vals) {
@@ -289,6 +289,7 @@ if(length(loop_over)>0){
         else{
           # print(time_ss_vec)
           message("Skipping replicate ", rep, " for param_set_", i, " due to NA in time_ss_vec")
+          processed_indices = c(processed_indices, i)
           next
         }
       }
