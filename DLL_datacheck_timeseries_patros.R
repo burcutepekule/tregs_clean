@@ -35,10 +35,13 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # Define the ros and pat value ranges
-ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-ros_vals = sort(c(ros_vals,c(0.05,0.1,0.25,0.5,1.5,2.5,3.5,4.5)))
-pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-tregs_on = 1
+# ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+# ros_vals = sort(c(ros_vals,c(0.05,0.1,0.25,0.5,1.5,2.5,3.5,4.5)))
+# pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+ros_vals    = c(0,0.1,0.25,0.5,1)
+pat_vals    = 1
+tregs_on_in = 0
 
 # Define both paths
 path  = "/Users/burcutepekule/Desktop/sim_abm/"
@@ -79,7 +82,7 @@ for(param_id in param_id_vec){
   for (ros in ros_vals) {
     for (pat in pat_vals) {
       var_name = paste0("results_", ros, "_", pat)
-      file_name = paste0('longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+      file_name = paste0('longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
       
       # Try main path first, then local
       file_path = paste0(path, file_name)
@@ -138,7 +141,7 @@ for(param_id in param_id_vec){
   
   
   ggsave(
-    filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on,"_",param_id,"_",variables[1],".png"),
+    filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
     plot = p,
     width = 20,
     height = 12,
@@ -187,7 +190,7 @@ for(param_id in param_id_vec){
   # print(p)
   
   ggsave(
-    filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on,"_",param_id,"_",variables[1],".png"),
+    filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
     plot = p,
     width = 20,
     height = 12,

@@ -38,7 +38,6 @@ split_equal = function(x, n_chunks) {
 
 loop_over = 60800
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-# params_df$recruitment_rate_danger = 0.01 # for 801
 
 # cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
@@ -99,24 +98,26 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # SCENARIO DEFINITIONS
 # ============================================================================
 
-scenarios_df_exist = list.files(dir_name_data, pattern = "^longitudinal_df_param_set_id_.*\\.rds$") %>%
-  str_match("sterile_([\\d.]+)_macspec_([\\d.]+)_tregs_([\\d.]+)_ros_level_([\\d.]+)_pat_level_([\\d.]+)_trnd_([\\d.]+)\\.rds") %>%
-  as_tibble(.name_repair = "minimal") %>%
-  set_names(c("full_match", "sterile", "macspec_on", "allow_tregs", "ros_level", "pat_level", "randomize_tregs")) %>%
-  dplyr::select(-full_match) %>%
-  distinct()
 
-scenarios_df_exist = scenarios_df_exist %>%
-  mutate(
-    sterile = as.numeric(sterile),
-    macspec_on = as.numeric(macspec_on),
-    allow_tregs = as.numeric(allow_tregs),
-    ros_level = as.numeric(ros_level),
-    pat_level = as.numeric(pat_level),
-    randomize_tregs = as.numeric(randomize_tregs)
-  )
-
-ros_levels_in = sort(unique(scenarios_df_exist$ros_level))
+# ## check existing ones?
+# scenarios_df_exist = list.files(dir_name_data, pattern = "^longitudinal_df_param_set_id_.*\\.rds$") %>%
+#   str_match("sterile_([\\d.]+)_macspec_([\\d.]+)_tregs_([\\d.]+)_ros_level_([\\d.]+)_pat_level_([\\d.]+)_trnd_([\\d.]+)\\.rds") %>%
+#   as_tibble(.name_repair = "minimal") %>%
+#   set_names(c("full_match", "sterile", "macspec_on", "allow_tregs", "ros_level", "pat_level", "randomize_tregs")) %>%
+#   dplyr::select(-full_match) %>%
+#   distinct()
+# 
+# scenarios_df_exist = scenarios_df_exist %>%
+#   mutate(
+#     sterile = as.numeric(sterile),
+#     macspec_on = as.numeric(macspec_on),
+#     allow_tregs = as.numeric(allow_tregs),
+#     ros_level = as.numeric(ros_level),
+#     pat_level = as.numeric(pat_level),
+#     randomize_tregs = as.numeric(randomize_tregs)
+#   )
+# 
+# ros_levels_in = sort(unique(scenarios_df_exist$ros_level))
 
 # scenarios_df_exist = expand.grid(
 #   sterile         = c(0),
@@ -126,18 +127,18 @@ ros_levels_in = sort(unique(scenarios_df_exist$ros_level))
 #   ros_level       = c(0,0.05,0.1,0.25,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5:10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
 #   pat_level       = c(1:10)
 # )
+# 
+# scenarios_df_all = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(0, 1),
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(0, 0.1, 0.25, 0.5, seq(1,10,0.5)), 
+#   pat_level       = c(1:15)
+# )
+# scenarios_df = anti_join(scenarios_df_all, scenarios_df_exist)
+# dim(scenarios_df)
 
-scenarios_df_all = expand.grid(
-  sterile         = c(0),
-  allow_tregs     = c(0, 1),
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = ros_levels_in, 
-  pat_level       = c(1:15)
-)
-
-scenarios_df = anti_join(scenarios_df_all, scenarios_df_exist)
-dim(scenarios_df)
 
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -152,6 +153,24 @@ dim(scenarios_df)
 #   pat_level       = c(1)
 # )
 # scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
+
+# scenarios_df = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(0, 1),
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(0, 0.05, 0.1, 0.25, 0.5, seq(1,10,0.5)), 
+#   pat_level       = c(1:15)
+# )
+
+scenarios_df = expand.grid(
+  sterile         = c(0),
+  allow_tregs     = c(0, 1),
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
+  ros_level       = c(0), 
+  pat_level       = c(7)
+)
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")

@@ -9,7 +9,7 @@ files_to_check = c()
 for (ros in ros_vals) {
   for (pat in pat_vals) {
     files_to_check = c(files_to_check,
-                       paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds'))
+                       paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds'))
   }
 }
 
@@ -20,7 +20,7 @@ results_list = list()
 for (ros in ros_vals) {
   for (pat in pat_vals) {
     var_name = paste0("results_", ros, "_", pat)
-    file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+    file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
     if(file.exists(file_path) & file.info(file_path)$size>10000){
       results_list[[var_name]] = readRDS(file_path)
     }
@@ -64,7 +64,7 @@ for (rep in min_reps:max_reps) {
       # Filter data
       var_name = paste0("full_data_comparison_scores_", ros, "_", pat)
       assign(var_name, full_data_comparison %>%
-               dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==tregs_on &
+               dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==tregs_on_in &
                                ros_level==ros & pat_level==pat & randomize_tregs==0))
       
       # Compute steady state for epithelial score
@@ -191,7 +191,7 @@ for (rep in min_reps:max_reps) {
       injury_type  = rep("pathogenic", n_total_rows),
       score_type   = c(rep("epithelium", n_combinations), rep("pathogen", n_combinations)),
       macspec_on   = rep(0, n_total_rows),
-      tregs_on     = rep(0, n_total_rows),
+      tregs_on     = rep(tregs_on_in, n_total_rows),
       tregs_rnd    = rep(0, n_total_rows),
       ros_level    = ros_vec_all,
       pat_level    = pat_vec_all,
