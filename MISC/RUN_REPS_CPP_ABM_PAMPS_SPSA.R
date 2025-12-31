@@ -855,17 +855,11 @@ for (t in 1:t_max) {
             commensal_engulfment_dominant = mac_identifies_as_commensal
           }
 
-          # FIX: Phenotype-specific deactivation logic (macspec mode)
+          # FIX: Corrected deactivation logic (macspec mode)
           current_phenotype = phagocyte_phenotype[i]
 
           if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
             # Both signals low → always deactivate
-            phagocyte_phenotype[i] = 0
-            phagocyte_active_age[i] = 0
-            phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
-            phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
-          } else if (current_phenotype == 1 && danger_signal < activation_threshold_danger) {
-            # M1 deactivates when danger drops, regardless of SAMPs
             phagocyte_phenotype[i] = 0
             phagocyte_active_age[i] = 0
             phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
@@ -876,23 +870,19 @@ for (t in 1:t_max) {
             phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
           } else if (SAMPs_dominant && commensal_engulfment_dominant) {
+            # M2: Both environmental safety AND commensal engulfment required
+            # (allows M1→M2 when danger drops but SAMPs high)
             phagocyte_phenotype[i] = 2
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
           }
         } else {
-          # FIX: Phenotype-specific deactivation logic (vanilla mode)
+          # FIX: Corrected deactivation logic (vanilla mode)
           current_phenotype = phagocyte_phenotype[i]
 
           if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
             # Both signals low → always deactivate
-            phagocyte_phenotype[i] = 0
-            phagocyte_active_age[i] = 0
-            phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
-            phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
-          } else if (current_phenotype == 1 && danger_signal < activation_threshold_danger) {
-            # M1 deactivates when danger drops, regardless of SAMPs
             phagocyte_phenotype[i] = 0
             phagocyte_active_age[i] = 0
             phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
@@ -904,7 +894,7 @@ for (t in 1:t_max) {
             phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
           } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
-            # SAMPs dominant → M2
+            # SAMPs dominant → M2 (allows M1→M2 when danger drops but SAMPs high)
             phagocyte_phenotype[i] = 2
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
