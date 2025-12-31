@@ -536,22 +536,29 @@ for (reps_in in 0:(num_reps-1)){
               phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
             }
           }else{ # vanilla
-            if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
+            # FIX: Deactivation should be based on danger signal only, not SAMPs
+            # SAMPs should only control M1 <-> M2 polarization, not activation state
+            if (danger_signal < activation_threshold_danger) {
+              # Deactivate when danger is low, regardless of SAMPs
+              phagocyte_phenotype[i] = 0
+              phagocyte_active_age[i] = 0
+              phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
+              phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
+            } else if (danger_signal > avg_SAMPs) {
+              # Danger dominant -> M1 (pro-inflammatory)
               phagocyte_phenotype[i] = 1
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
               phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
             } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
+              # SAMPs dominant -> M2 (anti-inflammatory)
               phagocyte_phenotype[i] = 2
               phagocyte_active_age[i] = 1
               phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
               phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
-            } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
-              phagocyte_phenotype[i] = 0
-              phagocyte_active_age[i] = 0
-              phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
-              phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
             }
+            # Note: If danger >= threshold but not > SAMPs, and SAMPs < threshold,
+            # macrophage stays in current state (no change)
           }
         }
       }
