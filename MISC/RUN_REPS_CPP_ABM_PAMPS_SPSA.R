@@ -855,7 +855,14 @@ for (t in 1:t_max) {
             commensal_engulfment_dominant = mac_identifies_as_commensal
           }
           
-          if (DAMPs_dominant || pathogen_engulfment_dominant) {
+          # FIX: Deactivation should be based on danger signal only, not SAMPs
+          if (danger_signal < activation_threshold_danger) {
+            # Deactivate when danger is low, regardless of SAMPs
+            phagocyte_phenotype[i] = 0
+            phagocyte_active_age[i] = 0
+            phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
+            phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
+          } else if (DAMPs_dominant || pathogen_engulfment_dominant) {
             phagocyte_phenotype[i] = 1
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
@@ -865,28 +872,27 @@ for (t in 1:t_max) {
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
-          } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
+          }
+        } else {
+          # FIX: Deactivation should be based on danger signal only, not SAMPs
+          if (danger_signal < activation_threshold_danger) {
+            # Deactivate when danger is low, regardless of SAMPs
             phagocyte_phenotype[i] = 0
             phagocyte_active_age[i] = 0
             phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
-          }
-        } else {
-          if (danger_signal >= activation_threshold_danger && danger_signal > avg_SAMPs) {
+          } else if (danger_signal > avg_SAMPs) {
+            # Danger dominant -> M1
             phagocyte_phenotype[i] = 1
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
           } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
+            # SAMPs dominant -> M2
             phagocyte_phenotype[i] = 2
             phagocyte_active_age[i] = 1
             phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
             phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
-          } else if (avg_SAMPs < activation_threshold_SAMPs && danger_signal < activation_threshold_danger) {
-            phagocyte_phenotype[i] = 0
-            phagocyte_active_age[i] = 0
-            phagocyte_activity_ROS[i] = activity_ROS_M0_baseline
-            phagocyte_activity_engulf[i] = activity_engulf_M0_baseline
           }
         }
       }
