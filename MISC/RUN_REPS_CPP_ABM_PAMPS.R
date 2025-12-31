@@ -435,12 +435,14 @@ for (reps_in in 0:(num_reps-1)){
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
           phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
-        } else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
-          phagocyte_phenotype[i] = 2
-          phagocyte_active_age[i] = 1
-          phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
-        }
+        } 
+        ## Prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
+        # else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
+        #   phagocyte_phenotype[i] = 2
+        #   phagocyte_active_age[i] = 1
+        #   phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+        #   phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
+        # }
       }
     }
 

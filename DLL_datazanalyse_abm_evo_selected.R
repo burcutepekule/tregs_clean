@@ -92,8 +92,8 @@ is_under_control = function(epithelial_health, pathogen_load) {
 df_steps = df_comparisons_keep %>%
   dplyr::filter(injury_type == 'pathogenic')
 
-ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+ros_vals = c(0, 0.1, 0.25, seq(0.5,10,0.5))
+pat_vals = c(1:15)
 
 # Dynamically create the controlled status columns for all ros/pat combinations
 for (ros in ros_vals) {

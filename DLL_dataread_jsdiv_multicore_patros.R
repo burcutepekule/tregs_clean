@@ -38,10 +38,10 @@ sterile_comparison_keep    = c()
 pathogenic_comparison_keep = c()
 
 # Define the ros and pat value ranges
-ros_vals = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-pat_vals = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+ros_vals = c(0, 0.1, 0.25, seq(0.5,10,0.5))
+pat_vals = c(1:15)
 
-path = "/Users/burcutepekule/Desktop/sim_abm/"
+path = "/Users/burcutepekule/Desktop/DLL/sim_abm/"
 
 # File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
 # Dynamically create file lists for all ros/pat combinations
