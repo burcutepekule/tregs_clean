@@ -35,13 +35,13 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # Define the ros and pat value ranges
-# ros_vals = c(0, 0.1, 0.25, seq(0.5,10,0.5))
-# pat_vals = c(1:15)
-# tregs_on_in = 1
+ros_vals = c(0, 0.25, seq(0.5,10,0.5))
+pat_vals = c(1:15)
+tregs_on_in_vec = c(0,1)
 
-ros_vals = c(0)
-pat_vals = 2
-tregs_on_in_vec = 1
+# ros_vals = c(0)
+# pat_vals = 2
+# tregs_on_in_vec = c(0,1)
 
 # ros_vals    = 0
 # pat_vals    = 3
@@ -52,11 +52,18 @@ path  = "/Users/burcutepekule/Desktop/sim_abm/"
 
 # ===== reread to include local results 
 
-param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
+# param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
 param_id_vec = 60800
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
 rep_ind_vec  = 0:4
-alpha_plot   = 0.75/length(rep_ind_vec)
+alpha_plot   = 2/length(rep_ind_vec)
+
+# variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
+variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),c("phagocyte_M1M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
+background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
+
+# variables_2_plot = list(c("phagocyte_M1","phagocyte_M2","phagocyte_M0"))
+# background_on    = 0
 
 for(tregs_on_in in tregs_on_in_vec){
   for(param_id in param_id_vec){
@@ -104,104 +111,71 @@ for(tregs_on_in in tregs_on_in_vec){
     results = do.call(rbind, results_list)
     
     results = results %>% dplyr::filter(rep_id %in% rep_ind_vec)
+    results = results %>% dplyr::mutate(phagocyte_M1M2 = phagocyte_M1+phagocyte_M2)
     
-    
-    # variables = c("epithelial_healthy", paste0("epithelial_inj_", 1:5))
-    variables = c("epithelial_score")
-    
-    data_long = results %>%
-      dplyr::select(t, tregs_on, ros_level, pat_level, rep_id, all_of(variables)) %>%
-      pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-    
-    p = ggplot(data_long, aes(x = t, y = value)) +
-      # Background
-      geom_rect(data = TF_df,
-                aes(fill = controlled),
-                xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
-                alpha = 0.1, inherit.aes = FALSE) +
-      scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "red"),
-                        name = "Under Control") +
-      # Border
-      geom_rect(data = TF_df,
-                aes(color = controlled),
-                xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
-                fill = NA, linewidth = 1.5, inherit.aes = FALSE,
-                show.legend = FALSE) +
-      scale_color_manual(values = c("TRUE" = "darkgreen", "FALSE" = "darkred")) +
-      # Reset color scale for lines
-      new_scale_color() +
-      # Horizontal threshold line
-      geom_hline(yintercept = 150*0.75,
-                 linetype = "solid",
-                 color = "gray",
-                 linewidth = 0.5) +
-      # Lines with agent colors
-      geom_line(aes(color = variable, group = rep_id), 
-                alpha = alpha_plot, linewidth = 1) +
-      scale_color_manual(values = agent_colors, name = "Agent") +
-      facet_grid(pat_level ~ ros_level, labeller = label_both) +
-      theme_minimal() +
-      scale_y_log10(limits = c(NA, 150)) +
-      labs(title = "Pathogen Abundance", x = "Time", y = "Count")
-    
-    
-    ggsave(
-      filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
-      plot = p,
-      width = 20,
-      height = 12,
-      dpi = 300,
-      bg='white'
-    )
-    
-    variables = c('pathogen')
-    
-    data_long = results %>%
-      dplyr::select(t, tregs_on, ros_level, pat_level, rep_id, all_of(variables)) %>%
-      pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-    
-    p = ggplot(data_long, aes(x = t, y = value)) +
-      # Background
-      geom_rect(data = TF_df,
-                aes(fill = controlled),
-                xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
-                alpha = 0.1, inherit.aes = FALSE) +
-      scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "red"),
-                        name = "Under Control") +
-      # Border
-      geom_rect(data = TF_df,
-                aes(color = controlled),
-                xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
-                fill = NA, linewidth = 1.5, inherit.aes = FALSE,
-                show.legend = FALSE) +
-      scale_color_manual(values = c("TRUE" = "darkgreen", "FALSE" = "darkred")) +
-      # Reset color scale for lines
-      new_scale_color() +
-      # Horizontal threshold line
-      geom_hline(yintercept = 10,
-                 linetype = "solid",
-                 color = "gray",
-                 linewidth = 0.5) +
-      # Lines with agent colors
-      geom_line(aes(color = variable, group = rep_id), 
-                alpha = alpha_plot, linewidth = 1) +
-      scale_color_manual(values = agent_colors, name = "Agent") +
-      facet_grid(pat_level ~ ros_level, labeller = label_both) +
-      theme_minimal() +
-      scale_y_log10() +
-      labs(title = "Pathogen Abundance", x = "Time", y = "Count")
-    
-    
-    # print(p)
-    
-    ggsave(
-      filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
-      plot = p,
-      width = 20,
-      height = 12,
-      dpi = 300,
-      bg='white'
-    )
+    for (p_ind in 1:length(variables_2_plot)){
+      variables = variables_2_plot[p_ind][[1]]
+      
+      data_long = results %>%
+        dplyr::select(t, tregs_on, ros_level, pat_level, rep_id, all_of(variables)) %>%
+        pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
+      
+      if(background_on[p_ind]==1){
+      p = ggplot(data_long, aes(x = t, y = value)) +
+        # Background
+        geom_rect(data = TF_df,
+                  aes(fill = controlled),
+                  xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+                  alpha = 0.1, inherit.aes = FALSE) +
+        scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "red"),
+                          name = "Under Control") +
+        # Border
+        geom_rect(data = TF_df,
+                  aes(color = controlled),
+                  xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+                  fill = NA, linewidth = 1.5, inherit.aes = FALSE,
+                  show.legend = FALSE) +
+        scale_color_manual(values = c("TRUE" = "darkgreen", "FALSE" = "darkred")) +
+        # Reset color scale for lines
+        new_scale_color() +
+        # Horizontal threshold line
+        geom_hline(yintercept = 150*0.75,
+                   linetype = "solid",
+                   color = "gray",
+                   linewidth = 0.5) +
+        # Lines with agent colors
+        geom_line(aes(color = variable, group = rep_id), 
+                  alpha = alpha_plot, linewidth = 1) +
+        scale_color_manual(values = agent_colors, name = "Agent") +
+        facet_grid(pat_level ~ ros_level, labeller = label_both) +
+        theme_minimal() +
+        scale_y_log10(limits = c(NA, 150)) +
+        labs(title = "", x = "Time", y = "Count")
+      }else{
+        p = ggplot(data_long, aes(x = t, y = value))+
+          geom_hline(yintercept = 10,
+                     linetype = "solid",
+                     color = "gray",
+                     linewidth = 0.5) +
+          # Lines with agent colors
+          geom_line(aes(color = variable, group = interaction(rep_id, variable)), 
+                    alpha = alpha_plot, linewidth = 1) +
+          scale_color_manual(values = agent_colors, name = "Agent") +
+          facet_grid(pat_level ~ ros_level, labeller = label_both) +
+          theme_minimal() +
+          labs(title = "", x = "Time", y = "Count")
+      }
+      
+      ggsave(
+        filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
+        plot = p,
+        width = 20,
+        height = 12,
+        dpi = 300,
+        bg='white'
+      )
+      
+    }
   } 
 }
 

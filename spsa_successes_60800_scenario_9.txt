@@ -1,10 +1,1 @@
-# SPSA Success Log
-t=2550 | iter=1 | score=150.0 | phase=plus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
-t=3115 | iter=1 | score=116.6 | phase=minus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
-t=3757 | iter=2 | score=117.3 | phase=plus | theta=[0.0010, 0.1603, 0.0010, 1.0000, 0.0010]
-t=4314 | iter=2 | score=113.6 | phase=minus | theta=[0.0010, 0.1603, 0.0010, 1.0000, 0.0010]
-t=4887 | iter=3 | score=136.8 | phase=minus | theta=[0.0252, 0.1906, 0.0312, 0.9758, 0.0010]
-t=7339 | iter=4 | score=108.7 | phase=minus | theta=[0.1200, 0.0010, 0.5000, 1.0000, 0.0010]
-t=8206 | iter=5 | score=120.8 | phase=plus | theta=[0.1200, 0.4552, 0.0458, 1.0000, 0.0010]
-t=8996 | iter=5 | score=115.4 | phase=minus | theta=[0.1200, 0.4552, 0.0458, 1.0000, 0.0010]
-t=9532 | iter=6 | score=130.9 | phase=minus | theta=[0.1200, 0.5000, 0.0941, 0.9614, 0.0396]
+# SPSA Success Log pat_14_ros_5

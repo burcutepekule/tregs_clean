@@ -100,6 +100,7 @@ agent_colors = c(
   phagocyte_M0   = "grey70",
   phagocyte_M1   = "#E754C4",
   phagocyte_M2   = "#3BA578",
+  phagocyte_M1M2 = "firebrick3",
   treg_resting = "#D8BFD8",
   treg_active  = "#967BB6",
   commensal    = "turquoise2",

@@ -1,6 +1,0 @@
-# SPSA Success Log
-t=2550 | iter=1 | score=150.0 | phase=plus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
-t=3128 | iter=1 | score=110.7 | phase=minus | theta=[0.0388, 0.4196, 0.1728, 0.8983, 0.1742]
-t=3783 | iter=2 | score=118.8 | phase=plus | theta=[0.1200, 0.5000, 0.4782, 1.0000, 0.4186]
-t=4519 | iter=2 | score=112.0 | phase=minus | theta=[0.1200, 0.5000, 0.4782, 1.0000, 0.4186]
-t=5226 | iter=3 | score=116.5 | phase=minus | theta=[0.0754, 0.5000, 0.5000, 0.9554, 0.3740]

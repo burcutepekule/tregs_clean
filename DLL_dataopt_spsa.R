@@ -24,7 +24,6 @@ param_names = c("diffusion_speed_SAMPs",
 
 params_df_treg = params_df[param_names]
 
-
 # Final theta: [0.069, 0.418, 0.257, 0.776, 0.485]
 
 # ============================================================================
@@ -41,7 +40,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 10000
+t_max      = 20000
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
 n_tregs         = round(grid_size*grid_size*0.20)
@@ -88,8 +87,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(1, 1.5, 2, 2.5, 3), 
-  pat_level       = c(10, 11, 12)
+  ros_level       = seq(1,5,0.5), 
+  pat_level       = c(14,15,16)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -110,14 +109,34 @@ cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 
 # ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+split_equal = function(x, n_chunks) {
+  split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
+}
+
+# ============================================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================================
+
+args   = commandArgs(trailingOnly = TRUE)
+n1     = as.integer(args[1])
+n2     = as.integer(args[2])
+
+chunks = split_equal(1:nrow(scenarios_df), n1)
+loop_over_sc = chunks[[n2]]
+
+# ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
 for(param_set_id_use in loop_over){
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   results = c()
   
-  for (scenario_ind in 1:dim(scenarios_df)[1]){
+  # for (scenario_ind in 1:dim(scenarios_df)[1]){
   # for (scenario_ind in 13){
+  for (scenario_ind in loop_over_sc){
     
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs

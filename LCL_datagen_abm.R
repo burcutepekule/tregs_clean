@@ -39,6 +39,21 @@ n2     = as.integer(args[2])
 loop_over = 60800
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
+# params_df$diffusion_speed_DAMPs = params_df$diffusion_speed_DAMPs
+# params_df$diffusion_speed_PAMPs = params_df$diffusion_speed_DAMPs
+# params_df$diffusion_speed_SAMPs = params_df$diffusion_speed_DAMPs
+# 
+# params_df$add_DAMPs = params_df$add_DAMPs
+# params_df$add_PAMPs = params_df$add_DAMPs
+# params_df$add_SAMPs = params_df$add_DAMPs
+# 
+# params_df$DAMPs_decay = params_df$DAMPs_decay
+# params_df$PAMPs_decay = params_df$DAMPs_decay
+# params_df$SAMPs_decay = params_df$DAMPs_decay
+
+# params_df$activation_threshold_SAMPs  = 0.5
+# params_df$activation_threshold_danger = 1
+
 # cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
 
@@ -154,15 +169,34 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # )
 # scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
-scenarios_df = expand.grid(
-  sterile         = c(0),
-  allow_tregs     = c(0, 1),
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(0),
-  pat_level       = c(2)
-)
-scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
+# scenarios_df = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(0, 1),
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(0),
+#   pat_level       = c(2)
+# )
+
+# scenarios_df_1 = expand.grid(
+#   sterile         = c(1),
+#   allow_tregs     = c(0),
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(0, 0.25, seq(0.5,10,0.5)),
+#   pat_level       = c(1:15)
+# )
+# 
+# scenarios_df_2 = expand.grid(
+#   sterile         = c(0, 1),
+#   allow_tregs     = c(1),
+#   randomize_tregs = c(1),
+#   macspec_on      = c(0),
+#   ros_level       = c(0, 0.25, seq(0.5,10,0.5)),
+#   pat_level       = c(1:15)
+# )
+# scenarios_df=rbind(scenarios_df_1, scenarios_df_2)
+# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
@@ -171,15 +205,15 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # MAIN SIMULATION LOOP
 # ============================================================================
 
-# chunks        = split_equal(887:nrow(scenarios_df), n1)
-# loop_over_sc = chunks[[n2]]
+chunks        = split_equal(1:nrow(scenarios_df), n1)
+loop_over_sc = chunks[[n2]]
 
 for(param_set_id_use in loop_over){
   scenario_elapsed_total = 0
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   
-  for (scenario_ind in 1:nrow(scenarios_df)){
-  # for (scenario_ind in loop_over_sc){
+  # for (scenario_ind in 1:nrow(scenarios_df)){
+    for (scenario_ind in loop_over_sc){
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs
@@ -218,4 +252,6 @@ for(param_set_id_use in loop_over){
   }
   cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 }
+
+source('~/Dropbox/tregs_clean/DLL_datacheck_timeseries_patros.R')
 
