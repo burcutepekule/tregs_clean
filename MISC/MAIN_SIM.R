@@ -327,19 +327,14 @@ phagocyte_pathogens_engulfed = rowSums(phagocyte_bacteria_registry < 0)
 if (length(M0_indices) > 0) {
   signals = calculate_phagocyte_signals_cpp(
     M0_indices, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
-    act_radius_DAMPs, act_radius_SAMPs, DAMPs, SAMPs, grid_size
+    act_radius_DAMPs, act_radius_SAMPs, act_radius_PAMPs,
+    DAMPs, SAMPs, PAMPs, grid_size
   )
   avg_DAMPs_vec = signals$avg_DAMPs
   avg_SAMPs_vec = signals$avg_SAMPs
+  avg_PAMPs_vec = signals$avg_PAMPs  # First return value contains PAMPs average
   # bacteria_count_vec = signals$bacteria_counts
-  
-  # Calculate PAMPs signals (reuse C++ function with PAMPs matrix)
-  pamps_signals = calculate_phagocyte_signals_cpp(
-    M0_indices, phagocyte_x, phagocyte_y,
-    act_radius_DAMPs, act_radius_DAMPs, PAMPs, PAMPs, grid_size
-  )
-  avg_PAMPs_vec = pamps_signals$avg_DAMPs  # First return value contains PAMPs average
-  
+
   for (idx in seq_along(M0_indices)) {
     i = M0_indices[idx]
     avg_DAMPs = avg_DAMPs_vec[idx]
@@ -348,7 +343,7 @@ if (length(M0_indices) > 0) {
     # bacteria_count = bacteria_count_vec[idx]
     
     # Combine DAMPs + PAMPs as danger signal
-    danger_signal = avg_DAMPs + avg_PAMPs
+    danger_signal      = avg_DAMPs + avg_PAMPs
     
     SAMPS_above_th     = avg_SAMPs >= activation_threshold_SAMPs
     SAMPS_below_th     = avg_SAMPs < activation_threshold_SAMPs
@@ -364,22 +359,31 @@ if (length(M0_indices) > 0) {
     
     # why two conditions? because both can be very low, then any activation shouldn't happen
     # and both can be very high, exceeding the thresholds - but then activation should 
-    # depend on the one that is dominating. 
-    if (DANGER_diff>SAMPS_diff) {
-      # if (DANGER_above_th && DANGER_above_SAMPS) {
-      # if (DANGER_above_th) {
-      phagocyte_phenotype[i] = 1
-      phagocyte_active_age[i] = 1
-      phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
-      phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
-    } 
-    ## Prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
-    # else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
-    #   phagocyte_phenotype[i] = 2
-    #   phagocyte_active_age[i] = 1
-    #   phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-    #   phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
-    # }
+    # depend on the one that is dominating.
+    if(SAMPS_diff>0 | DANGER_diff>0){
+      if (DANGER_diff>SAMPS_diff) {
+        # if (DANGER_above_th && DANGER_above_SAMPS) {
+        # if (DANGER_above_th) {
+        phagocyte_phenotype[i] = 1
+        phagocyte_active_age[i] = 1
+        phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
+        phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
+      }else{
+        ## Should I really prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
+        phagocyte_phenotype[i] = 2
+        phagocyte_active_age[i] = 1
+        phagocyte_activity_ROS[i] = activity_ROS_M2_baseline # + activity_ROS_M1_step*bacteria_count
+        phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M1_step*bacteria_count
+      }
+      ## Prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
+      # else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
+      #   phagocyte_phenotype[i] = 2
+      #   phagocyte_active_age[i] = 1
+      #   phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+      #   phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M2_step*bacteria_count
+      # }
+    }
+    
   }
 }
 
@@ -394,18 +398,13 @@ if (length(active_indices) > 0) {
     # C++ ACCELERATION: Calculate all signals at once
     signals = calculate_phagocyte_signals_cpp(
       candidates, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
-      act_radius_DAMPs, act_radius_SAMPs, DAMPs, SAMPs, grid_size
+      act_radius_DAMPs, act_radius_SAMPs, act_radius_PAMPs,
+      DAMPs, SAMPs, PAMPs, grid_size
     )
     avg_DAMPs_vec = signals$avg_DAMPs
     avg_SAMPs_vec = signals$avg_SAMPs
+    avg_PAMPs_vec = signals$avg_PAMPs
     # bacteria_count_vec = signals$bacteria_counts # WILL ALWAYS RETURN 0
-    
-    # Calculate PAMPs signals (reuse C++ function with PAMPs matrix)
-    pamps_signals = calculate_phagocyte_signals_cpp(
-      candidates, phagocyte_x, phagocyte_y,
-      act_radius_DAMPs, act_radius_DAMPs, PAMPs, PAMPs, grid_size
-    )
-    avg_PAMPs_vec = pamps_signals$avg_DAMPs  # First return value contains PAMPs average
     
     for (idx in seq_along(candidates)) {
       i = candidates[idx]

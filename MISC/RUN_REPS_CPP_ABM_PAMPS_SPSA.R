@@ -192,8 +192,8 @@ collapse_rate      = 0.75
 
 success_threshold_e= 150*0.75 
 success_threshold_p= 10
-success_duration   = 125 
-success_rate       = 0.80
+success_duration   = 125
+success_rate       = 0.95
 
 # Initialize success log file
 cat(paste0("# SPSA Success Log pat_",pat_level,"_ros_",ros_level,"\n"), file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = FALSE)

@@ -35,9 +35,10 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # Define the ros and pat value ranges
-ros_vals = c(0, 0.25, seq(0.5,10,0.5))
-pat_vals = c(1:15)
-tregs_on_in_vec = c(0,1)
+ros_vals = c(2, 2.5, 3, 3.5, 4, 4.5)
+pat_vals = c(14)
+tregs_on_in_vec = c(0, 1)
+sterile_in      = 0
 
 # ros_vals = c(0)
 # pat_vals = 2
@@ -55,11 +56,13 @@ path  = "/Users/burcutepekule/Desktop/sim_abm/"
 # param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
 param_id_vec = 60800
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
-rep_ind_vec  = 0:4
+rep_ind_vec  = 0:2
 alpha_plot   = 2/length(rep_ind_vec)
 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
 variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),c("phagocyte_M1M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
+# variables_2_plot = list("epithelial_score","pathogen")
+
 background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 
 # variables_2_plot = list(c("phagocyte_M1","phagocyte_M2","phagocyte_M0"))
@@ -94,7 +97,7 @@ for(tregs_on_in in tregs_on_in_vec){
     for (ros in ros_vals) {
       for (pat in pat_vals) {
         var_name = paste0("results_", ros, "_", pat)
-        file_name = paste0('longitudinal_df_param_set_id_', param_id, '_sterile_0_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+        file_name = paste0('longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
         
         # Try main path first, then local
         file_path = paste0(path, file_name)
@@ -167,10 +170,10 @@ for(tregs_on_in in tregs_on_in_vec){
       }
       
       ggsave(
-        filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
+        filename = paste0("/Users/burcutepekule/Desktop/timeseries_tri/sterile_",sterile_in,"_tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
         plot = p,
         width = 20,
-        height = 12,
+        height = 6,
         dpi = 300,
         bg='white'
       )

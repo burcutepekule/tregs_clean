@@ -135,13 +135,16 @@ List calculate_phagocyte_signals_cpp(
     IntegerVector phagocyte_y,
     int act_radius_DAMPs,
     int act_radius_SAMPs,
+    int act_radius_PAMPs,
     NumericMatrix DAMPs,
     NumericMatrix SAMPs,
+    NumericMatrix PAMPs,
     int grid_size)
 {
   int n = phagocyte_indices.size();
   NumericVector avg_DAMPs(n);
   NumericVector avg_SAMPs(n);
+  NumericVector avg_PAMPs(n);
   // IntegerVector bacteria_counts(n);
   int bacteria_counts = 0;
 
@@ -156,6 +159,7 @@ List calculate_phagocyte_signals_cpp(
     // Calculate average signals
     avg_DAMPs[i] = get_8n_avg_signal_cpp(x, y, act_radius_DAMPs, DAMPs, grid_size);
     avg_SAMPs[i] = get_8n_avg_signal_cpp(x, y, act_radius_SAMPs, SAMPs, grid_size);
+    avg_PAMPs[i] = get_8n_avg_signal_cpp(x, y, act_radius_PAMPs, PAMPs, grid_size);
 
     // Count bacteria
     // int bacteria_count = 0;
@@ -168,6 +172,7 @@ List calculate_phagocyte_signals_cpp(
   return List::create(
       Named("avg_DAMPs") = avg_DAMPs,
       Named("avg_SAMPs") = avg_SAMPs,
+      Named("avg_PAMPs") = avg_PAMPs,
       Named("bacteria_counts") = bacteria_counts);
 }
 

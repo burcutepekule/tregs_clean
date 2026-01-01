@@ -99,8 +99,7 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  # ros_level       = c(0, 1, 2), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  ros_level       = c(0, 0.1, 0.25, seq(0.5,10,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  ros_level       = c(0, 0.25, seq(0.5,10,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   pat_level       = c(1:15)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS

@@ -22,6 +22,9 @@ cat("Loaded", nrow(params_df), "parameter sets\n\n")
 # ============================================================================
 
 split_equal = function(x, n_chunks) {
+  if (n_chunks == 1) {
+    return(list(`1` = x))
+  }
   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
 }
 
@@ -39,6 +42,14 @@ n2     = as.integer(args[2])
 loop_over = 60800
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
+param_names = c("diffusion_speed_SAMPs",
+                "add_SAMPs",
+                "SAMPs_decay",
+                "treg_discrimination_efficiency",
+                "activation_threshold_SAMPs")
+
+# params_df[param_names] = c(0.05, 0.5, 0.05, 1, 0.1)
+  
 # params_df$diffusion_speed_DAMPs = params_df$diffusion_speed_DAMPs
 # params_df$diffusion_speed_PAMPs = params_df$diffusion_speed_DAMPs
 # params_df$diffusion_speed_SAMPs = params_df$diffusion_speed_DAMPs
@@ -98,6 +109,7 @@ act_radius_ROS   = 1
 act_radius_treg  = 1
 act_radius_DAMPs = 1
 act_radius_SAMPs = 1
+act_radius_PAMPs = 1
 
 # Logistic function parameters (for epithelial injury calculation)
 k_in  = 0.044
@@ -114,89 +126,32 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 
 
-# ## check existing ones?
-# scenarios_df_exist = list.files(dir_name_data, pattern = "^longitudinal_df_param_set_id_.*\\.rds$") %>%
-#   str_match("sterile_([\\d.]+)_macspec_([\\d.]+)_tregs_([\\d.]+)_ros_level_([\\d.]+)_pat_level_([\\d.]+)_trnd_([\\d.]+)\\.rds") %>%
-#   as_tibble(.name_repair = "minimal") %>%
-#   set_names(c("full_match", "sterile", "macspec_on", "allow_tregs", "ros_level", "pat_level", "randomize_tregs")) %>%
-#   dplyr::select(-full_match) %>%
-#   distinct()
-# 
-# scenarios_df_exist = scenarios_df_exist %>%
-#   mutate(
-#     sterile = as.numeric(sterile),
-#     macspec_on = as.numeric(macspec_on),
-#     allow_tregs = as.numeric(allow_tregs),
-#     ros_level = as.numeric(ros_level),
-#     pat_level = as.numeric(pat_level),
-#     randomize_tregs = as.numeric(randomize_tregs)
-#   )
-# 
-# ros_levels_in = sort(unique(scenarios_df_exist$ros_level))
-
-# scenarios_df_exist = expand.grid(
-#   sterile         = c(0),
-#   allow_tregs     = c(0),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0,0.05,0.1,0.25,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5:10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-#   pat_level       = c(1:10)
-# )
-# 
-# scenarios_df_all = expand.grid(
-#   sterile         = c(0),
-#   allow_tregs     = c(0, 1),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0, 0.1, 0.25, 0.5, seq(1,10,0.5)), 
-#   pat_level       = c(1:15)
-# )
-# scenarios_df = anti_join(scenarios_df_all, scenarios_df_exist)
-# dim(scenarios_df)
-
-
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
 # scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
 # scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
-# scenarios_df_ctrl = expand.grid(
-#   sterile         = c(0),
-#   allow_tregs     = c(0),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0), # ros_level=0 makes this control
-#   pat_level       = c(1)
-# )
-# scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
 
-# scenarios_df = expand.grid(
-#   sterile         = c(0),
-#   allow_tregs     = c(0, 1),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0),
-#   pat_level       = c(2)
-# )
+scenarios_df = expand.grid(
+  sterile         = c(0),
+  allow_tregs     = c(1),
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
+  ros_level       = c(0, 0.25, seq(0.5, 10, 0.5)),
+  pat_level       = c(1:15)
+)
 
-# scenarios_df_1 = expand.grid(
-#   sterile         = c(1),
-#   allow_tregs     = c(0),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0, 0.25, seq(0.5,10,0.5)),
-#   pat_level       = c(1:15)
+# ============================================================================
+# DELETE ALL FILES PRIOR TO AVOID CONFUSION
+# ============================================================================
+# # Get all files with tregs_1
+# files_to_delete = list.files(
+#   path = dir_name_data,
+#   pattern = "tregs_1",
+#   full.names = TRUE
 # )
-# 
-# scenarios_df_2 = expand.grid(
-#   sterile         = c(0, 1),
-#   allow_tregs     = c(1),
-#   randomize_tregs = c(1),
-#   macspec_on      = c(0),
-#   ros_level       = c(0, 0.25, seq(0.5,10,0.5)),
-#   pat_level       = c(1:15)
-# )
-# scenarios_df=rbind(scenarios_df_1, scenarios_df_2)
-# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
+# # Delete them
+# file.remove(files_to_delete)
+# ============================================================================
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
@@ -252,6 +207,4 @@ for(param_set_id_use in loop_over){
   }
   cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 }
-
-source('~/Dropbox/tregs_clean/DLL_datacheck_timeseries_patros.R')
 

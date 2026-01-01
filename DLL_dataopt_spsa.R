@@ -40,7 +40,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 20000
+t_max      = 500000
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
 n_tregs         = round(grid_size*grid_size*0.20)
@@ -87,8 +87,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = seq(1,5,0.5), 
-  pat_level       = c(14,15,16)
+  ros_level       = c(3), 
+  pat_level       = c(14)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
@@ -113,6 +113,9 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # ============================================================================
 
 split_equal = function(x, n_chunks) {
+  if (n_chunks == 1) {
+    return(list(`1` = x))
+  }
   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
 }
 
