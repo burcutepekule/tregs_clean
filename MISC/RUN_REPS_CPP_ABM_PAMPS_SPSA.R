@@ -262,15 +262,45 @@ for (t in 1:t_max) {
     }
     
     if (is_collapse || is_success) {
-      
+
       early_triggered = TRUE
-      
+
       if (is_collapse) {
         early_objective = mean(spsa_score_window_e)
         cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
         cat(sprintf("    Epithelial score: %.1f (window mean)\n", early_objective))
         cat(sprintf("    Pathogens: %d\n", current_pathogens))
+        cat(sprintf("    Old theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                    spsa_params$theta[4], spsa_params$theta[5]))
+
+        # Randomize theta upon collapse to escape bad parameter region
+        spsa_params$theta = sapply(1:length(spsa_params$theta), function(i) {
+          runif(1, spsa_params$lower[i], spsa_params$upper[i])
+        })
+
+        cat(sprintf("    → Randomizing theta to escape bad parameter region\n"))
+        cat(sprintf("    New random theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                    spsa_params$theta[4], spsa_params$theta[5]))
+
+        # Update parameter values
+        diffusion_speed_SAMPs          = spsa_params$theta[1]
+        add_SAMPs                      = spsa_params$theta[2]
+        SAMPs_decay                    = spsa_params$theta[3]
+        treg_discrimination_efficiency = spsa_params$theta[4]
+        activation_threshold_SAMPs     = spsa_params$theta[5]
+
+        # Reset simulation state and restart from baseline
+        cat(sprintf("    → Resetting simulation state and restarting from baseline phase\n\n"))
+        reset_simulation_state()
+        spsa_score_window_e = numeric(0)
+        spsa_score_window_p = numeric(0)
+        spsa_phase = "baseline"
+
+        next  # Skip the rest of the loop and continue with baseline
+
       } else {
         early_objective = mean(spsa_score_window_e)
         cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
@@ -280,16 +310,16 @@ for (t in 1:t_max) {
         cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                     spsa_params$theta[4], spsa_params$theta[5]))
-        
+
         # Write success to file
         success_line = sprintf("t=%d | iter=%d | score=%.1f | phase=%s | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                                t, spsa_params$k, early_objective, spsa_phase,
                                spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                                spsa_params$theta[4], spsa_params$theta[5])
-        
+
         cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = TRUE)
       }
-      
+
       if (spsa_phase == "plus") {
         spsa_f_plus = early_objective
         cat(sprintf("    Recorded: f_plus = %.2f\n", spsa_f_plus))
