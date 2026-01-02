@@ -369,11 +369,11 @@ if (length(M0_indices) > 0) {
         phagocyte_activity_ROS[i] = activity_ROS_M1_baseline # + activity_ROS_M1_step*bacteria_count
         phagocyte_activity_engulf[i] = activity_engulf_M1_baseline # + activity_engulf_M1_step*bacteria_count
       }else{
-        ## Should I really prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
-        phagocyte_phenotype[i] = 2
-        phagocyte_active_age[i] = 1
-        phagocyte_activity_ROS[i] = activity_ROS_M2_baseline # + activity_ROS_M1_step*bacteria_count
-        phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M1_step*bacteria_count
+        # ## Should I really prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
+        # phagocyte_phenotype[i] = 2
+        # phagocyte_active_age[i] = 1
+        # phagocyte_activity_ROS[i] = activity_ROS_M2_baseline # + activity_ROS_M1_step*bacteria_count
+        # phagocyte_activity_engulf[i] = activity_engulf_M2_baseline # + activity_engulf_M1_step*bacteria_count
       }
       ## Prevent M0 → M2 transitions so that Tregs can only suppress already-activated M1 macrophages (M1 → M2), not activate naive M0 macrophages.
       # else if (avg_SAMPs >= activation_threshold_SAMPs && avg_SAMPs > danger_signal) {
@@ -452,15 +452,14 @@ if (length(active_indices) > 0) {
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
           phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
+        }else {
+          # M1 → M1
+          # REINFORCE → Reset age given stimulus
+          phagocyte_phenotype[i] = 1
+          phagocyte_active_age[i] = 1
+          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
+          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
         }
-        # # M1 → M1
-        # # REINFORCE → Reset age given stimulus
-        # if (DANGER_above_th && DANGER_above_SAMPS) {
-        #   phagocyte_phenotype[i] = 1
-        #   phagocyte_active_age[i] = 1
-        #   phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
-        #   phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
-        # }
       }else if(current_phenotype == 2){
         # if (SAMPS_below_th && DANGER_below_th) {
         if (SAMPS_diff==0 && DANGER_diff==0) {
@@ -479,16 +478,15 @@ if (length(active_indices) > 0) {
           phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
           phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
         }
-        # # M2 → M2
-        # # REINFORCE → Reset age given stimulus
-        # if (SAMPS_above_th && SAMPS_above_DANGER) {
-        #   phagocyte_phenotype[i] = 2
-        #   phagocyte_active_age[i] = 1
-        #   phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-        #   phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
-        # }
+        else{
+          # M2 → M2
+          # REINFORCE → Reset age given stimulus
+          phagocyte_phenotype[i] = 2
+          phagocyte_active_age[i] = 1
+          phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
+        }
       }
-      
     }
   }
 }

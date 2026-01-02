@@ -31,9 +31,19 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
-chunks    = split_equal(0:max(params_df$param_set_id), n1)
-loop_over = chunks[[n2]]
+# chunks    = split_equal(0:max(params_df$param_set_id), n1)
+# loop_over = chunks[[n2]]
+
+loop_over = 60800
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+
+param_names = c("diffusion_speed_SAMPs",
+                "add_SAMPs",
+                "SAMPs_decay",
+                "treg_discrimination_efficiency",
+                "activation_threshold_SAMPs")
+params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS FOR _A
+params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER
 
 cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
@@ -79,6 +89,7 @@ act_radius_ROS   = 1
 act_radius_treg  = 1
 act_radius_DAMPs = 1
 act_radius_SAMPs = 1
+act_radius_PAMPs = 1
 
 # Logistic function parameters (for epithelial injury calculation)
 k_in  = 0.044
@@ -99,7 +110,7 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 0.25, seq(0.5,10,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  ros_level       = c(0, 0.25, seq(0.5,12,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   pat_level       = c(1:15)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
@@ -123,11 +134,15 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # MAIN SIMULATION LOOP
 # ============================================================================
 
+chunks        = split_equal(1:nrow(scenarios_df), n1)
+loop_over_sc = chunks[[n2]]
+
 for(param_set_id_use in loop_over){
   scenario_elapsed_total = 0
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
 
-  for (scenario_ind in 1:nrow(scenarios_df)){
+  # for (scenario_ind in 1:nrow(scenarios_df)){
+  for (scenario_ind in loop_over_sc){
     sterile         = scenarios_df[scenario_ind,]$sterile
     allow_tregs     = scenarios_df[scenario_ind,]$allow_tregs
     randomize_tregs = scenarios_df[scenario_ind,]$randomize_tregs

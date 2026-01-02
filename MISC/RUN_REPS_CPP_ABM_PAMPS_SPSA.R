@@ -18,7 +18,7 @@ spsa_params = list(
             activation_threshold_SAMPs),
   
   lower = c(0.001, 0.001, 0.001, 0.001, 0.001),
-  upper = c(0.120, 0.500, 0.500, 1.000, 1.000),
+  upper = c(0.120, 0.500, 0.250, 1.000, 1.000),
   
   c_scale = c(0.005, 0.020, 0.020, 0.05, 0.05),
   a_scale = c(0.001, 0.005, 0.005, 0.01, 0.01),
@@ -180,23 +180,27 @@ collapse_threshold = 30
 collapse_duration  = 25
 collapse_rate      = 0.75
 
-### from try 25 to 40
-# success_threshold  = 120 # used to be 100
-# success_duration   = 125 # used to be 30
-# success_rate       = 0.95
-
-### try 41
-# success_threshold  = 145 # used to be 100
-# success_duration   = 250 # used to be 30
-# success_rate       = 0.95
-
-success_threshold_e= 150*0.75 
+success_threshold_e= 150*0.75
 success_threshold_p= 10
 success_duration   = 125
 success_rate       = 0.95
 
+# success_threshold_e= 150*0.95 
+# success_threshold_p= 10
+# success_duration   = 250
+# success_rate       = 0.95
+
 # Initialize success log file
 cat(paste0("# SPSA Success Log pat_",pat_level,"_ros_",ros_level,"\n"), file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = FALSE)
+
+cat(sprintf("\n========================================\n"))
+cat(sprintf("SPSA OPTIMIZATION STARTING\n"))
+cat(sprintf("========================================\n"))
+cat(sprintf("Update interval: %d timesteps\n", spsa_update_interval))
+cat(sprintf("Initial theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+            spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+            spsa_params$theta[4], spsa_params$theta[5]))
+cat(sprintf("========================================\n\n"))
 
 # ============================================================================
 # MAIN SIMULATION LOOP
@@ -263,13 +267,17 @@ for (t in 1:t_max) {
       
       if (is_collapse) {
         early_objective = mean(spsa_score_window_e)
-        cat(sprintf("  [COLLAPSE at t=%d, score=%.1f, phase=%s]\n", 
-                    t, current_epithelial_score, spsa_phase))
+        cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
+        cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
+        cat(sprintf("    Epithelial score: %.1f (window mean)\n", early_objective))
+        cat(sprintf("    Pathogens: %d\n", current_pathogens))
       } else {
         early_objective = mean(spsa_score_window_e)
-        cat(sprintf("  [SUCCESS at t=%d, score=%.1f, phase=%s]\n", 
-                    t, current_epithelial_score, spsa_phase))
-        cat(sprintf("  theta: [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
+        cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
+        cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
+        cat(sprintf("    Epithelial score: %.1f (window mean)\n", early_objective))
+        cat(sprintf("    Pathogens: %d\n", current_pathogens))
+        cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                     spsa_params$theta[4], spsa_params$theta[5]))
         
@@ -280,13 +288,13 @@ for (t in 1:t_max) {
                                spsa_params$theta[4], spsa_params$theta[5])
         
         cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = TRUE)
-        
-        # Continue optimization like a collapse (don't break)
       }
       
       if (spsa_phase == "plus") {
         spsa_f_plus = early_objective
+        cat(sprintf("    Recorded: f_plus = %.2f\n", spsa_f_plus))
         
+        cat(sprintf("    → Resetting simulation state for MINUS evaluation\n"))
         reset_simulation_state()
         spsa_score_window_e = numeric(0)
         spsa_score_window_p = numeric(0)
@@ -305,10 +313,14 @@ for (t in 1:t_max) {
         treg_discrimination_efficiency = theta_minus[4]
         activation_threshold_SAMPs     = theta_minus[5]
         
+        cat(sprintf("    → Switching to MINUS phase with theta_minus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n\n",
+                    theta_minus[1], theta_minus[2], theta_minus[3], theta_minus[4], theta_minus[5]))
+        
         spsa_phase = "minus"
         
       } else if (spsa_phase == "minus") {
         spsa_f_minus = early_objective
+        cat(sprintf("    Recorded: f_minus = %.2f\n", spsa_f_minus))
         
         c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
         a_k = spsa_params$a / (spsa_params$A + spsa_params$k)^spsa_params$alpha
@@ -329,9 +341,12 @@ for (t in 1:t_max) {
         treg_discrimination_efficiency = spsa_params$theta[4]
         activation_threshold_SAMPs     = spsa_params$theta[5]
         
-        cat(sprintf("t=%d | SPSA iter %d | f+: %.1f, f-: %.1f [EARLY]\n",
-                    t, spsa_params$k, spsa_f_plus, spsa_f_minus))
-        cat(sprintf("  theta: [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
+        cat(sprintf("\n--- SPSA UPDATE (EARLY, iter %d) ---\n", spsa_params$k))
+        cat(sprintf("    f_plus:  %.2f\n", spsa_f_plus))
+        cat(sprintf("    f_minus: %.2f\n", spsa_f_minus))
+        cat(sprintf("    gradient: [%.4f, %.4f, %.4f, %.4f, %.4f]\n", 
+                    g_hat[1], g_hat[2], g_hat[3], g_hat[4], g_hat[5]))
+        cat(sprintf("    Updated theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                     spsa_params$theta[4], spsa_params$theta[5]))
         
@@ -341,6 +356,7 @@ for (t in 1:t_max) {
         spsa_params$theta_history = rbind(spsa_params$theta_history, spsa_params$theta)
         spsa_params$t_history = c(spsa_params$t_history, t)
         
+        cat(sprintf("    → Resetting simulation state for next iteration\n"))
         reset_simulation_state()
         spsa_score_window_e = numeric(0)
         spsa_score_window_p = numeric(0)
@@ -362,6 +378,10 @@ for (t in 1:t_max) {
         treg_discrimination_efficiency = theta_plus[4]
         activation_threshold_SAMPs     = theta_plus[5]
         
+        cat(sprintf("    → Starting PLUS phase (iter %d) with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                    spsa_params$k, theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
+        cat(sprintf("--- END SPSA UPDATE ---\n\n"))
+        
         spsa_phase = "plus"
       }
     }
@@ -381,6 +401,12 @@ for (t in 1:t_max) {
     # objective = 0*current_window_mean + 1*current_window_min ### until try 41
     objective = current_window_min_e + current_window_min_p 
     
+    cat(sprintf("\n>>> [REGULAR INTERVAL UPDATE] <<<\n"))
+    cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
+    cat(sprintf("    Window stats - Epithelial (mean: %.1f, min: %.1f) | Pathogens (mean: %.1f, min: %.1f)\n",
+                current_window_mean_e, current_window_min_e, current_window_mean_p, current_window_min_p))
+    cat(sprintf("    Objective: %.2f\n", objective))
+    
     spsa_score_window_e = numeric(0)
     spsa_score_window_p = numeric(0)
     
@@ -388,6 +414,8 @@ for (t in 1:t_max) {
       spsa_last_window_mean = objective
       spsa_delta = sample(c(-1, 1), length(spsa_params$theta), replace = TRUE)
       spsa_params$k = spsa_params$k + 1
+      
+      cat(sprintf("    Baseline objective recorded: %.2f\n", objective))
       
       c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
       perturb = c_k*spsa_params$c_scale*spsa_delta
@@ -403,10 +431,17 @@ for (t in 1:t_max) {
       treg_discrimination_efficiency = theta_plus[4]
       activation_threshold_SAMPs     = theta_plus[5]
       
+      cat(sprintf("    → Switching to PLUS phase with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n\n",
+                  theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
+      
       spsa_phase = "plus"
       
     } else if (spsa_phase == "plus") {
       spsa_f_plus = objective
+      cat(sprintf("    Recorded: f_plus = %.2f\n", spsa_f_plus))
+      
+      cat(sprintf("    → Resetting simulation state for MINUS evaluation\n"))
+      reset_simulation_state()
       
       c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
       perturb = c_k*spsa_params$c_scale*spsa_delta
@@ -422,10 +457,14 @@ for (t in 1:t_max) {
       treg_discrimination_efficiency = theta_minus[4]
       activation_threshold_SAMPs     = theta_minus[5]
       
+      cat(sprintf("    → Switching to MINUS phase with theta_minus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n\n",
+                  theta_minus[1], theta_minus[2], theta_minus[3], theta_minus[4], theta_minus[5]))
+      
       spsa_phase = "minus"
       
     } else if (spsa_phase == "minus") {
       spsa_f_minus = objective
+      cat(sprintf("    Recorded: f_minus = %.2f\n", spsa_f_minus))
       
       c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
       a_k = spsa_params$a / (spsa_params$A + spsa_params$k)^spsa_params$alpha
@@ -446,9 +485,12 @@ for (t in 1:t_max) {
       treg_discrimination_efficiency = spsa_params$theta[4]
       activation_threshold_SAMPs     = spsa_params$theta[5]
       
-      cat(sprintf("t=%d | SPSA iter %d | f+: %.1f, f-: %.1f\n",
-                  t, spsa_params$k, spsa_f_plus, spsa_f_minus))
-      cat(sprintf("  theta: [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
+      cat(sprintf("\n--- SPSA UPDATE (REGULAR, iter %d) ---\n", spsa_params$k))
+      cat(sprintf("    f_plus:  %.2f\n", spsa_f_plus))
+      cat(sprintf("    f_minus: %.2f\n", spsa_f_minus))
+      cat(sprintf("    gradient: [%.4f, %.4f, %.4f, %.4f, %.4f]\n", 
+                  g_hat[1], g_hat[2], g_hat[3], g_hat[4], g_hat[5]))
+      cat(sprintf("    Updated theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                   spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                   spsa_params$theta[4], spsa_params$theta[5]))
       
@@ -458,8 +500,8 @@ for (t in 1:t_max) {
       spsa_params$theta_history = rbind(spsa_params$theta_history, spsa_params$theta)
       spsa_params$t_history = c(spsa_params$t_history, t)
       
+      cat(sprintf("    → Resetting simulation state for next iteration\n"))
       reset_simulation_state()
-      cat("  [State reset]\n")
       
       spsa_delta = sample(c(-1, 1), length(spsa_params$theta), replace = TRUE)
       spsa_params$k = spsa_params$k + 1
@@ -478,10 +520,14 @@ for (t in 1:t_max) {
       treg_discrimination_efficiency = theta_plus[4]
       activation_threshold_SAMPs     = theta_plus[5]
       
+      cat(sprintf("    → Starting PLUS phase (iter %d) with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$k, theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
+      cat(sprintf("--- END SPSA UPDATE ---\n\n"))
+      
       spsa_phase = "plus"
     }
   }
-  source("~/Dropbox/tregs_clean/MISC/MAIN_SIM.R")
+  source("./MISC/MAIN_SIM.R")
 }
 
 # ============================================================================
@@ -535,6 +581,15 @@ longitudinal_df_keep = rbind(longitudinal_df_keep, longitudinal_df)
 # ============================================================================
 # AFTER SIMULATION: Compile SPSA optimization history
 # ============================================================================
+cat(sprintf("\n========================================\n"))
+cat(sprintf("SPSA OPTIMIZATION COMPLETE\n"))
+cat(sprintf("========================================\n"))
+cat(sprintf("Total iterations: %d\n", spsa_params$k))
+cat(sprintf("Final theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+            spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+            spsa_params$theta[4], spsa_params$theta[5]))
+cat(sprintf("========================================\n\n"))
+
 spsa_results = data.frame(
   iter = seq_along(spsa_params$score_history),
   t = spsa_params$t_history,
@@ -548,6 +603,6 @@ spsa_results = data.frame(
   activation_threshold_SAMPs = spsa_params$theta_history[, 5]
 )
 
-write.csv(spsa_results, 
-          file = paste0("./spsa_optimization_", param_set_id_use, ".csv"),
-          row.names = FALSE)
+# write.csv(spsa_results, 
+#           file = paste0("./spsa_optimization_", param_set_id_use, ".csv"),
+#           row.names = FALSE)

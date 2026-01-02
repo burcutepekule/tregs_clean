@@ -2,9 +2,9 @@ rm(list=ls())
 library(dplyr)
 library(tidyr)
 library(zoo)
-library(cowplot)
-library(av)
-library(ggplot2)
+# library(cowplot)
+# library(av)
+# library(ggplot2)
 
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
@@ -23,8 +23,15 @@ param_names = c("diffusion_speed_SAMPs",
                 "activation_threshold_SAMPs")
 
 params_df_treg = params_df[param_names]
+param_bounds = data.frame(
+  lower = c(0.001, 0.001, 0.001, 0.001, 0.001),
+  upper = c(0.120, 0.500, 0.250, 1.000, 1.000),
+  row.names = param_names
+)
+params_df_treg = sapply(param_names, function(p) {
+  runif(1, param_bounds[p, "lower"], param_bounds[p, "upper"])
+})
 
-# Final theta: [0.069, 0.418, 0.257, 0.776, 0.485]
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -40,7 +47,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 num_reps   = 1
-t_max      = 500000
+t_max      = 5000000
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
 n_tregs         = round(grid_size*grid_size*0.20)
@@ -66,6 +73,7 @@ act_radius_ROS   = 1
 act_radius_treg  = 1
 act_radius_DAMPs = 1
 act_radius_SAMPs = 1
+act_radius_PAMPs = 1
 
 # Logistic function parameters (for epithelial injury calculation)
 k_in  = 0.044
@@ -84,11 +92,11 @@ cat("  n_tregs:", n_tregs, "\n\n")
 
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(1),
+  allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(3), 
-  pat_level       = c(14)
+  ros_level       = c(4), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(9)
 )
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))

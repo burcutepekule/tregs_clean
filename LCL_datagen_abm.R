@@ -48,7 +48,15 @@ param_names = c("diffusion_speed_SAMPs",
                 "treg_discrimination_efficiency",
                 "activation_threshold_SAMPs")
 
-# params_df[param_names] = c(0.05, 0.5, 0.05, 1, 0.1)
+params_df[param_names] = c(0.0010, 0.0010, 0.5000, 1.0000, 0.0010)# WORKS!
+params_df[param_names] = c(0.0010, 0.0010, 0.5000, 1.0000, 0.0010)# WORKS!
+params_df[param_names] = c(0.1200, 0.0266, 0.5000, 1.0000, 0.0010)# DOESN'T REALLY WORK?
+
+params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ### WORKS!
+# params_df[param_names] = c(0.0010, 0.5000, 0.5000, 0.7921, 0.1256)
+# params_df[param_names] = c(0.1200, 0.5000, 0.5000, 1.0000, 0.5338)
+
+
   
 # params_df$diffusion_speed_DAMPs = params_df$diffusion_speed_DAMPs
 # params_df$diffusion_speed_PAMPs = params_df$diffusion_speed_DAMPs
@@ -88,8 +96,8 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 plot_on    = 0
 plot_every = 0
-t_max      = 2000
-num_reps   = 5
+t_max      = 1000
+num_reps   = 1
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -125,7 +133,6 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # SCENARIO DEFINITIONS
 # ============================================================================
 
-
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
 # scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
@@ -136,8 +143,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 0.25, seq(0.5, 10, 0.5)),
-  pat_level       = c(1:15)
+  ros_level       = c(3),
+  pat_level       = c(8)
 )
 
 # ============================================================================

@@ -2,7 +2,7 @@
 #SBATCH --job-name=treg_array
 #SBATCH --array=0-389
 #SBATCH --cpus-per-task=1
-#SBATCH --time=24:00:00
+#SBATCH --time=96:00:00
 #SBATCH --mem-per-cpu=4G
 #SBATCH --output=logs/treg_%A_%a.out
 #SBATCH --error=logs/treg_%A_%a.err
@@ -17,7 +17,7 @@ CHUNK_ID=$(( SLURM_ARRAY_TASK_ID + 1 ))
 
 echo "Running chunk $CHUNK_ID on node $(hostname)"
 
-Rscript /home/bt6725/tregs/DLL_datagen_abm.R \
+Rscript /home/bt6725/tregs/DLL_dataopt_spsa.R \
     $N_CHUNKS \
     $CHUNK_ID
 
