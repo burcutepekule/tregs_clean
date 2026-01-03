@@ -227,8 +227,7 @@ for (t in 1:t_max) {
     if (length(spsa_score_window_e) >= collapse_duration) {
       recent_scores_collapse = tail(spsa_score_window_e, collapse_duration)
       pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
-      is_collapse = all(recent_scores_collapse < collapse_threshold) ||
-        (pct_below_threshold > collapse_rate)
+      is_collapse = (pct_below_threshold > collapse_rate)
     }
     
     # Check for SUCCESS (needs success_duration scores)
@@ -236,12 +235,12 @@ for (t in 1:t_max) {
     if (length(spsa_score_window_e) >= success_duration) {
       recent_scores_success_e = tail(spsa_score_window_e, success_duration)
       recent_scores_success_p = tail(spsa_score_window_p, success_duration)
-      
+
       pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-      is_success_e = all(recent_scores_success_e > success_threshold_e) || (pct_above_threshold_e > success_rate)
-      
+      is_success_e = (pct_above_threshold_e > success_rate)
+
       pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
-      is_success_p = all(recent_scores_success_p < success_threshold_p) || (pct_above_threshold_p > success_rate)
+      is_success_p = (pct_above_threshold_p > success_rate)
       
       is_success = is_success_e & is_success_p
     }
