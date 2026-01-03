@@ -52,20 +52,21 @@ sterile_in      = 0
 
 # Define both paths
 path  = "/Users/burcutepekule/Desktop/sim_abm/"
+dir.create("/Users/burcutepekule/Desktop/timeseries_tri", showWarnings = FALSE)
 
 # ===== reread to include local results 
 
 # param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
 # param_id_vec = 60800
-param_id_vec = 1300
+param_id_vec = c(1300, 60800)
 
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
-rep_ind_vec  = 0:4
-alpha_plot   = 2/length(rep_ind_vec)
+rep_ind_vec  = 0:9
+alpha_plot   = 1/length(rep_ind_vec)
 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
-variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),c("phagocyte_M1M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
-# variables_2_plot = list("epithelial_score","pathogen")
+# variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),c("phagocyte_M1M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
+variables_2_plot = list("epithelial_score","pathogen")
 
 background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 

@@ -11,6 +11,8 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 loop_over_all   = 1300
+# loop_over_all   = 60800
+
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
 loop_over = loop_over_all
@@ -94,14 +96,14 @@ cat("  n_tregs:", n_tregs, "\n\n")
 ### replicate as you want to parallelize same scenario multiple times
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(0),
+  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(1:12), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(8:15)
+  ros_level       = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(12)
 )
 
-for (i in 1:2){
+for (i in 1:4){
   scenarios_df = rbind(scenarios_df, scenarios_df)
 }
 
@@ -157,7 +159,7 @@ collapse_rate      = 0.75
 success_threshold_e= 150*0.75
 success_threshold_p= 10
 success_duration   = 125
-success_rate       = 0.75
+success_rate       = 0.95
 
 # success_threshold_e= 150*0.95 
 # success_threshold_p= 10
