@@ -10,7 +10,7 @@ source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-loop_over_all   = 60800
+loop_over_all   = 1300
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
 loop_over = loop_over_all
@@ -32,6 +32,7 @@ params_df_treg = sapply(param_names, function(p) {
   runif(1, param_bounds[p, "lower"], param_bounds[p, "upper"])
 })
 
+params_df[param_names]=params_df_treg
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -90,14 +91,21 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # SCENARIO DEFINITIONS
 # ============================================================================
 
+### replicate as you want to parallelize same scenario multiple times
 scenarios_df = expand.grid(
   sterile         = c(0),
   allow_tregs     = c(0),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(4), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(9)
+  ros_level       = c(1:12), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(8:15)
 )
+
+for (i in 1:2){
+  scenarios_df = rbind(scenarios_df, scenarios_df)
+}
+
+dim(scenarios_df)[1]
 # # DOESN'T MAKE SENSE TO RUN THIS
 # scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
 # scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
@@ -132,12 +140,29 @@ split_equal = function(x, n_chunks) {
 # ============================================================================
 
 args   = commandArgs(trailingOnly = TRUE)
-n1     = as.integer(args[1])
-n2     = as.integer(args[2])
+n1     = as.integer(args[1]) # this is not necessary right now 
+n2     = as.integer(args[2]) # just use n2 to start another optimization
 
 chunks = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]
 
+
+# ============================================================================
+# DETECTION SETTINGS
+# ============================================================================
+collapse_threshold = 30
+collapse_duration  = 25
+collapse_rate      = 0.75
+
+success_threshold_e= 150*0.75
+success_threshold_p= 10
+success_duration   = 125
+success_rate       = 0.75
+
+# success_threshold_e= 150*0.95 
+# success_threshold_p= 10
+# success_duration   = 250
+# success_rate       = 0.95
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================

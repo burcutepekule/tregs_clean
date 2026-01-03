@@ -1,4 +1,0 @@
-# SPSA Success Log pat_8_ros_3
-t=38279 | iter=8 | score=82.4 | phase=minus | theta=[0.0375, 0.5000, 0.0479, 0.9850, 0.1856]
-t=228980 | iter=50 | score=97.1 | phase=minus | theta=[0.0010, 0.0619, 0.2234, 1.0000, 0.9621]
-t=795262 | iter=174 | score=95.4 | phase=plus | theta=[0.0987, 0.5000, 0.1231, 0.0546, 0.4509]

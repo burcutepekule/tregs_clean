@@ -175,23 +175,8 @@ spsa_delta = NULL
 spsa_f_plus = NA
 spsa_f_minus = NA
 
-# Detection settings
-collapse_threshold = 30
-collapse_duration  = 25
-collapse_rate      = 0.75
-
-success_threshold_e= 150*0.75
-success_threshold_p= 10
-success_duration   = 125
-success_rate       = 0.95
-
-# success_threshold_e= 150*0.95 
-# success_threshold_p= 10
-# success_duration   = 250
-# success_rate       = 0.95
-
 # Initialize success log file
-cat(paste0("# SPSA Success Log pat_",pat_level,"_ros_",ros_level,"\n"), file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = FALSE)
+cat(paste0("# SPSA Success Log pat_",pat_level,"_ros_",ros_level,"\n"), file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,"_n2_",n2,".txt"), append = FALSE)
 
 cat(sprintf("\n========================================\n"))
 cat(sprintf("SPSA OPTIMIZATION STARTING\n"))

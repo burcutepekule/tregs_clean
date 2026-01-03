@@ -34,16 +34,20 @@ n2     = as.integer(args[2])
 # chunks    = split_equal(0:max(params_df$param_set_id), n1)
 # loop_over = chunks[[n2]]
 
-loop_over = 60800
+loop_over = c(1300,60800)
+
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
-param_names = c("diffusion_speed_SAMPs",
-                "add_SAMPs",
-                "SAMPs_decay",
-                "treg_discrimination_efficiency",
-                "activation_threshold_SAMPs")
-params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS FOR _A
-params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER
+# param_names = c("diffusion_speed_SAMPs",
+#                 "add_SAMPs",
+#                 "SAMPs_decay",
+#                 "treg_discrimination_efficiency",
+#                 "activation_threshold_SAMPs")
+# 
+# if(loop_over==60800){
+#   params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS BEAUTIFULLY FOR _A!
+#   params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER - KIND OF WORKS FOR _C AS WELL BUT AGAIN NOT GREAT IMPROVEMENT
+# }
 
 cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
@@ -69,7 +73,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 plot_on    = 0
 plot_every = 0
 t_max      = 2000
-num_reps   = 5
+num_reps   = 10
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -104,7 +108,6 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 # SCENARIO DEFINITIONS
 # ============================================================================
-
 scenarios_df = expand.grid(
   sterile         = c(0),
   allow_tregs     = c(0),

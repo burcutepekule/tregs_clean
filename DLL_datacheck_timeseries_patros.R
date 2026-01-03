@@ -56,7 +56,9 @@ path  = "/Users/burcutepekule/Desktop/sim_abm/"
 # ===== reread to include local results 
 
 # param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
-param_id_vec = 60800
+# param_id_vec = 60800
+param_id_vec = 1300
+
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
 rep_ind_vec  = 0:4
 alpha_plot   = 2/length(rep_ind_vec)

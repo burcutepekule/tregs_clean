@@ -452,14 +452,15 @@ if (length(active_indices) > 0) {
           phagocyte_active_age[i] = 1
           phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
           phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
-        }else {
-          # M1 → M1
-          # REINFORCE → Reset age given stimulus
-          phagocyte_phenotype[i] = 1
-          phagocyte_active_age[i] = 1
-          phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
-          phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
         }
+        #else {
+        #   # M1 → M1
+        #   # REINFORCE → Reset age given stimulus
+        #   phagocyte_phenotype[i] = 1
+        #   phagocyte_active_age[i] = 1
+        #   phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
+        #   phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
+        # }
       }else if(current_phenotype == 2){
         # if (SAMPS_below_th && DANGER_below_th) {
         if (SAMPS_diff==0 && DANGER_diff==0) {
@@ -478,14 +479,14 @@ if (length(active_indices) > 0) {
           phagocyte_activity_ROS[i] = activity_ROS_M1_baseline
           phagocyte_activity_engulf[i] = activity_engulf_M1_baseline
         }
-        else{
-          # M2 → M2
-          # REINFORCE → Reset age given stimulus
-          phagocyte_phenotype[i] = 2
-          phagocyte_active_age[i] = 1
-          phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
-          phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
-        }
+        # else{
+        #   # M2 → M2
+        #   # REINFORCE → Reset age given stimulus
+        #   phagocyte_phenotype[i] = 2
+        #   phagocyte_active_age[i] = 1
+        #   phagocyte_activity_ROS[i] = activity_ROS_M2_baseline
+        #   phagocyte_activity_engulf[i] = activity_engulf_M2_baseline
+        # }
       }
     }
   }
