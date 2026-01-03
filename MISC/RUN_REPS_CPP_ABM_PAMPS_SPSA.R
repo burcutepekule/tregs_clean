@@ -214,41 +214,39 @@ for (t in 1:t_max) {
   # EARLY DETECTION: COLLAPSE OR SUCCESS (check BEFORE regular update)
   # ========================================================================
   early_triggered = FALSE
-  
+
   # # DEBUG: Print window stats at regular interval boundaries
   # if (spsa_phase != "baseline" && length(spsa_score_window) >= 50 && (t %% spsa_update_interval) == 0) {
   #   cat(sprintf("  DEBUG t=%d: len=%d, mean=%.1f, min=%d, max=%d, all<30=%s, phase=%s\n",
-  #               t, length(spsa_score_window), mean(spsa_score_window), 
+  #               t, length(spsa_score_window), mean(spsa_score_window),
   #               min(spsa_score_window), max(spsa_score_window),
   #               all(tail(spsa_score_window, 30) < 30), spsa_phase))
   # }
-  
-  if (spsa_phase != "baseline") {
-    
-    # Check for COLLAPSE (needs collapse_duration scores)
-    is_collapse = FALSE
-    if (length(spsa_score_window_e) >= collapse_duration) {
-      recent_scores_collapse = tail(spsa_score_window_e, collapse_duration)
-      pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
-      is_collapse = (pct_below_threshold > collapse_rate)
-    }
-    
-    # Check for SUCCESS (needs success_duration scores)
-    is_success = FALSE
-    if (length(spsa_score_window_e) >= success_duration) {
-      recent_scores_success_e = tail(spsa_score_window_e, success_duration)
-      recent_scores_success_p = tail(spsa_score_window_p, success_duration)
-      
-      pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-      is_success_e = (pct_above_threshold_e > success_rate)
-      
-      pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
-      is_success_p = (pct_above_threshold_p > success_rate)
-      
-      is_success = is_success_e & is_success_p
-    }
-    
-    if (is_collapse || is_success) {
+
+  # Check for COLLAPSE (in all phases including baseline)
+  is_collapse = FALSE
+  if (length(spsa_score_window_e) >= collapse_duration) {
+    recent_scores_collapse = tail(spsa_score_window_e, collapse_duration)
+    pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
+    is_collapse = (pct_below_threshold > collapse_rate)
+  }
+
+  # Check for SUCCESS (only in non-baseline phases)
+  is_success = FALSE
+  if (spsa_phase != "baseline" && length(spsa_score_window_e) >= success_duration) {
+    recent_scores_success_e = tail(spsa_score_window_e, success_duration)
+    recent_scores_success_p = tail(spsa_score_window_p, success_duration)
+
+    pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
+    is_success_e = (pct_above_threshold_e > success_rate)
+
+    pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
+    is_success_p = (pct_above_threshold_p > success_rate)
+
+    is_success = is_success_e & is_success_p
+  }
+
+  if (is_collapse || is_success) {
 
       early_triggered = TRUE
 
@@ -398,12 +396,11 @@ for (t in 1:t_max) {
         cat(sprintf("    → Starting PLUS phase (iter %d) with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$k, theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
         cat(sprintf("--- END SPSA UPDATE ---\n\n"))
-        
+
         spsa_phase = "plus"
       }
     }
-  }
-  
+
   # ========================================================================
   # SPSA PARAMETER UPDATE (at regular intervals) - SKIP IF EARLY TRIGGERED
   # ========================================================================
