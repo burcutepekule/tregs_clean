@@ -135,7 +135,6 @@ param_names = c("diffusion_speed_SAMPs",
 lower_bounds = param_bounds$lower
 upper_bounds = param_bounds$upper
 
-evaluation_interval = 300  # Run each random sample for 300 timesteps
 max_iterations = 1000      # Number of random samples to try
 
 # Tracking
@@ -146,8 +145,7 @@ random_search_results = data.frame(
   mean_epithelial = numeric(),
   min_pathogen = numeric(),
   mean_pathogen = numeric(),
-  outcome = character(),  # "success", "collapse", "incomplete"
-  termination_time = integer(),
+  is_success = logical(),
   diffusion_speed_SAMPs = numeric(),
   add_SAMPs = numeric(),
   SAMPs_decay = numeric(),
@@ -164,7 +162,8 @@ cat(paste0("# Random Search Success Log pat_", pat_level, "_ros_", ros_level, "\
 cat(sprintf("\n========================================\n"))
 cat(sprintf("RANDOM SEARCH OPTIMIZATION STARTING\n"))
 cat(sprintf("========================================\n"))
-cat(sprintf("Evaluation interval: %d timesteps\n", evaluation_interval))
+cat(sprintf("Simulation time: %d timesteps\n", t_max))
+cat(sprintf("Evaluation window: last %d timesteps\n", success_duration))
 cat(sprintf("Max iterations: %d\n", max_iterations))
 cat(sprintf("Parameter bounds:\n"))
 for (i in 1:length(param_names)) {
@@ -197,90 +196,66 @@ for (iter in 1:max_iterations) {
   # Reset simulation
   reset_simulation_state()
 
-  # Run simulation for evaluation_interval timesteps
-  score_window_e = numeric(0)
-  score_window_p = numeric(0)
-  outcome = "incomplete"
-  termination_time = evaluation_interval
-
-  for (t in 1:evaluation_interval) {
-
-    # Calculate current scores
-    current_epithelial_score = 6*sum(epithelium$level_injury == 0) +
-      5*sum(epithelium$level_injury == 1) +
-      4*sum(epithelium$level_injury == 2) +
-      3*sum(epithelium$level_injury == 3) +
-      2*sum(epithelium$level_injury == 4) +
-      1*sum(epithelium$level_injury == 5)
-
-    current_pathogens = nrow(pathogen_coords)
-
-    score_window_e = c(score_window_e, current_epithelial_score)
-    score_window_p = c(score_window_p, current_pathogens)
-
-    # Check for COLLAPSE
-    if (length(score_window_e) >= collapse_duration) {
-      recent_scores_collapse = tail(score_window_e, collapse_duration)
-      pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
-
-      if (pct_below_threshold > collapse_rate) {
-        outcome = "collapse"
-        termination_time = t
-        cat(sprintf("    [COLLAPSE at t=%d] Epithelial score too low\n", t))
-        break
-      }
-    }
-
-    # Check for SUCCESS
-    if (length(score_window_e) >= success_duration) {
-      recent_scores_success_e = tail(score_window_e, success_duration)
-      recent_scores_success_p = tail(score_window_p, success_duration)
-
-      pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-      pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
-
-      is_success_e = (pct_above_threshold_e > success_rate)
-      is_success_p = (pct_above_threshold_p > success_rate)
-
-      if (is_success_e && is_success_p) {
-        outcome = "success"
-        termination_time = t
-        cat(sprintf("    [SUCCESS at t=%d] Criteria met!\n", t))
-
-        # Log success
-        success_line = sprintf("iter=%d | t=%d | score=%.1f | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                               iter, t, min(score_window_e),
-                               current_theta[1], current_theta[2], current_theta[3],
-                               current_theta[4], current_theta[5])
-        cat(success_line, file = success_log_file, append = TRUE)
-        break
-      }
-    }
-
-    # Run one simulation step
+  # Run full simulation (t_max timesteps)
+  for (t in 1:t_max) {
     source("./MISC/MAIN_SIM.R")
   }
 
-  # Calculate objective
-  objective = min(score_window_e)
+  # Evaluate ONLY the last success_duration timesteps
+  eval_start = max(1, t_max - success_duration + 1)
 
-  cat(sprintf("    Outcome: %s | Objective: %.1f (min_epithelial) | Time: %d timesteps\n",
-              outcome, objective, termination_time))
-  cat(sprintf("    Epithelial - min: %.1f, mean: %.1f\n",
-              min(score_window_e), mean(score_window_e)))
-  cat(sprintf("    Pathogens - min: %d, mean: %.1f\n\n",
-              min(score_window_p), mean(score_window_p)))
+  eval_scores_e = numeric(success_duration)
+  eval_scores_p = numeric(success_duration)
+
+  eval_idx = 1
+  for (t_eval in eval_start:t_max) {
+    eval_scores_e[eval_idx] = epithelium_longitudinal[t_eval, 1]*6 +
+                               epithelium_longitudinal[t_eval, 2]*5 +
+                               epithelium_longitudinal[t_eval, 3]*4 +
+                               epithelium_longitudinal[t_eval, 4]*3 +
+                               epithelium_longitudinal[t_eval, 5]*2 +
+                               epithelium_longitudinal[t_eval, 6]*1
+    eval_scores_p[eval_idx] = microbes_longitudinal[t_eval, 2]  # pathogen column
+    eval_idx = eval_idx + 1
+  }
+
+  # Check success criteria on evaluation window
+  pct_above_threshold_e = sum(eval_scores_e > success_threshold_e) / length(eval_scores_e)
+  pct_above_threshold_p = sum(eval_scores_p < success_threshold_p) / length(eval_scores_p)
+
+  is_success_e = (pct_above_threshold_e > success_rate)
+  is_success_p = (pct_above_threshold_p > success_rate)
+  is_success = is_success_e & is_success_p
+
+  # Calculate objective (min of evaluation window)
+  objective = min(eval_scores_e)
+
+  if (is_success) {
+    cat(sprintf("    [SUCCESS] Criteria met in final %d timesteps!\n", success_duration))
+
+    # Log success
+    success_line = sprintf("iter=%d | score=%.1f | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                           iter, objective,
+                           current_theta[1], current_theta[2], current_theta[3],
+                           current_theta[4], current_theta[5])
+    cat(success_line, file = success_log_file, append = TRUE)
+  }
+
+  cat(sprintf("    Success: %s | Objective: %.1f (min_epithelial in last %d steps)\n",
+              is_success, objective, success_duration))
+  cat(sprintf("    Evaluation window - Epithelial (min: %.1f, mean: %.1f) | Pathogens (min: %d, mean: %.1f)\n\n",
+              min(eval_scores_e), mean(eval_scores_e),
+              min(eval_scores_p), mean(eval_scores_p)))
 
   # Record results
   random_search_results = rbind(random_search_results, data.frame(
     iter = iter,
     objective = objective,
-    min_epithelial = min(score_window_e),
-    mean_epithelial = mean(score_window_e),
-    min_pathogen = min(score_window_p),
-    mean_pathogen = mean(score_window_p),
-    outcome = outcome,
-    termination_time = termination_time,
+    min_epithelial = min(eval_scores_e),
+    mean_epithelial = mean(eval_scores_e),
+    min_pathogen = min(eval_scores_p),
+    mean_pathogen = mean(eval_scores_p),
+    is_success = is_success,
     diffusion_speed_SAMPs = current_theta[1],
     add_SAMPs = current_theta[2],
     SAMPs_decay = current_theta[3],
@@ -297,12 +272,10 @@ cat(sprintf("\n========================================\n"))
 cat(sprintf("RANDOM SEARCH COMPLETE\n"))
 cat(sprintf("========================================\n"))
 cat(sprintf("Total iterations: %d\n", max_iterations))
-cat(sprintf("Successes: %d\n", sum(random_search_results$outcome == "success")))
-cat(sprintf("Collapses: %d\n", sum(random_search_results$outcome == "collapse")))
-cat(sprintf("Incomplete: %d\n", sum(random_search_results$outcome == "incomplete")))
+cat(sprintf("Successes: %d\n", sum(random_search_results$is_success)))
 
-if (sum(random_search_results$outcome == "success") > 0) {
-  best_success = random_search_results[random_search_results$outcome == "success", ]
+if (sum(random_search_results$is_success) > 0) {
+  best_success = random_search_results[random_search_results$is_success, ]
   best_success = best_success[which.max(best_success$objective), ]
   cat(sprintf("\nBest successful configuration:\n"))
   cat(sprintf("  Iter: %d | Objective: %.1f\n", best_success$iter, best_success$objective))
@@ -317,8 +290,8 @@ if (sum(random_search_results$outcome == "success") > 0) {
 if (nrow(random_search_results) > 0) {
   overall_best = random_search_results[which.max(random_search_results$objective), ]
   cat(sprintf("\nOverall best configuration (any outcome):\n"))
-  cat(sprintf("  Iter: %d | Objective: %.1f | Outcome: %s\n",
-              overall_best$iter, overall_best$objective, overall_best$outcome))
+  cat(sprintf("  Iter: %d | Objective: %.1f | Success: %s\n",
+              overall_best$iter, overall_best$objective, overall_best$is_success))
   cat(sprintf("  Theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
               overall_best$diffusion_speed_SAMPs,
               overall_best$add_SAMPs,
