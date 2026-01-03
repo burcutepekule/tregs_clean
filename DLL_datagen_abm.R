@@ -34,7 +34,7 @@ n2     = as.integer(args[2])
 # chunks    = split_equal(0:max(params_df$param_set_id), n1)
 # loop_over = chunks[[n2]]
 
-loop_over = c(1300,60800)
+loop_over = c(60800)
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
@@ -44,10 +44,12 @@ params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 #                 "treg_discrimination_efficiency",
 #                 "activation_threshold_SAMPs")
 # 
-# if(loop_over==60800){
-#   params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS BEAUTIFULLY FOR _A!
-#   params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER - KIND OF WORKS FOR _C AS WELL BUT AGAIN NOT GREAT IMPROVEMENT
-# }
+if(loop_over==60800){
+  # params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS BEAUTIFULLY FOR _A!
+  # params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER - KIND OF WORKS FOR _C AS WELL BUT AGAIN NOT GREAT IMPROVEMENT
+  params_df[param_names] = c(0.1155, 0.0920, 0.2082, 0.8323, 0.5962) # kind of found empirically 
+}
+
 
 cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
@@ -110,7 +112,7 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(0),
+  allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = c(0, 0.25, seq(0.5,12,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)

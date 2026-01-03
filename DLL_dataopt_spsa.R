@@ -11,7 +11,7 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 loop_over_all   = 1300
-# loop_over_all   = 60800
+loop_over_all   = 60800
 
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 
@@ -26,7 +26,7 @@ param_names = c("diffusion_speed_SAMPs",
 
 params_df_treg = params_df[param_names]
 param_bounds = data.frame(
-  lower = c(0.001, 0.001, 0.001, 0.001, 0.001),
+  lower = c(0.001, 0.001, 0.001, 0.750, 0.001),
   upper = c(0.120, 0.500, 0.250, 1.000, 1.000),
   row.names = param_names
 )
@@ -99,29 +99,15 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(12)
+  ros_level       = c(3), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(8)
 )
 
-for (i in 1:4){
-  scenarios_df = rbind(scenarios_df, scenarios_df)
-}
-
-dim(scenarios_df)[1]
-# # DOESN'T MAKE SENSE TO RUN THIS
-# scenarios_df = scenarios_df %>% dplyr::filter(!(allow_tregs == 0 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==1))
-# scenarios_df = scenarios_df %>% dplyr::filter(!(macspec_on>0 & allow_tregs == 1 & randomize_tregs==0))
-# scenarios_df_ctrl = expand.grid(
-#   # sterile         = c(0, 1),
-#   sterile         = c(0),
-#   allow_tregs     = c(0),
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(0),
-#   pat_level       = c(1)
-# )
-# scenarios_df=rbind(scenarios_df_ctrl, scenarios_df)
+# for (i in 1:4){
+#   scenarios_df = rbind(scenarios_df, scenarios_df)
+# }
+# 
+# dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
@@ -158,8 +144,8 @@ collapse_rate      = 0.75
 
 success_threshold_e= 150*0.75
 success_threshold_p= 10
-success_duration   = 125
-success_rate       = 0.95
+success_duration   = 150 # because max active_age_limit=30 and this ensures 5 cycles of the max value
+success_rate       = 0.75
 
 # success_threshold_e= 150*0.95 
 # success_threshold_p= 10

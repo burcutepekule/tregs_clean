@@ -17,11 +17,14 @@ spsa_params = list(
             treg_discrimination_efficiency, 
             activation_threshold_SAMPs),
   
-  lower = c(0.001, 0.001, 0.001, 0.001, 0.001),
-  upper = c(0.120, 0.500, 0.250, 1.000, 1.000),
+  lower = param_bounds$lower,
+  upper = param_bounds$upper,
   
   c_scale = c(0.005, 0.020, 0.020, 0.05, 0.05),
   a_scale = c(0.001, 0.005, 0.005, 0.01, 0.01),
+  
+  # c_scale = c(0.0025, 0.005, 0.005, 0.0125, 0.0125),  # 4x smaller 
+  # a_scale = c(0.00025, 0.00125, 0.00125, 0.0025, 0.0025),  # 4x smaller → smaller steps
   
   a = 1.0,
   c = 1.0,
@@ -166,7 +169,7 @@ microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
 # ============================================================================
 # SPSA STATE
 # ============================================================================
-spsa_update_interval = 100*active_age_limit
+spsa_update_interval = 2*success_duration
 spsa_score_window_e = numeric(0)
 spsa_score_window_p = numeric(0)
 spsa_last_window_mean = NA
@@ -227,8 +230,7 @@ for (t in 1:t_max) {
     if (length(spsa_score_window_e) >= collapse_duration) {
       recent_scores_collapse = tail(spsa_score_window_e, collapse_duration)
       pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
-      is_collapse = all(recent_scores_collapse < collapse_threshold) ||
-        (pct_below_threshold > collapse_rate)
+      is_collapse = (pct_below_threshold > collapse_rate)
     }
     
     # Check for SUCCESS (needs success_duration scores)
@@ -238,10 +240,10 @@ for (t in 1:t_max) {
       recent_scores_success_p = tail(spsa_score_window_p, success_duration)
       
       pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-      is_success_e = all(recent_scores_success_e > success_threshold_e) || (pct_above_threshold_e > success_rate)
+      is_success_e = (pct_above_threshold_e > success_rate)
       
       pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
-      is_success_p = all(recent_scores_success_p < success_threshold_p) || (pct_above_threshold_p > success_rate)
+      is_success_p = (pct_above_threshold_p > success_rate)
       
       is_success = is_success_e & is_success_p
     }
@@ -251,10 +253,10 @@ for (t in 1:t_max) {
       early_triggered = TRUE
 
       if (is_collapse) {
-        early_objective = min(spsa_score_window_e) + min(spsa_score_window_p)
+        early_objective = min(spsa_score_window_e) 
         cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Objective: %.1f (min_epithelial + min_pathogen)\n", early_objective))
+        cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
         cat(sprintf("    Pathogens: %d\n", current_pathogens))
         cat(sprintf("    Old theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
@@ -264,7 +266,7 @@ for (t in 1:t_max) {
         spsa_params$theta = sapply(1:length(spsa_params$theta), function(i) {
           runif(1, spsa_params$lower[i], spsa_params$upper[i])
         })
-
+        
         cat(sprintf("    → Randomizing theta to escape bad parameter region\n"))
         cat(sprintf("    New random theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
@@ -287,7 +289,7 @@ for (t in 1:t_max) {
         next  # Skip the rest of the loop and continue with baseline
 
       } else {
-        early_objective = min(spsa_score_window_e) + min(spsa_score_window_p)
+        early_objective = min(spsa_score_window_e) 
         cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
         cat(sprintf("    Objective: %.1f (min_epithelial + min_pathogen)\n", early_objective))
