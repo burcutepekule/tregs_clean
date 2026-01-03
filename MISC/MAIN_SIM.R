@@ -319,10 +319,6 @@ M0_indices = which(phagocyte_phenotype == 0)
 M1_indices = which(phagocyte_phenotype == 1)
 M2_indices = which(phagocyte_phenotype == 2)
 
-# Calculate counts from registry (used in phenotype updates)
-phagocyte_commensals_engulfed = rowSums(phagocyte_bacteria_registry > 0)
-phagocyte_pathogens_engulfed = rowSums(phagocyte_bacteria_registry < 0)
-
 # Process M0 phagocytes (candidates for activation)
 if (length(M0_indices) > 0) {
   signals = calculate_phagocyte_signals_cpp(
