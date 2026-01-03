@@ -226,9 +226,9 @@ for (t in 1:t_max) {
     is_collapse = FALSE
     if (length(spsa_score_window_e) >= collapse_duration) {
       recent_scores_collapse = tail(spsa_score_window_e, collapse_duration)
-      pct_below_threshold = sum(spsa_score_window_e < collapse_threshold) / length(spsa_score_window_e)
-      is_collapse = all(recent_scores_collapse < collapse_threshold) || 
-        (length(spsa_score_window_e) >= collapse_duration && pct_below_threshold > collapse_rate)
+      pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
+      is_collapse = all(recent_scores_collapse < collapse_threshold) ||
+        (pct_below_threshold > collapse_rate)
     }
     
     # Check for SUCCESS (needs success_duration scores)
@@ -251,10 +251,10 @@ for (t in 1:t_max) {
       early_triggered = TRUE
 
       if (is_collapse) {
-        early_objective = mean(spsa_score_window_e)
+        early_objective = min(spsa_score_window_e) + min(spsa_score_window_p)
         cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Epithelial score: %.1f (window mean)\n", early_objective))
+        cat(sprintf("    Objective: %.1f (min_epithelial + min_pathogen)\n", early_objective))
         cat(sprintf("    Pathogens: %d\n", current_pathogens))
         cat(sprintf("    Old theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
@@ -287,10 +287,10 @@ for (t in 1:t_max) {
         next  # Skip the rest of the loop and continue with baseline
 
       } else {
-        early_objective = mean(spsa_score_window_e)
+        early_objective = min(spsa_score_window_e) + min(spsa_score_window_p)
         cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Epithelial score: %.1f (window mean)\n", early_objective))
+        cat(sprintf("    Objective: %.1f (min_epithelial + min_pathogen)\n", early_objective))
         cat(sprintf("    Pathogens: %d\n", current_pathogens))
         cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
@@ -302,7 +302,7 @@ for (t in 1:t_max) {
                                spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
                                spsa_params$theta[4], spsa_params$theta[5])
 
-        cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,".txt"), append = TRUE)
+        cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,"_n2_",n2,".txt"), append = TRUE)
       }
 
       if (spsa_phase == "plus") {
