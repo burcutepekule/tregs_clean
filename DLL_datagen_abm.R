@@ -38,13 +38,14 @@ loop_over = c(60800)
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
-# param_names = c("diffusion_speed_SAMPs",
-#                 "add_SAMPs",
-#                 "SAMPs_decay",
-#                 "treg_discrimination_efficiency",
-#                 "activation_threshold_SAMPs")
-# 
+
 if(loop_over==60800){
+  param_names = c("diffusion_speed_SAMPs",
+                  "add_SAMPs",
+                  "SAMPs_decay",
+                  "treg_discrimination_efficiency",
+                  "activation_threshold_SAMPs")
+
   # params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS BEAUTIFULLY FOR _A!
   # params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER - KIND OF WORKS FOR _C AS WELL BUT AGAIN NOT GREAT IMPROVEMENT
   params_df[param_names] = c(0.1155, 0.0920, 0.2082, 0.8323, 0.5962) # kind of found empirically 

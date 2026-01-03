@@ -292,7 +292,7 @@ for (t in 1:t_max) {
         early_objective = min(spsa_score_window_e) 
         cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
         cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Objective: %.1f (min_epithelial + min_pathogen)\n", early_objective))
+        cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
         cat(sprintf("    Pathogens: %d\n", current_pathogens))
         cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
                     spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
@@ -416,7 +416,7 @@ for (t in 1:t_max) {
     current_window_min_p  = min(spsa_score_window_p)
     
     # objective = 0*current_window_mean + 1*current_window_min ### until try 41
-    objective = current_window_min_e + current_window_min_p 
+    objective = current_window_min_e 
     
     cat(sprintf("\n>>> [REGULAR INTERVAL UPDATE] <<<\n"))
     cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
