@@ -45,12 +45,9 @@ if(loop_over==60800){
                   "SAMPs_decay",
                   "treg_discrimination_efficiency",
                   "activation_threshold_SAMPs")
-
   # params_df[param_names] = c(0.0325, 0.0403, 0.4607, 0.9685, 0.0325) ## OPTIMIZED FOR _A - WORKS BEAUTIFULLY FOR _A!
-  # params_df[param_names] = c(0.0010, 0.0619, 0.2234, 1.0000, 0.9621) ## OPTIMIZED FOR _B - KIND OF FORKS FOR B BUT NOT TOO MUCH BETTER - KIND OF WORKS FOR _C AS WELL BUT AGAIN NOT GREAT IMPROVEMENT
-  params_df[param_names] = c(0.1155, 0.0920, 0.2082, 0.8323, 0.5962) # kind of found empirically 
+  params_df[param_names] = c(0.1083, 0.1862, 0.0062, 0.8503, 0.8155) ## OPTIMIZED FOR _C
 }
-
 
 cat("Processing chunk", n2, "of", n1, "\n")
 cat("Parameter sets:", min(loop_over), "-", max(loop_over), "\n\n")
@@ -76,7 +73,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 plot_on    = 0
 plot_every = 0
 t_max      = 2000
-num_reps   = 10
+num_reps   = 5
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -139,7 +136,6 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
-
 chunks        = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]
 

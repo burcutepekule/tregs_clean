@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=treg_array
-#SBATCH --array=0-159
+#SBATCH --array=0-194
 #SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
 #SBATCH --mem-per-cpu=4G
@@ -10,14 +10,15 @@
 module load anaconda3/2023.3
 conda activate env_Treg
 
-N_CHUNKS=160
+N_CHUNKS=195
 
 # SLURM_ARRAY_TASK_ID gives 0..99
 CHUNK_ID=$(( SLURM_ARRAY_TASK_ID + 1 ))
 
 echo "Running chunk $CHUNK_ID on node $(hostname)"
 
-Rscript /home/bt6725/tregs/DLL_dataopt_spsa.R \
+Rscript /home/bt6725/tregs/DLL_dataopt_random.R \
+    1300 \
     $N_CHUNKS \
     $CHUNK_ID
 

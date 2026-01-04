@@ -39,7 +39,7 @@ ros_vals = c(0, 0.25, seq(0.5,12,0.5))
 pat_vals = c(1:15)
 # ros_vals = c(3)
 # pat_vals = c(8)
-tregs_on_in_vec = c(0)
+tregs_on_in_vec = c(1)
 sterile_in      = 0
 
 # ros_vals = c(0)
@@ -57,11 +57,11 @@ dir.create("/Users/burcutepekule/Desktop/timeseries_tri", showWarnings = FALSE)
 # ===== reread to include local results 
 
 # param_id_vec = readRDS('evo_selected_triangular_pattern.rds')
-# param_id_vec = 60800
-param_id_vec = c(1300, 60800)
+param_id_vec = 60800
+# param_id_vec = c(1300, 60800)
 
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
-rep_ind_vec  = 0:9
+rep_ind_vec  = 0:4
 alpha_plot   = 1/length(rep_ind_vec)
 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
@@ -101,6 +101,7 @@ for(tregs_on_in in tregs_on_in_vec){
     results_list = list()
     for (ros in ros_vals) {
       for (pat in pat_vals) {
+        print(paste0('Processing ros ',ros,' pat ',pat,))
         var_name = paste0("results_", ros, "_", pat)
         file_name = paste0('longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
         

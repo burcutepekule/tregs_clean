@@ -169,7 +169,6 @@ microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
 # ============================================================================
 # SPSA STATE
 # ============================================================================
-spsa_update_interval = 2*success_duration
 spsa_score_window_e = numeric(0)
 spsa_score_window_p = numeric(0)
 spsa_last_window_mean = NA
@@ -214,7 +213,7 @@ for (t in 1:t_max) {
   # EARLY DETECTION: COLLAPSE OR SUCCESS (check BEFORE regular update)
   # ========================================================================
   early_triggered = FALSE
-
+  
   # # DEBUG: Print window stats at regular interval boundaries
   # if (spsa_phase != "baseline" && length(spsa_score_window) >= 50 && (t %% spsa_update_interval) == 0) {
   #   cat(sprintf("  DEBUG t=%d: len=%d, mean=%.1f, min=%d, max=%d, all<30=%s, phase=%s\n",
@@ -222,7 +221,7 @@ for (t in 1:t_max) {
   #               min(spsa_score_window), max(spsa_score_window),
   #               all(tail(spsa_score_window, 30) < 30), spsa_phase))
   # }
-
+  
   # Check for COLLAPSE (in all phases including baseline)
   is_collapse = FALSE
   if (length(spsa_score_window_e) >= collapse_duration) {
@@ -230,177 +229,177 @@ for (t in 1:t_max) {
     pct_below_threshold = sum(recent_scores_collapse < collapse_threshold) / length(recent_scores_collapse)
     is_collapse = (pct_below_threshold > collapse_rate)
   }
-
+  
   # Check for SUCCESS (only in non-baseline phases)
   is_success = FALSE
   if (spsa_phase != "baseline" && length(spsa_score_window_e) >= success_duration) {
     recent_scores_success_e = tail(spsa_score_window_e, success_duration)
     recent_scores_success_p = tail(spsa_score_window_p, success_duration)
-
+    
     pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
     is_success_e = (pct_above_threshold_e > success_rate)
-
+    
     pct_above_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
     is_success_p = (pct_above_threshold_p > success_rate)
-
+    
     is_success = is_success_e & is_success_p
   }
-
+  
   if (is_collapse || is_success) {
-
-      early_triggered = TRUE
-
-      if (is_collapse) {
-        early_objective = min(spsa_score_window_e) 
-        cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
-        cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
-        cat(sprintf("    Pathogens: %d\n", current_pathogens))
-        cat(sprintf("    Old theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
-                    spsa_params$theta[4], spsa_params$theta[5]))
-
-        # Randomize theta upon collapse to escape bad parameter region
-        spsa_params$theta = sapply(1:length(spsa_params$theta), function(i) {
-          runif(1, spsa_params$lower[i], spsa_params$upper[i])
-        })
-        
-        cat(sprintf("    → Randomizing theta to escape bad parameter region\n"))
-        cat(sprintf("    New random theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
-                    spsa_params$theta[4], spsa_params$theta[5]))
-
-        # Update parameter values
-        diffusion_speed_SAMPs          = spsa_params$theta[1]
-        add_SAMPs                      = spsa_params$theta[2]
-        SAMPs_decay                    = spsa_params$theta[3]
-        treg_discrimination_efficiency = spsa_params$theta[4]
-        activation_threshold_SAMPs     = spsa_params$theta[5]
-
-        # Reset simulation state and restart from baseline
-        cat(sprintf("    → Resetting simulation state and restarting from baseline phase\n\n"))
-        reset_simulation_state()
-        spsa_score_window_e = numeric(0)
-        spsa_score_window_p = numeric(0)
-        spsa_phase = "baseline"
-
-        next  # Skip the rest of the loop and continue with baseline
-
-      } else {
-        early_objective = min(spsa_score_window_e) 
-        cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
-        cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
-        cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
-        cat(sprintf("    Pathogens: %d\n", current_pathogens))
-        cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
-                    spsa_params$theta[4], spsa_params$theta[5]))
-
-        # Write success to file
-        success_line = sprintf("t=%d | iter=%d | score=%.1f | phase=%s | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                               t, spsa_params$k, early_objective, spsa_phase,
-                               spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
-                               spsa_params$theta[4], spsa_params$theta[5])
-
-        cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,"_n2_",n2,".txt"), append = TRUE)
-      }
-
-      if (spsa_phase == "plus") {
-        spsa_f_plus = early_objective
-        cat(sprintf("    Recorded: f_plus = %.2f\n", spsa_f_plus))
-        
-        cat(sprintf("    → Resetting simulation state for MINUS evaluation\n"))
-        reset_simulation_state()
-        spsa_score_window_e = numeric(0)
-        spsa_score_window_p = numeric(0)
-        
-        c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
-        perturb = c_k*spsa_params$c_scale*spsa_delta
-        
-        theta_minus = clip_theta(
-          spsa_params$theta - perturb,
-          spsa_params$lower, spsa_params$upper
-        )
-        
-        diffusion_speed_SAMPs          = theta_minus[1]
-        add_SAMPs                      = theta_minus[2]
-        SAMPs_decay                    = theta_minus[3]
-        treg_discrimination_efficiency = theta_minus[4]
-        activation_threshold_SAMPs     = theta_minus[5]
-        
-        cat(sprintf("    → Switching to MINUS phase with theta_minus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n\n",
-                    theta_minus[1], theta_minus[2], theta_minus[3], theta_minus[4], theta_minus[5]))
-        
-        spsa_phase = "minus"
-        
-      } else if (spsa_phase == "minus") {
-        spsa_f_minus = early_objective
-        cat(sprintf("    Recorded: f_minus = %.2f\n", spsa_f_minus))
-        
-        c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
-        a_k = spsa_params$a / (spsa_params$A + spsa_params$k)^spsa_params$alpha
-        
-        perturb = c_k*spsa_params$c_scale*spsa_delta
-        g_hat = (spsa_f_plus - spsa_f_minus) / (2*perturb)
-        
-        step = a_k*spsa_params$a_scale*g_hat
-        
-        spsa_params$theta = clip_theta(
-          spsa_params$theta + step,
-          spsa_params$lower, spsa_params$upper
-        )
-        
-        diffusion_speed_SAMPs          = spsa_params$theta[1]
-        add_SAMPs                      = spsa_params$theta[2]
-        SAMPs_decay                    = spsa_params$theta[3]
-        treg_discrimination_efficiency = spsa_params$theta[4]
-        activation_threshold_SAMPs     = spsa_params$theta[5]
-        
-        cat(sprintf("\n--- SPSA UPDATE (EARLY, iter %d) ---\n", spsa_params$k))
-        cat(sprintf("    f_plus:  %.2f\n", spsa_f_plus))
-        cat(sprintf("    f_minus: %.2f\n", spsa_f_minus))
-        cat(sprintf("    gradient: [%.4f, %.4f, %.4f, %.4f, %.4f]\n", 
-                    g_hat[1], g_hat[2], g_hat[3], g_hat[4], g_hat[5]))
-        cat(sprintf("    Updated theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                    spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
-                    spsa_params$theta[4], spsa_params$theta[5]))
-        
-        spsa_params$f_plus_history = c(spsa_params$f_plus_history, spsa_f_plus)
-        spsa_params$f_minus_history = c(spsa_params$f_minus_history, spsa_f_minus)
-        spsa_params$score_history = c(spsa_params$score_history, (spsa_f_plus + spsa_f_minus) / 2)
-        spsa_params$theta_history = rbind(spsa_params$theta_history, spsa_params$theta)
-        spsa_params$t_history = c(spsa_params$t_history, t)
-        
-        cat(sprintf("    → Resetting simulation state for next iteration\n"))
-        reset_simulation_state()
-        spsa_score_window_e = numeric(0)
-        spsa_score_window_p = numeric(0)
-        
-        spsa_delta = sample(c(-1, 1), length(spsa_params$theta), replace = TRUE)
-        spsa_params$k = spsa_params$k + 1
-        
-        c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
-        perturb = c_k*spsa_params$c_scale*spsa_delta
-        
-        theta_plus = clip_theta(
-          spsa_params$theta + perturb,
-          spsa_params$lower, spsa_params$upper
-        )
-        
-        diffusion_speed_SAMPs          = theta_plus[1]
-        add_SAMPs                      = theta_plus[2]
-        SAMPs_decay                    = theta_plus[3]
-        treg_discrimination_efficiency = theta_plus[4]
-        activation_threshold_SAMPs     = theta_plus[5]
-        
-        cat(sprintf("    → Starting PLUS phase (iter %d) with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                    spsa_params$k, theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
-        cat(sprintf("--- END SPSA UPDATE ---\n\n"))
-        
-        spsa_phase = "plus"
-      }
+    
+    early_triggered = TRUE
+    
+    if (is_collapse) {
+      early_objective = min(spsa_score_window_e) 
+      cat(sprintf("\n>>> [EARLY TERMINATION: COLLAPSE] <<<\n"))
+      cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
+      cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
+      cat(sprintf("    Pathogens: %d\n", current_pathogens))
+      cat(sprintf("    Old theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                  spsa_params$theta[4], spsa_params$theta[5]))
+      
+      # Randomize theta upon collapse to escape bad parameter region
+      spsa_params$theta = sapply(1:length(spsa_params$theta), function(i) {
+        runif(1, spsa_params$lower[i], spsa_params$upper[i])
+      })
+      
+      cat(sprintf("    → Randomizing theta to escape bad parameter region\n"))
+      cat(sprintf("    New random theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                  spsa_params$theta[4], spsa_params$theta[5]))
+      
+      # Update parameter values
+      diffusion_speed_SAMPs          = spsa_params$theta[1]
+      add_SAMPs                      = spsa_params$theta[2]
+      SAMPs_decay                    = spsa_params$theta[3]
+      treg_discrimination_efficiency = spsa_params$theta[4]
+      activation_threshold_SAMPs     = spsa_params$theta[5]
+      
+      # Reset simulation state and restart from baseline
+      cat(sprintf("    → Resetting simulation state and restarting from baseline phase\n\n"))
+      reset_simulation_state()
+      spsa_score_window_e = numeric(0)
+      spsa_score_window_p = numeric(0)
+      spsa_phase = "baseline"
+      
+      next  # Skip the rest of the loop and continue with baseline
+      
+    } else {
+      early_objective = min(spsa_score_window_e) 
+      cat(sprintf("\n>>> [EARLY TERMINATION: SUCCESS] <<<\n"))
+      cat(sprintf("    Time: t=%d | Phase: %s | SPSA iter: %d\n", t, spsa_phase, spsa_params$k))
+      cat(sprintf("    Objective: %.1f (min_epithelial)\n", early_objective))
+      cat(sprintf("    Pathogens: %d\n", current_pathogens))
+      cat(sprintf("    Current theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                  spsa_params$theta[4], spsa_params$theta[5]))
+      
+      # Write success to file
+      success_line = sprintf("t=%d | iter=%d | score=%.1f | phase=%s | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                             t, spsa_params$k, early_objective, spsa_phase,
+                             spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                             spsa_params$theta[4], spsa_params$theta[5])
+      
+      cat(success_line, file = paste0("./spsa_successes_", param_set_id_use,"_scenario_",scenario_ind,"_n2_",n2,".txt"), append = TRUE)
+    }
+    
+    if (spsa_phase == "plus") {
+      spsa_f_plus = early_objective
+      cat(sprintf("    Recorded: f_plus = %.2f\n", spsa_f_plus))
+      
+      cat(sprintf("    → Resetting simulation state for MINUS evaluation\n"))
+      reset_simulation_state()
+      spsa_score_window_e = numeric(0)
+      spsa_score_window_p = numeric(0)
+      
+      c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
+      perturb = c_k*spsa_params$c_scale*spsa_delta
+      
+      theta_minus = clip_theta(
+        spsa_params$theta - perturb,
+        spsa_params$lower, spsa_params$upper
+      )
+      
+      diffusion_speed_SAMPs          = theta_minus[1]
+      add_SAMPs                      = theta_minus[2]
+      SAMPs_decay                    = theta_minus[3]
+      treg_discrimination_efficiency = theta_minus[4]
+      activation_threshold_SAMPs     = theta_minus[5]
+      
+      cat(sprintf("    → Switching to MINUS phase with theta_minus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n\n",
+                  theta_minus[1], theta_minus[2], theta_minus[3], theta_minus[4], theta_minus[5]))
+      
+      spsa_phase = "minus"
+      
+    } else if (spsa_phase == "minus") {
+      spsa_f_minus = early_objective
+      cat(sprintf("    Recorded: f_minus = %.2f\n", spsa_f_minus))
+      
+      c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
+      a_k = spsa_params$a / (spsa_params$A + spsa_params$k)^spsa_params$alpha
+      
+      perturb = c_k*spsa_params$c_scale*spsa_delta
+      g_hat = (spsa_f_plus - spsa_f_minus) / (2*perturb)
+      
+      step = a_k*spsa_params$a_scale*g_hat
+      
+      spsa_params$theta = clip_theta(
+        spsa_params$theta + step,
+        spsa_params$lower, spsa_params$upper
+      )
+      
+      diffusion_speed_SAMPs          = spsa_params$theta[1]
+      add_SAMPs                      = spsa_params$theta[2]
+      SAMPs_decay                    = spsa_params$theta[3]
+      treg_discrimination_efficiency = spsa_params$theta[4]
+      activation_threshold_SAMPs     = spsa_params$theta[5]
+      
+      cat(sprintf("\n--- SPSA UPDATE (EARLY, iter %d) ---\n", spsa_params$k))
+      cat(sprintf("    f_plus:  %.2f\n", spsa_f_plus))
+      cat(sprintf("    f_minus: %.2f\n", spsa_f_minus))
+      cat(sprintf("    gradient: [%.4f, %.4f, %.4f, %.4f, %.4f]\n", 
+                  g_hat[1], g_hat[2], g_hat[3], g_hat[4], g_hat[5]))
+      cat(sprintf("    Updated theta: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$theta[1], spsa_params$theta[2], spsa_params$theta[3],
+                  spsa_params$theta[4], spsa_params$theta[5]))
+      
+      spsa_params$f_plus_history = c(spsa_params$f_plus_history, spsa_f_plus)
+      spsa_params$f_minus_history = c(spsa_params$f_minus_history, spsa_f_minus)
+      spsa_params$score_history = c(spsa_params$score_history, (spsa_f_plus + spsa_f_minus) / 2)
+      spsa_params$theta_history = rbind(spsa_params$theta_history, spsa_params$theta)
+      spsa_params$t_history = c(spsa_params$t_history, t)
+      
+      cat(sprintf("    → Resetting simulation state for next iteration\n"))
+      reset_simulation_state()
+      spsa_score_window_e = numeric(0)
+      spsa_score_window_p = numeric(0)
+      
+      spsa_delta = sample(c(-1, 1), length(spsa_params$theta), replace = TRUE)
+      spsa_params$k = spsa_params$k + 1
+      
+      c_k = spsa_params$c / (spsa_params$k)^spsa_params$gamma
+      perturb = c_k*spsa_params$c_scale*spsa_delta
+      
+      theta_plus = clip_theta(
+        spsa_params$theta + perturb,
+        spsa_params$lower, spsa_params$upper
+      )
+      
+      diffusion_speed_SAMPs          = theta_plus[1]
+      add_SAMPs                      = theta_plus[2]
+      SAMPs_decay                    = theta_plus[3]
+      treg_discrimination_efficiency = theta_plus[4]
+      activation_threshold_SAMPs     = theta_plus[5]
+      
+      cat(sprintf("    → Starting PLUS phase (iter %d) with theta_plus: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                  spsa_params$k, theta_plus[1], theta_plus[2], theta_plus[3], theta_plus[4], theta_plus[5]))
+      cat(sprintf("--- END SPSA UPDATE ---\n\n"))
+      
+      spsa_phase = "plus"
     }
   }
+  
   
   # ========================================================================
   # SPSA PARAMETER UPDATE (at regular intervals) - SKIP IF EARLY TRIGGERED
