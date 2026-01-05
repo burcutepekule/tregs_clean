@@ -34,6 +34,13 @@ n2     = as.integer(args[2])
 
 loop_over = c(60800)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+opt_df    = readRDS(paste0('./df_opt_rnd_95_',loop_over,'_use.rds'))
+
+param_names = c("diffusion_speed_SAMPs",
+                "add_SAMPs",
+                "SAMPs_decay",
+                "treg_discrimination_efficiency",
+                "activation_threshold_SAMPs")
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -56,7 +63,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 plot_on    = 0
 plot_every = 0
 t_max      = 2000
-num_reps   = 3
+num_reps   = 5
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -93,13 +100,11 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(0), # PAY ATTENTION HERE! 
+  allow_tregs     = c(1),
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 1, seq(2, 10, 0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(seq(1,10,0.5))
-  # ros_level       = c(0, 0.25, seq(0.5,12,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  # pat_level       = c(1:15)
+  ros_level       = c(0, 0.25, seq(0.5,12,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1:15)
 )
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
@@ -124,35 +129,43 @@ for(param_set_id_use in loop_over){
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
     
-    source("./MISC/ASSIGN_PARAMETERS.R")
-    
-    cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
-               ' - scenario ', scenario_ind, '/', nrow(scenarios_df)))
-    
-    # Track timing for this scenario
-    scenario_start_time = Sys.time()
-    
-    longitudinal_df_keep = c()
-    
-    # ========================================================================
-    # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
-    # ========================================================================
-    source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
-    
-    scenario_end_time = Sys.time()
-    scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
-    scenario_elapsed_total = scenario_elapsed_total + scenario_elapsed
-    cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
-    
-    saveRDS(longitudinal_df_keep, paste0(dir_name_data,'/longitudinal_df_param_set_id_',param_set_id_use,
-                                         '_sterile_',sterile,
-                                         '_macspec_',macspec_on,
-                                         '_tregs_',allow_tregs,
-                                         '_ros_level_',ros_level,
-                                         '_pat_level_',pat_level,
-                                         '_trnd_',randomize_tregs,
-                                         '.rds'))
-    
+    for(optidx in 1:dim(opt_df)[1]){# == OPTIMIZED FOR 60800
+      cat("Processing chunk", optidx, "of", dim(opt_df)[1], "\n")
+
+      params_insert = opt_df[optidx,]
+      param_set_use[param_names] = params_insert ## OPTIMIZED FOR 60800_A - WORKS BEAUTIFULLY FOR _A!
+      title_opt = paste(params_insert, collapse = "_")
+      
+      source("./MISC/ASSIGN_PARAMETERS.R")
+      
+      cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,
+                 ' - scenario ', scenario_ind, '/', nrow(scenarios_df)))
+      
+      # Track timing for this scenario
+      scenario_start_time = Sys.time()
+      
+      longitudinal_df_keep = c()
+      
+      # ========================================================================
+      # RUN SIMULATION WITH C++ ACCELERATION AND MACROPHAGE SPECIFICITY
+      # ========================================================================
+      source("./MISC/RUN_REPS_CPP_ABM_PAMPS.R")
+      
+      scenario_end_time = Sys.time()
+      scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
+      scenario_elapsed_total = scenario_elapsed_total + scenario_elapsed
+      cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
+      
+      saveRDS(longitudinal_df_keep, paste0(dir_name_data,'/longitudinal_df_param_set_id_',param_set_id_use,
+                                           '_sterile_',sterile,
+                                           '_macspec_',macspec_on,
+                                           '_tregs_',allow_tregs,
+                                           '_ros_level_',ros_level,
+                                           '_pat_level_',pat_level,
+                                           '_trnd_',randomize_tregs,
+                                           '_optidx_',optidx,
+                                           '.rds'))
+    }
   }
   cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 }

@@ -12,13 +12,9 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 args   = commandArgs(trailingOnly = TRUE)
-n0     = as.integer(args[1])
+n0     = as.integer(args[1]) # 5504
 n1     = as.integer(args[2])
 n2     = as.integer(args[3])
-
-# n1 = 195
-# n2 = 1
-# loop_over_all   = 60800
 
 loop_over_all   = n0
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
@@ -55,7 +51,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-num_reps   = 1
+num_reps   = 5
 t_max      = 2000
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -104,11 +100,11 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(3:15),
-  pat_level       = c(8)
+  ros_level       = c(1:10),
+  pat_level       = c(7,8,9,10)
 )
 
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 15), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 10), ]
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
 
 dim(scenarios_df)[1]
@@ -139,7 +135,7 @@ loop_over_sc = chunks[[n2]]
 
 success_threshold_e = 150*0.75
 success_threshold_p = 10
-success_duration    = 125
+success_duration    = 150
 success_rate        = 0.95
 max_iterations      = 100000 # Number of random samples to try
 # ============================================================================
@@ -167,8 +163,6 @@ for(param_set_id_use in loop_over){
     # Track timing for this scenario
     scenario_start_time = Sys.time()
 
-    longitudinal_df_keep = c()
-
     # ========================================================================
     # RUN RANDOM SEARCH OPTIMIZATION
     # ========================================================================
@@ -176,8 +170,6 @@ for(param_set_id_use in loop_over){
 
     scenario_end_time = Sys.time()
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
-
-    results = rbind(results, longitudinal_df_keep)
 
     cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
   }

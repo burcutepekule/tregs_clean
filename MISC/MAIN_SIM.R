@@ -257,8 +257,8 @@ if (!all_equal_phagocytes) {
 # ========================================================================
 # ADD NEW MICROBES
 # ========================================================================
-n_pathogens_lp_new = round(mean(epithelium$level_injury)*rate_leak_pathogen_injury *
-                             length(injury_site_updated))
+n_pathogens_lp_new = round(mean(epithelium$level_injury)*rate_leak_pathogen_injury*length(injury_site_updated))
+
 if (n_pathogens_lp_new > 0) {
   new_pathogen_coords = matrix(c(
     sample(1:grid_size, n_pathogens_lp_new, replace = TRUE, prob = epithelium$level_injury),
@@ -270,8 +270,7 @@ if (n_pathogens_lp_new > 0) {
   last_id_pathogen = last_id_pathogen + n_pathogens_lp_new
 }
 
-n_commensals_lp_new_injury = round(mean(epithelium$level_injury)*rate_leak_commensal_injury *
-                                     length(injury_site_updated))
+n_commensals_lp_new_injury = round(mean(epithelium$level_injury)*rate_leak_commensal_injury*length(injury_site_updated))
 n_commensals_lp_new_baseline = round(rate_leak_commensal_baseline*grid_size)
 
 total_new_commensals = n_commensals_lp_new_baseline + n_commensals_lp_new_injury

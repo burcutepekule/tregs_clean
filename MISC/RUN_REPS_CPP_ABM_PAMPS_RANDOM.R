@@ -135,38 +135,14 @@ param_names = c("diffusion_speed_SAMPs",
 lower_bounds = param_bounds$lower
 upper_bounds = param_bounds$upper
 
-# Tracking
-random_search_results = data.frame(
-  iter = integer(),
-  objective = numeric(),
-  min_epithelial = numeric(),
-  mean_epithelial = numeric(),
-  min_pathogen = numeric(),
-  mean_pathogen = numeric(),
-  outcome = character(),  # "success", "collapse", "incomplete"
-  termination_time = integer(),
-  diffusion_speed_SAMPs = numeric(),
-  add_SAMPs = numeric(),
-  SAMPs_decay = numeric(),
-  treg_discrimination_efficiency = numeric(),
-  activation_threshold_SAMPs = numeric(),
-  stringsAsFactors = FALSE
-)
-
 # Initialize success log file
 success_log_file = paste0("./random_search_successes_", param_set_id_use, "_scenario_", scenario_ind, "_n2_", n2, ".txt")
-cat(paste0("# Random Search Success Log for ",param_set_id_use,"_pat_", pat_level, "_ros_", ros_level, "\n"),
-    file = success_log_file, append = FALSE)
+# cat(paste0("# Random Search Success Log for ",param_set_id_use,"_pat_", pat_level, "_ros_", ros_level, "\n"),
+#     file = success_log_file, append = FALSE)
 
 cat(sprintf("\n========================================\n"))
 cat(sprintf("RANDOM SEARCH OPTIMIZATION STARTING\n"))
 cat(sprintf("========================================\n"))
-cat(sprintf("Max iterations: %d\n", max_iterations))
-cat(sprintf("Parameter bounds:\n"))
-for (i in 1:length(param_names)) {
-  cat(sprintf("  %s: [%.4f, %.4f]\n", param_names[i], lower_bounds[i], upper_bounds[i]))
-}
-cat(sprintf("========================================\n\n"))
 
 # ============================================================================
 # MAIN RANDOM SEARCH LOOP
@@ -177,6 +153,7 @@ for (iter in 1:max_iterations) {
   current_theta = sapply(1:length(param_names), function(i) {
     runif(1, lower_bounds[i], upper_bounds[i])
   })
+  current_theta = round(current_theta, 3)
   
   # Set parameter values
   diffusion_speed_SAMPs          = current_theta[1]
@@ -190,66 +167,70 @@ for (iter in 1:max_iterations) {
               current_theta[1], current_theta[2], current_theta[3],
               current_theta[4], current_theta[5]))
   
-  # Reset simulation
-  reset_simulation_state()
-  
-  # Run one loop
-  reps_in = 1
-  source('./MISC/MAIN_SIM_LOOP_OVER_T.R')
-  
-  longitudinal_df = data.frame(
-    epithelium_longitudinal,
-    macrophages_longitudinal,
-    microbes_longitudinal,
-    tregs_longitudinal,
-    microbes_cumdeath_longitudinal
-  )
-  
-  colnames(longitudinal_df) = colnames_insert
-  
-  longitudinal_df$t = 1:t_max
-  longitudinal_df$sterile = sterile
-  longitudinal_df$macspec_on = macspec_on
-  longitudinal_df$tregs_on = allow_tregs
-  longitudinal_df$ros_level = ros_level
-  longitudinal_df$pat_level = pat_level
-  longitudinal_df$randomize_tregs = randomize_tregs
-  longitudinal_df$param_set_id = param_set_use$param_set_id
-  longitudinal_df$rep_id = reps_in
-  
-  
-  longitudinal_df = longitudinal_df %>% dplyr::mutate(epithelial_score = 6*epithelial_healthy+ # higher the score, healthier the epithelium!
-                                                        5*epithelial_inj_1+
-                                                        4*epithelial_inj_2+
-                                                        3*epithelial_inj_3+
-                                                        2*epithelial_inj_4+
-                                                        1*epithelial_inj_5)
-  
-  
-  current_epithelial_score = longitudinal_df$epithelial_score
-  current_pathogens        = longitudinal_df$pathogen
-  
-  recent_scores_success_e = tail(current_epithelial_score, success_duration)
-  recent_scores_success_p = tail(current_pathogens, success_duration)
-
-  pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-  pct_below_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
-  
-  is_success_e = (pct_above_threshold_e > success_rate)
-  is_success_p = (pct_below_threshold_p > success_rate)
-  
-  if (is_success_e && is_success_p) {
-    outcome = "success"
-    termination_time = t
-    cat(sprintf("    [SUCCESS at t=%d] Criteria met!\n", t))
+  for (reps in 1:num_reps){
+    # Reset simulation
+    reset_simulation_state()
     
-    # Log success
-    success_line = sprintf("iter=%d | t=%d | score=%.1f | theta=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                           iter, t, min(recent_scores_success_e),  
-                           current_theta[1], current_theta[2], current_theta[3],
-                           current_theta[4], current_theta[5])
-    cat(success_line, file = success_log_file, append = TRUE)
-  }else{
-    # cat(sprintf("    Didn't happen."))
+    # Run one loop
+    reps_in = 1
+    source('./MISC/MAIN_SIM_LOOP_OVER_T.R')
+    
+    longitudinal_df = data.frame(
+      epithelium_longitudinal,
+      macrophages_longitudinal,
+      microbes_longitudinal,
+      tregs_longitudinal,
+      microbes_cumdeath_longitudinal
+    )
+    
+    colnames(longitudinal_df) = colnames_insert
+    
+    longitudinal_df$t = 1:t_max
+    longitudinal_df$sterile = sterile
+    longitudinal_df$macspec_on = macspec_on
+    longitudinal_df$tregs_on = allow_tregs
+    longitudinal_df$ros_level = ros_level
+    longitudinal_df$pat_level = pat_level
+    longitudinal_df$randomize_tregs = randomize_tregs
+    longitudinal_df$param_set_id = param_set_use$param_set_id
+    longitudinal_df$rep_id = reps_in
+    
+    
+    longitudinal_df = longitudinal_df %>% dplyr::mutate(epithelial_score = 6*epithelial_healthy+ # higher the score, healthier the epithelium!
+                                                          5*epithelial_inj_1+
+                                                          4*epithelial_inj_2+
+                                                          3*epithelial_inj_3+
+                                                          2*epithelial_inj_4+
+                                                          1*epithelial_inj_5)
+    
+    
+    current_epithelial_score = longitudinal_df$epithelial_score
+    current_pathogens        = longitudinal_df$pathogen
+    
+    recent_scores_success_e = tail(current_epithelial_score, success_duration)
+    recent_scores_success_p = tail(current_pathogens, success_duration)
+    
+    recent_scores_success_e = round(recent_scores_success_e, 3)
+    recent_scores_success_p = round(recent_scores_success_p, 3)
+    
+    pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
+    pct_below_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
+    
+    is_success_e = (pct_above_threshold_e > success_rate)
+    is_success_p = (pct_below_threshold_p > success_rate)
+    
+    cat(paste0(param_set_id_use," ", reps, " ", pat_level, " ", ros_level, " "),file = success_log_file, append = TRUE)
+    cat(paste0(current_theta[1]," ", 
+               current_theta[2]," ",
+               current_theta[3]," ", 
+               current_theta[4]," ",
+               current_theta[5]," "),file = success_log_file, append = TRUE)
+    cat(paste0(min(recent_scores_success_e)," ", 
+               min(recent_scores_success_p)," ",
+               mean(recent_scores_success_e)," ", 
+               mean(recent_scores_success_p)," ",
+               pct_above_threshold_e," ",
+               pct_below_threshold_p,"\n"),file = success_log_file, append = TRUE)
+
   }
 }

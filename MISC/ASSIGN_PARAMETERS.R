@@ -24,7 +24,8 @@ diffusion_speed_ROS   = param_set_use$diffusion_speed_ROS
 # ==============================================================================
 # ====================== OVERWRITE - easiest for now
 add_ROS                   = ros_level*0.1 # ros_level=0, control, until 10, which is max 1=10*0.1
-rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, pat_level*0.1) # pat_level=1 lowest, pat_level=10, highest. 
+# rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, pat_level*0.1) 
+rate_leak_pathogen_injury = ifelse(sterile == 1, 0.0, pat_level) # spice it up
 # ==============================================================================
 
 add_DAMPs = param_set_use$add_DAMPs

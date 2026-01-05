@@ -9,7 +9,7 @@ files_to_check = c()
 for (ros in ros_vals) {
   for (pat in pat_vals) {
     files_to_check = c(files_to_check,
-                       paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds'))
+                       paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0_optidx_', opt_idx,'.rds'))
   }
 }
 
@@ -19,9 +19,9 @@ files2read = which(file.info(files_to_check)$size>10000)
 results_list = list()
 for (ros in ros_vals) {
   for (pat in pat_vals) {
-    print(paste0('Reading ros ',ros,' pat ',pat))
+    # print(paste0('Reading ros ',ros,' pat ',pat))
     var_name = paste0("results_", ros, "_", pat)
-    file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
+    file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0_optidx_', opt_idx,'.rds')
     if(file.exists(file_path) & file.info(file_path)$size>10000){
       results_list[[var_name]] = readRDS(file_path)
     }

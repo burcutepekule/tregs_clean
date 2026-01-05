@@ -1,22 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=treg_array
+#SBATCH --array=0-399
 #SBATCH --cpus-per-task=1
-#SBATCH --time=24:00:00
-#SBATCH --array=0-360
+#SBATCH --time=96:00:00
 #SBATCH --mem-per-cpu=4G
-#SBATCH --output=logs_abm/treg_%A_%a.out
-#SBATCH --error=logs_abm/treg_%A_%a.err
+#SBATCH --output=logs_opt/treg_%A_%a.out
+#SBATCH --error=logs_opt/treg_%A_%a.err
 
 module load anaconda3/2023.3
 conda activate env_Treg
 
-N_CHUNKS=361
+N_CHUNKS=400
 
+# SLURM_ARRAY_TASK_ID gives 0..99
 CHUNK_ID=$(( SLURM_ARRAY_TASK_ID + 1 ))
 
 echo "Running chunk $CHUNK_ID on node $(hostname)"
 
-Rscript /home/bt6725/tregs/DLL_datagen_abm.R \
+Rscript /home/bt6725/tregs/DLL_dataopt_random.R \
+    5504 \
     $N_CHUNKS \
     $CHUNK_ID
 
