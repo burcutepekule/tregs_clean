@@ -15,9 +15,24 @@ df_opt_rnd      = read.table(paste0("./merged_",loop_over_all,".txt"),
                                            param_names, "min_e", "min_p","mean_e","mean_p",
                                            "pct_above_threshold_e","pct_above_threshold_p"))
 
-df_opt_rnd_95  = df_opt_rnd %>% dplyr::filter(pct_above_threshold_e>0.95 & pct_above_threshold_p>0.95 & min_e==150 & min_p==0) 
-df_opt_rnd_95  = df_opt_rnd_95[param_names]
-print(df_opt_rnd_95)
+summary_df = df_opt_rnd %>%
+  group_by(param_set_id, pat_level, ros_level, diffusion_speed_SAMPs, 
+           add_SAMPs, SAMPs_decay, treg_discrimination_efficiency, 
+           activation_threshold_SAMPs) %>%
+  summarise(
+    n_reps = n(),
+    mean_pct_above_threshold_e = mean(pct_above_threshold_e),
+    mean_pct_above_threshold_p = mean(pct_above_threshold_p),
+    .groups = "drop"
+  )
+
+summary_df_095 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.95 & mean_pct_above_threshold_p > 0.95)
+df_opt_rnd_95  = summary_df_095[param_names]
+saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over_all,'_use.rds'))
+
+# df_opt_rnd_95  = df_opt_rnd %>% dplyr::filter(pct_above_threshold_e>0.95 & pct_above_threshold_p>0.95 & min_e==150 & min_p==0) 
+# df_opt_rnd_95  = df_opt_rnd_95[param_names]
+# print(df_opt_rnd_95)
 
 # saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over_all,'_2.rds'))
 

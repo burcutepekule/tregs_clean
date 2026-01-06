@@ -32,7 +32,8 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
-loop_over = c(60800)
+# loop_over = c(60800)
+loop_over = params_df$param_set_id
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
 # ============================================================================
@@ -55,8 +56,8 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 plot_on    = 0
 plot_every = 0
-t_max      = 2000
-num_reps   = 3
+t_max      = 5000
+num_reps   = 5
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)
@@ -96,8 +97,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 1, seq(2, 10, 0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(seq(1,10,0.5))
+  ros_level       = c(0:10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1:32)
   # ros_level       = c(0, 0.25, seq(0.5,12,0.5)), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   # pat_level       = c(1:15)
 )

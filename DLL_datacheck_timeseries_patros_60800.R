@@ -69,7 +69,7 @@ for (opt_idx in 14:14){
   
   for(tregs_on_in in tregs_on_in_vec){
     # TF_matrix = TF_matricies[[as.character(param_id)]]
-    source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros_60800.R')
+    source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros_optidx.R')
     TF_matrix = control_matrix
     # Convert TF_matrix to a data frame for plotting
     TF_df = as.data.frame.table(TF_matrix, stringsAsFactors = FALSE)
