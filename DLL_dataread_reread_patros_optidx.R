@@ -1,5 +1,5 @@
-is_under_control = function(epithelial_health, pathogen_load) {
-  return(epithelial_health > 150*0.75 & pathogen_load < 10)
+is_under_control = function(epithelial_health, pathogen_load, epithelial_limit, pathogen_limit) {
+  return(epithelial_health < epithelial_limit & pathogen_load < pathogen_limit)
 }
 
 message("Re-processing param_set_", param_id)

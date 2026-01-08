@@ -32,7 +32,7 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
-loop_over = c(5504)
+loop_over = c(50002)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 opt_df    = readRDS(paste0('./df_opt_rnd_95_',loop_over,'_use.rds'))
 

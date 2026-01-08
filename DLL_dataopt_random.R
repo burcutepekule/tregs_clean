@@ -12,9 +12,13 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 args   = commandArgs(trailingOnly = TRUE)
-n0     = as.integer(args[1]) # 5504
+n0     = as.integer(args[1]) # 50002
 n1     = as.integer(args[2])
 n2     = as.integer(args[3])
+
+# n0     = 50002
+# n1     = 1
+# n2     = 1
 
 loop_over_all   = n0
 params_df       = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
@@ -39,54 +43,18 @@ param_bounds = data.frame(
 # Just keep param_bounds for the search
 
 # ============================================================================
-# SETUP OUTPUT DIRECTORY
+# FIXED PARAMETERS (not in CSV)
 # ============================================================================
+source('./MISC/LOAD_FIXED_PARAMS.R')
 
-colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
-                    'epithelial_inj_3','epithelial_inj_4','epithelial_inj_5',
+colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
                     'commensal','pathogen','treg_resting','treg_active',
                     'C_ROS','C_M0','C_M1','C_M2','P_ROS','P_M0','P_M1','P_M2')
 
-# ============================================================================
-# FIXED PARAMETERS (not in CSV)
-# ============================================================================
-num_reps   = 5
-t_max      = 2000
-grid_size       = 25
-n_phagocytes    = round(grid_size*grid_size*0.20)
-n_tregs         = round(grid_size*grid_size*0.20)
-n_commensals_lp = 20
-max_total_phagocytes = round(grid_size*grid_size*0.80)
-
-injury_percentage = 60
-max_level_injury  = 5
-
-max_cell_value_ROS   = 1
-max_cell_value_DAMPs = 1
-max_cell_value_SAMPs = 1
-max_cell_value_PAMPs = 1
-
-## PLOTTING
-lim_ROS  = max_cell_value_ROS
-lim_DAMP = max_cell_value_DAMPs
-lim_SAMP = max_cell_value_SAMPs
-lim_PAMP = max_cell_value_PAMPs
-## PLOTTING
-
-act_radius_ROS   = 1
-act_radius_treg  = 1
-act_radius_DAMPs = 1
-act_radius_SAMPs = 1
-act_radius_PAMPs = 1
-
-# Logistic function parameters (for epithelial injury calculation)
-k_in  = 0.044
-x0_in = 50
 
 cat("Simulation parameters:\n")
 cat("  t_max:", t_max, "\n")
-cat("  num_reps:", num_reps, "\n")
 cat("  grid_size:", grid_size, "x", grid_size, "\n")
 cat("  n_phagocytes:", n_phagocytes, "\n")
 cat("  n_tregs:", n_tregs, "\n\n")
@@ -100,17 +68,26 @@ scenarios_df = expand.grid(
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(1:10),
-  pat_level       = c(7,8,9,10)
+  ros_level       = c(3, 5, 10, 20, 50),
+  pat_level       = c(10)
 )
 
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 10), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 80), ]
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
 
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
+
+# ============================================================================
+# SETUP OUTPUT DIRECTORY
+# ============================================================================
+
+dir_name_data = '/scratch/gpfs/CMETCALF/sim_opt_random'
+dir.create(dir_name_data, showWarnings = TRUE)
+
+cat("Output directory:", dir_name_data, "\n\n")
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -129,15 +106,11 @@ loop_over_sc = chunks[[n2]]
 # ============================================================================
 # DETECTION SETTINGS
 # ============================================================================
-# collapse_threshold = 30
-# collapse_duration  = 1000
-# collapse_rate      = 0.75
-
-success_threshold_e = 150*0.75
+success_threshold_e = 5
 success_threshold_p = 10
 success_duration    = 150
 success_rate        = 0.95
-max_iterations      = 100000 # Number of random samples to try
+max_iterations      = 100 # Number of random samples to try
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
@@ -172,5 +145,6 @@ for(param_set_id_use in loop_over){
     scenario_elapsed = as.numeric(difftime(scenario_end_time, scenario_start_time, units = "secs"))
 
     cat(sprintf(' - %.1f seconds ✓\n', scenario_elapsed))
+    
   }
 }

@@ -117,7 +117,7 @@ commensals_killed_by_ROS = 0
 commensals_killed_by_Mac = rep(0, 3)
 
 # Longitudinal tracking
-epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = (max_level_injury + 1))
+epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = 1)
 macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3)
 microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
 tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
@@ -171,8 +171,6 @@ for (iter in 1:max_iterations) {
     # Reset simulation
     reset_simulation_state()
     
-    # Run one loop
-    reps_in = 1
     source('./MISC/MAIN_SIM_LOOP_OVER_T.R')
     
     longitudinal_df = data.frame(
@@ -193,16 +191,7 @@ for (iter in 1:max_iterations) {
     longitudinal_df$pat_level = pat_level
     longitudinal_df$randomize_tregs = randomize_tregs
     longitudinal_df$param_set_id = param_set_use$param_set_id
-    longitudinal_df$rep_id = reps_in
-    
-    
-    longitudinal_df = longitudinal_df %>% dplyr::mutate(epithelial_score = 6*epithelial_healthy+ # higher the score, healthier the epithelium!
-                                                          5*epithelial_inj_1+
-                                                          4*epithelial_inj_2+
-                                                          3*epithelial_inj_3+
-                                                          2*epithelial_inj_4+
-                                                          1*epithelial_inj_5)
-    
+    longitudinal_df$rep_id = reps
     
     current_epithelial_score = longitudinal_df$epithelial_score
     current_pathogens        = longitudinal_df$pathogen
@@ -213,8 +202,8 @@ for (iter in 1:max_iterations) {
     recent_scores_success_e = round(recent_scores_success_e, 3)
     recent_scores_success_p = round(recent_scores_success_p, 3)
     
-    pct_above_threshold_e = sum(recent_scores_success_e > success_threshold_e) / length(recent_scores_success_e)
-    pct_below_threshold_p = sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p)
+    pct_above_threshold_e = round(sum(recent_scores_success_e < success_threshold_e) / length(recent_scores_success_e),3)
+    pct_below_threshold_p = round(sum(recent_scores_success_p < success_threshold_p) / length(recent_scores_success_p),3)
     
     is_success_e = (pct_above_threshold_e > success_rate)
     is_success_p = (pct_below_threshold_p > success_rate)
@@ -225,12 +214,39 @@ for (iter in 1:max_iterations) {
                current_theta[3]," ", 
                current_theta[4]," ",
                current_theta[5]," "),file = success_log_file, append = TRUE)
-    cat(paste0(min(recent_scores_success_e)," ", 
-               min(recent_scores_success_p)," ",
-               mean(recent_scores_success_e)," ", 
-               mean(recent_scores_success_p)," ",
+    cat(paste0(round(min(recent_scores_success_e),3)," ", 
+               round(min(recent_scores_success_p),3)," ",
+               round(mean(recent_scores_success_e),3)," ", 
+               round(mean(recent_scores_success_p),3)," ",
                pct_above_threshold_e," ",
                pct_below_threshold_p,"\n"),file = success_log_file, append = TRUE)
+    
+    saveRDS(current_theta, paste0(dir_name_data,'/theta_param_set_id_',param_set_id_use,
+                                  '_sterile_',sterile,
+                                  '_macspec_',macspec_on,
+                                  '_tregs_',allow_tregs,
+                                  '_ros_level_',ros_level,
+                                  '_pat_level_',pat_level,
+                                  '_trnd_',randomize_tregs,
+                                  '_n1_',n1,
+                                  '_n2_',n2,
+                                  '_iter_',iter,
+                                  '_rep_',reps,
+                                  '.rds'))
+    
+    ## SAVE TO COME BACK TO IT LATER?
+    saveRDS(longitudinal_df, paste0(dir_name_data,'/longitudinal_df_param_set_id_',param_set_id_use,
+                                         '_sterile_',sterile,
+                                         '_macspec_',macspec_on,
+                                         '_tregs_',allow_tregs,
+                                         '_ros_level_',ros_level,
+                                         '_pat_level_',pat_level,
+                                         '_trnd_',randomize_tregs,
+                                         '_n1_',n1,
+                                         '_n2_',n2,
+                                         '_iter_',iter,
+                                         '_rep_',reps,
+                                         '.rds'))
 
   }
 }

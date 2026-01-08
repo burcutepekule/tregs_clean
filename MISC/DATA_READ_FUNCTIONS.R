@@ -1,3 +1,119 @@
+is_rectangular_top = function(control_matrix) {
+  n_rows = nrow(control_matrix)
+  n_cols = ncol(control_matrix)
+  
+  if (sum(control_matrix) < n_cols) return(FALSE)  # Need at least one full row
+  
+  # Find row-wise sums
+  row_sums = rowSums(control_matrix)
+  
+  # Key property: top rows should be full (or nearly full), 
+  
+  # then drop to empty (or nearly empty)
+  # No gradual tapering like the triangle
+  
+  # Find the transition point: where does it go from "full" to "empty"?
+  full_threshold = n_cols * 0.8  # Row is "full" if 80%+ TRUE
+  empty_threshold = n_cols * 0.2  # Row is "empty" if 20%- TRUE
+  
+  # Classify each row
+  row_status = sapply(row_sums, function(s) {
+    if (s >= full_threshold) return("full")
+    if (s <= empty_threshold) return("empty")
+    return("partial")
+  })
+  
+  # For rectangle: should be [full, full, ..., empty, empty, ...]
+  # With at most one "partial" row at the transition
+  
+  # Check pattern: all "full" rows come before all "empty" rows
+  full_rows = which(row_status == "full")
+  empty_rows = which(row_status == "empty")
+  partial_rows = which(row_status == "partial")
+  
+  # Must have at least one full row at the top
+  if (length(full_rows) == 0 || min(full_rows) != 1) return(FALSE)
+  
+  # Full rows must be contiguous from top
+  if (length(full_rows) > 1) {
+    if (!all(diff(full_rows) == 1)) return(FALSE)
+  }
+  
+  # Empty rows must be contiguous at bottom (if any exist)
+  if (length(empty_rows) > 0) {
+    if (!all(diff(empty_rows) == 1)) return(FALSE)
+    # Empty rows should come after full rows
+    if (min(empty_rows) <= max(full_rows)) return(FALSE)
+  }
+  
+  # Allow at most one partial row (the transition)
+  if (length(partial_rows) > 1) return(FALSE)
+  
+  # If there's a partial row, it should be between full and empty
+  if (length(partial_rows) == 1) {
+    if (partial_rows < max(full_rows)) return(FALSE)
+    if (length(empty_rows) > 0 && partial_rows > min(empty_rows)) return(FALSE)
+  }
+  
+  # Additional check: the width should be constant in full rows
+  full_row_sums = row_sums[full_rows]
+  if (max(full_row_sums) - min(full_row_sums) > 1) return(FALSE)
+  
+  return(TRUE)
+}
+
+is_inverted_triangle_boundary = function(control_matrix) {
+  if (sum(control_matrix) < 3) return(FALSE)
+  
+  # Find left and right boundaries for each row
+  n_rows = nrow(control_matrix)
+  n_cols = ncol(control_matrix)
+  
+  left_boundary = rep(NA, n_rows)
+  right_boundary = rep(NA, n_rows)
+  
+  for (r in 1:n_rows) {
+    true_cols = which(control_matrix[r,])
+    if (length(true_cols) > 0) {
+      left_boundary[r] = min(true_cols)
+      right_boundary[r] = max(true_cols)
+    }
+  }
+  
+  # Find the contiguous TRUE region (from top)
+  first_empty = which(is.na(left_boundary))
+  if (length(first_empty) > 0) {
+    # After first empty row, all should be empty (no gaps in middle)
+    cutoff = min(first_empty)
+    if (cutoff < n_rows && any(!is.na(left_boundary[(cutoff):n_rows]))) {
+      return(FALSE)  # There's a gap
+    }
+    left_boundary = left_boundary[1:(cutoff-1)]
+    right_boundary = right_boundary[1:(cutoff-1)]
+  }
+  
+  if (length(left_boundary) < 2) return(FALSE)
+  
+  # Key insight: for inverted triangle, boundaries should converge
+  # Left boundary should be non-decreasing (moving right)
+  # Right boundary should be non-increasing (moving left)
+  
+  left_trend = diff(left_boundary)
+  right_trend = diff(right_boundary)
+  
+  # Allow small violations (1 step) for robustness
+  left_ok = sum(left_trend < -1) == 0  # Never jumps left by more than 1
+  right_ok = sum(right_trend > 1) == 0  # Never jumps right by more than 1
+  
+  # Overall: width should decrease
+  widths = right_boundary - left_boundary + 1
+  overall_narrowing = widths[1] > widths[length(widths)]
+  
+  return(left_ok && right_ok && overall_narrowing)
+}
+
+
+
 steady_state_idx = function(x, k = 50, tail_frac = 0.25, min_run = 20) {
   
   n = length(x)

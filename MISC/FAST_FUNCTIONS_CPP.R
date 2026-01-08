@@ -48,8 +48,8 @@ logistic_function <- function(x, k = k_in, x0 = x0_in) {
   return(1 / (1 + exp(-k * (x - x0))))
 }
 
-logistic_scaled_0_to_5_quantized <- function(x,  k = k_in, x0 = x0_in) {
-  return(round(5*plogis(x, location = x0, scale = 1 / k)))
+logistic_scaled_0_to_5_quantized <- function(x,  k = k_in, x0 = x0_in, c=c_in) {
+  return(round(c*plogis(x, location = x0, scale = 1 / k)))
 }
 
 # Original R implementation (kept as fallback)

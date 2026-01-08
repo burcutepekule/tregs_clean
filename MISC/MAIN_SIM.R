@@ -71,10 +71,8 @@ if (nrow(commensal_coords) > 0) {
 # DAMPs from epithelial injury
 DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury*add_DAMPs
 
-# DAMPs from microbes touching epithelium
-DAMPs[1, ] = DAMPs[1, ] + logistic_scaled_0_to_5_quantized(
-  pathogen_epithelium_counts + commensal_epithelium_counts
-)*add_DAMPs
+# DAMPs from microbes touching epithelium- this needs to be different because commensals do not harm the epithelium but can induce damps on the basolateral side
+DAMPs[1, ] = DAMPs[1, ] + logistic_scaled_0_to_5_quantized(pathogen_epithelium_counts + commensal_epithelium_counts, k_in_log, x0_in_log, c_in_log)*add_DAMPs
 
 # ========================================================================
 # UPDATE PAMPs 
@@ -89,8 +87,7 @@ if (nrow(pathogen_coords) > 0) {
     for (xi in seq_along(pat_x)) {
       for (yi in seq_along(pat_y)) {
         if (pat_counts_tab[xi, yi] > 0) {
-          PAMPs_add[pat_y[yi], pat_x[xi]] = add_PAMPs *
-            logistic_scaled_0_to_5_quantized(pat_counts_tab[xi, yi])
+          PAMPs_add[pat_y[yi], pat_x[xi]] = add_PAMPs*logistic_scaled_0_to_5_quantized(pat_counts_tab[xi, yi],k_in_log, x0_in_log, c_in_log)
         }
       }
     }
@@ -294,21 +291,21 @@ if (total_new_commensals > 0) {
 # ========================================================================
 # PLOTTING
 # ========================================================================
-if(exists("plot_on")){
-  if (plot_on == 1 & (t %% plot_every == 0 | t == 1)) {
-    source('./MISC/CONVERT_TO_DATAFRAME_ABM.R')
-    p = plot_simtime_simple()
-    ggsave(
-      paste0(dir_name_frames, "/frame_param_", param_set_id_use, "_rep_", reps_in,
-             "_ind_", scenario_ind, "_", t, ".png"),
-      plot = p,
-      width = 12,
-      height = 10,
-      dpi = 600,
-      bg = "white"
-    )
-  }
-}
+# if(exists("plot_on")){
+#   if (plot_on == 1 & (t %% plot_every == 0 | t == 1)) {
+#     source('./MISC/CONVERT_TO_DATAFRAME_ABM.R')
+#     p = plot_simtime_simple()
+#     ggsave(
+#       paste0(dir_name_frames, "/frame_param_", param_set_id_use, "_rep_", reps_in,
+#              "_ind_", scenario_ind, "_", t, ".png"),
+#       plot = p,
+#       width = 12,
+#       height = 10,
+#       dpi = 600,
+#       bg = "white"
+#     )
+#   }
+# }
 
 # ========================================================================
 # UPDATE PHAGOCYTE PHENOTYPES
@@ -675,14 +672,23 @@ ros_means = calculate_epithelial_ros_cpp(
 )
 
 # Vectorized injury updates
-epithelium$level_injury = epithelium$level_injury +
-  logistic_scaled_0_to_5_quantized(pathogen_epithelium_counts)
 
+# === VERSION 1, MAYBE NOT VERY SENSITIVE TO INCREASE IN PATHOGENIC LOAD AFTER A WHILE?
+# epithelium$level_injury = epithelium$level_injury +
+# logistic_scaled_0_to_5_quantized(pathogen_epithelium_counts)
 # ROS-based injury (vectorized)
-epithelium$level_injury = epithelium$level_injury + as.integer(ros_means > th_ROS_epith_injury)
+# epithelium$level_injury = epithelium$level_injury + as.integer(ros_means > th_ROS_epith_injury)
 
-# Apply maximum injury constraint (vectorized)
-epithelium$level_injury = pmin(epithelium$level_injury, max_level_injury)
+# === MAYBE TRY THIS? VERSION #2
+add_inj_pathogen = x0_in*(1-exp(-k_in*pathogen_epithelium_counts)) # max x0_in added
+add_inj_ros      = pmax(0,x0_in*(ros_means-th_ROS_epith_injury)) # max x0_in added
+
+epithelium$level_injury = epithelium$level_injury + add_inj_pathogen + add_inj_ros
+
+# pathogen_epithelium_longitudinal[t, ] = pathogen_epithelium_counts
+# ros_epithelium_longitudinal[t, ]      = ros_means
+# injury_pathogen_longitudinal[t, ]     = add_inj_pathogen
+# injury_ros_longitudinal[t, ]          = add_inj_ros
 
 # RECOVERY: Stochastic recovery (must loop for random number consumption order)
 for (i in 1:nrow(epithelium)) {
@@ -691,10 +697,14 @@ for (i in 1:nrow(epithelium)) {
   }
 }
 
+# Apply maximum injury constraint (vectorized)
+epithelium$level_injury = pmin(epithelium$level_injury, max_level_injury)
+
 # ========================================================================
 # SAVE ABUNDANCES
 # ========================================================================
-epithelium_longitudinal[t, ] = as.numeric(table(factor(epithelium$level_injury, levels = 0:5)))
+# epithelium_longitudinal[t, ] = as.numeric(table(factor(epithelium$level_injury, levels = 0:max_level_injury)))
+epithelium_longitudinal[t, ] = sum(epithelium$level_injury)
 
 phagocyte_counts = c(
   sum(phagocyte_phenotype == 0),

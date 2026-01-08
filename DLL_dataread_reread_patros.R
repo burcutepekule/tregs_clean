@@ -1,5 +1,9 @@
-is_under_control = function(epithelial_health, pathogen_load) {
-  return(epithelial_health > 150*0.75 & pathogen_load < 10)
+# is_under_control = function(epithelial_health, pathogen_load) {
+#   return(epithelial_health > 150*0.75 & pathogen_load < 10)
+# }
+
+is_under_control = function(epithelial_health, pathogen_load, epithelial_limit, pathogen_limit) {
+  return(epithelial_health < epithelial_limit & pathogen_load < pathogen_limit)
 }
 
 message("Re-processing param_set_", param_id)
@@ -273,7 +277,6 @@ if(dim(all_comparison_results_reps)[1]>0){
 }
 
 
-
 df_steps = all_comparison_results %>% dplyr::filter(injury_type == 'pathogenic')
 
 # Dynamically create the controlled status columns for all ros/pat combinations
@@ -284,7 +287,7 @@ for (ros in ros_vals) {
     mean_p_col = paste0("mean_ros", ros, "_pat", pat, "_treg0_p")
     
     df_steps = df_steps %>%
-      dplyr::mutate(!!col_name := is_under_control(.data[[mean_e_col]], .data[[mean_p_col]]))
+      dplyr::mutate(!!col_name := is_under_control(.data[[mean_e_col]], .data[[mean_p_col]], epithelial_limit, pathogen_limit))
   }
 }
 

@@ -50,34 +50,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-plot_on    = 0
-plot_every = 0
-t_max      = 5000
-num_reps   = 5
-
-grid_size       = 25
-n_phagocytes    = round(grid_size*grid_size*0.20)
-n_tregs         = round(grid_size*grid_size*0.20)
-n_commensals_lp = 20
-max_total_phagocytes = round(grid_size*grid_size*0.80)
-
-injury_percentage = 60
-max_level_injury  = 5
-
-max_cell_value_ROS   = 1
-max_cell_value_DAMPs = 1
-max_cell_value_SAMPs = 1
-max_cell_value_PAMPs = 1
-
-act_radius_ROS   = 1
-act_radius_treg  = 1
-act_radius_DAMPs = 1
-act_radius_SAMPs = 1
-act_radius_PAMPs = 1
-
-# Logistic function parameters (for epithelial injury calculation)
-k_in  = 0.044
-x0_in = 50
+source('./MISC/LOAD_FIXED_PARAMS.R')
 
 cat("Simulation parameters:\n")
 cat("  t_max:", t_max, "\n")
@@ -93,10 +66,11 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0:10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1,seq(2,10,0.5))
+  ros_level       = c(0,1,3,5,10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1,2,5,10,100)
 )
 
+scenarios_df = 
 dim(scenarios_df) # 198, so first half is 198 cores
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")

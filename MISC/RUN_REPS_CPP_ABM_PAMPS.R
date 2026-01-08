@@ -17,7 +17,7 @@ for (reps_in in 0:(num_reps-1)){
     level_injury = 0,
     id = seq(1, grid_size)
   )
-  epithelium[injury_site, ]$level_injury = 1
+  epithelium[injury_site, ]$level_injury = initial_injury_level
   
   # Initialize phagocytes
   phagocyte_x = sample(1:grid_size, n_phagocytes, TRUE)
@@ -69,12 +69,16 @@ for (reps_in in 0:(num_reps-1)){
   commensals_killed_by_Mac = rep(0, 3)
   
   # Longitudinal tracking
-  epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = (max_level_injury + 1))
-  macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3) #onelevel
+  # epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = (max_level_injury + 1))
+  epithelium_longitudinal  = matrix(0, nrow = t_max, ncol = 1)
+  macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3) # onelevel
   microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
   tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
   microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
-  
+  injury_pathogen_longitudinal   = matrix(0, nrow = t_max, ncol = grid_size)
+  injury_ros_longitudinal        = matrix(0, nrow = t_max, ncol = grid_size)
+  pathogen_epithelium_longitudinal = matrix(0, nrow = t_max, ncol = grid_size)
+  ros_epithelium_longitudinal      = matrix(0, nrow = t_max, ncol = grid_size)
   # ============================================================================
   # MAIN SIMULATION LOOP
   # ============================================================================
@@ -103,13 +107,18 @@ for (reps_in in 0:(num_reps-1)){
   longitudinal_df$param_set_id = param_set_use$param_set_id
   longitudinal_df$rep_id = reps_in
   
+  ## VERSION 0
+  # longitudinal_df = longitudinal_df %>% dplyr::mutate(epithelial_score = 6*epithelial_healthy+ # higher the score, healthier the epithelium!
+  #                                                       5*epithelial_inj_1+
+  #                                                       4*epithelial_inj_2+
+  #                                                       3*epithelial_inj_3+
+  #                                                       2*epithelial_inj_4+
+  #                                                       1*epithelial_inj_5)
   
-  longitudinal_df = longitudinal_df %>% dplyr::mutate(epithelial_score = 6*epithelial_healthy+ # higher the score, healthier the epithelium!
-                                                        5*epithelial_inj_1+
-                                                        4*epithelial_inj_2+
-                                                        3*epithelial_inj_3+
-                                                        2*epithelial_inj_4+
-                                                        1*epithelial_inj_5)
+  ## VERSION 1
+  # longitudinal_df = longitudinal_df %>%
+  #   mutate(epithelial_score = (max_level_injury+1)*epithelial_healthy + 
+  #            rowSums(across(paste0("epithelial_inj_", 1:max_level_injury))*max_level_injury:1))
   
   # moved from one time_ss based only on epithelial_score to two time_ss for both signals
   longitudinal_df$time_ss_e = steady_state_idx(longitudinal_df$epithelial_score)

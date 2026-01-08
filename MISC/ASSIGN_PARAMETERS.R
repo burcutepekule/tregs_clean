@@ -2,8 +2,8 @@
 # ASSIGN PARAMETERS FROM CSV (WITH MACROPHAGE SPECIFICITY)
 # ============================================================================
 # Thresholds
-th_ROS_microbe = param_set_use$th_ROS_microbe
-th_ROS_epith_injury = param_set_use$th_ROS_epith_injury
+th_ROS_microbe        = param_set_use$th_ROS_microbe
+th_ROS_epith_injury   = param_set_use$th_ROS_epith_injury
 epith_recovery_chance = param_set_use$epith_recovery_chance
 
 # Diffusion speeds

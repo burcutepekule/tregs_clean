@@ -50,34 +50,7 @@ colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-plot_on    = 0
-plot_every = 0
-t_max      = 5000
-num_reps   = 5
-
-grid_size       = 25
-n_phagocytes    = round(grid_size*grid_size*0.20)
-n_tregs         = round(grid_size*grid_size*0.20)
-n_commensals_lp = 20
-max_total_phagocytes = round(grid_size*grid_size*0.80)
-
-injury_percentage = 60
-max_level_injury  = 5
-
-max_cell_value_ROS   = 1
-max_cell_value_DAMPs = 1
-max_cell_value_SAMPs = 1
-max_cell_value_PAMPs = 1
-
-act_radius_ROS   = 1
-act_radius_treg  = 1
-act_radius_DAMPs = 1
-act_radius_SAMPs = 1
-act_radius_PAMPs = 1
-
-# Logistic function parameters (for epithelial injury calculation)
-k_in  = 0.044
-x0_in = 50
+source('./MISC/LOAD_FIXED_PARAMS.R')
 
 cat("Simulation parameters:\n")
 cat("  t_max:", t_max, "\n")

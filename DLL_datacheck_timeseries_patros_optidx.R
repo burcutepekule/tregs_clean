@@ -35,21 +35,24 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # Define the ros and pat value ranges
-ros_vals = c(0, 1, seq(2, 12, 0.5))
-pat_vals = c(1, 2, seq(3, 10, 0.5))
+ros_vals = c(0,1,3,5,10)
+pat_vals = c(1,2,5,10,100)
 tregs_on_in_vec = c(1)
 sterile_in      = 0
+epithelial_limit = 5
+pathogen_limit   = 10
+max_level_injury = 10*25 # 2*x0_in*grid_size
 
-save_images_path = 'timeseries_tri_local_5504_optimized'
+param_id = 50002
+save_images_path = paste0('timeseries_tri_local_',param_id,'_optimized')
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path), showWarnings = FALSE)
-path  = "/Users/burcutepekule/Desktop/sim_abm_5504_optimized/sim_abm/"
+path  = paste0('/Users/burcutepekule/Desktop/sim_abm_local/')
 
 # ===== reread to include local results 
-param_id = 5504
 opt_df   = readRDS(paste0('./df_opt_rnd_95_',param_id,'_use.rds'))
 
 # TF_matricies = readRDS('control_matrices_all_triangular_patterns.rds')
-rep_ind_vec  = 0:4 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
+rep_ind_vec  = 0:2 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
 alpha_plot   = 1/length(rep_ind_vec)
 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
@@ -61,7 +64,7 @@ background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 # variables_2_plot = list(c("phagocyte_M1","phagocyte_M2","phagocyte_M0"))
 # background_on    = 0
 
-for (opt_idx in 2:2){
+for (opt_idx in 1){
   cat("Processing ", opt_idx, "of", dim(opt_df)[1], "\n")
   
   params_insert = opt_df[opt_idx,]
