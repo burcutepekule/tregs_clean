@@ -27,11 +27,11 @@ summary_df = df_opt_rnd %>%
 
 summary_df_095 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.95 & mean_pct_above_threshold_p > 0.95 & n_reps>3)
 df_opt_rnd_95  = summary_df_095[param_names]
-# saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over_all,'_use.rds'))
+saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over_all,'_use.rds'))
 
 summary_df_075 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.75 & mean_pct_above_threshold_p > 0.75 & n_reps>3)
 df_opt_rnd_75  = summary_df_075[param_names]
-# saveRDS(df_opt_rnd_75,paste0('./df_opt_rnd_75_',loop_over_all,'_use.rds'))
+saveRDS(df_opt_rnd_75,paste0('./df_opt_rnd_75_',loop_over_all,'_use.rds'))
 
 # df_opt_rnd_95  = df_opt_rnd %>% dplyr::filter(pct_above_threshold_e>0.95 & pct_above_threshold_p>0.95 & min_e==150 & min_p==0) 
 # df_opt_rnd_95  = df_opt_rnd_95[param_names]

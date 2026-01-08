@@ -47,7 +47,7 @@ df_opt_rnd_95 = readRDS(paste0('./df_opt_rnd_95_',loop_over,'_use.rds'))
 loop_over_param_inds = 1:dim(df_opt_rnd_95)[1]
 
 for (i_opt in loop_over_param_inds){
-
+  
   print(paste0('At i_opt', i_opt))
   params_df[param_names] = df_opt_rnd_95[i_opt,]
   title_opt = paste(df_opt_rnd_95[i_opt,], collapse = "_")
@@ -59,16 +59,8 @@ for (i_opt in loop_over_param_inds){
   # SETUP OUTPUT DIRECTORY
   # ============================================================================
   
-  dir_name_data = '/scratch/gpfs/CMETCALF/sim_abm'
+  dir_name_data <<- '/Users/burcutepekule/Desktop/sim_abm_local'  # note the <<- for global assignment
   dir.create(dir_name_data, showWarnings = TRUE)
-  
-  tryCatch({
-    dir.create(dir_name_data, showWarnings = TRUE)
-  }, warning = function(w) {
-    message("Caught warning: ", w$message)
-    dir_name_data <<- '/Users/burcutepekule/Desktop/sim_abm_local'  # note the <<- for global assignment
-    dir.create(dir_name_data, showWarnings = TRUE)
-  })
   
   cat("Output directory:", dir_name_data, "\n\n")
   

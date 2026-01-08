@@ -63,7 +63,6 @@ cc_phagocyte     = as.integer(param_set_use$cc_phagocyte)
 # Treg parameters
 treg_vicinity_effect = 1
 treg_discrimination_efficiency = param_set_use$treg_discrimination_efficiency
-# allow_tregs_to_suppress_cognate = FALSE
 
 # Macrophage specificity parameters
 if(macspec_on == 2){# PERFECT DISCRIMINATION
