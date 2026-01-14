@@ -32,9 +32,17 @@ split_equal = function(x, n_chunks) {
 args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
-
 loop_over = split_equal(params_df$param_set_id, n1)[[n2]]
+
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+
+param_names = c("diffusion_speed_SAMPs",
+                "add_SAMPs",
+                "SAMPs_decay",
+                "treg_discrimination_efficiency",
+                "activation_threshold_SAMPs")
+
+# params_df[param_names] = c(0.027, 0.375, 0.016, 0.8, 0.221) #optimized for 68752
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -70,8 +78,11 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0,1,3,5,10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1,2,5,10,100)
+  ros_level       = c(0, 1, 3, 5, 10), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1, 2, 5, 10, 20),
+  overwrite       = c(1)
+  # ros_level       = seq(10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  # pat_level       = c(60,70,80,90,100)
 )
 
 dim(scenarios_df) 
@@ -104,6 +115,7 @@ for(param_set_id_use in loop_over){
     macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
+    overwrite_in    = scenarios_df[scenario_ind,]$overwrite
     
     source("./MISC/ASSIGN_PARAMETERS.R")
     

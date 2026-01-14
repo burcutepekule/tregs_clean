@@ -63,18 +63,36 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # SCENARIO DEFINITIONS
 # ============================================================================
 
-scenarios_df = expand.grid(
+scenarios_df_1 = expand.grid(
   sterile         = c(0),
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(3, 5, 10, 20, 50),
-  pat_level       = c(10)
+  ros_level       = c(1:10),
+  pat_level       = c(seq(13,15,0.5)),
+  overwrite       = c(1)
 )
+# scenarios_df_2 = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(5, 7, 10),
+#   pat_level       = c(15, 20)
+# )
+# scenarios_df_3 = expand.grid(
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(5, 7, 10),
+#   pat_level       = c(50)
+# )
+# scenarios_df = rbind(scenarios_df_1, scenarios_df_2, scenarios_df_3)
 
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 80), ]
+scenarios_df = rbind(scenarios_df_1)
+# scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 8), ]
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
@@ -84,7 +102,8 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
 
-dir_name_data = '/scratch/gpfs/CMETCALF/sim_opt_random'
+# dir_name_data = '/scratch/gpfs/CMETCALF/sim_opt_random'
+dir_name_data = '/Users/burcutepekule/Desktop/sim_opt_random'
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -110,7 +129,7 @@ success_threshold_e = 5
 success_threshold_p = 10
 success_duration    = 150
 success_rate        = 0.95
-max_iterations      = 100 # Number of random samples to try
+max_iterations      = 10000 # Number of random samples to try
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
@@ -126,7 +145,8 @@ for(param_set_id_use in loop_over){
     macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
-
+    overwrite_in    = scenarios_df[scenario_ind,]$overwrite
+    
     source("./MISC/ASSIGN_PARAMETERS.R")
 
     cat(paste0('[', Sys.time(), '] Processing param set ', param_set_id_use,

@@ -11,44 +11,86 @@ library(purrr)
 
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
-
 source("./DLL_dataopt_random_read.R")
-path  = "/Users/burcutepekule/Desktop/sim_opt_random/"
 
-# Define the ros and pat value ranges
-# ros_vals        = c(3, 5, 10, 20, 50) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-ros_vals        = c(3) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-pat_vals        = c(10)
-iter_vals       = seq(1,100,1)
-rep_vals        = seq(1,5,1)
-n2_vals         = seq(1,400,1)
-tregs_on_in     = 1
-sterile_in      = 0
-param_id        = 50002
+path = "/Users/burcutepekule/Desktop/sim_opt_random/"
 
-results_list_long  = list()
+ros_vals  = seq(1,10,1)
+ros_vals  = ros_vals[ros_vals==6]
+pat_vals  = c(seq(13,15,0.5))
+pat_vals  = pat_vals[pat_vals>=13]
+iter_vals = seq(1, 100, 1)
+rep_vals  = seq(1, 5, 1)
+n1        = 10
+n2_vals   = seq(1, n1, 1)
+param_id  = 87503
+
+# 1. Load the optimal theta FIRST
+opt_theta = readRDS(paste0('./df_opt_rnd_80_', param_id, '_use.rds'))
+print(paste0("opt_theta read"))
+
+# 2. Build file index and read ONLY theta files (smaller), then filter
+# Read theta files in chunks or one by one, checking for matches immediately
+
+results_list_long = list()
 results_list_theta = list()
 
-path = '/Users/burcutepekule/Desktop/sim_opt_random'
+print(paste0("loop starting"))
 
-# File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
-# Dynamically create file lists for all ros/pat combinations
 for (ros in ros_vals) {
   for (pat in pat_vals) {
     for (n2 in n2_vals) {
       for (iter in iter_vals) {
         for (rep in rep_vals) {
-          print(paste0("results_", ros, "_", pat, "_", n2, "_", iter, "_", rep))
-          file_path_theta = paste0(path,"/theta_param_set_id_",param_id,
-                                     "_sterile_0_macspec_0_tregs_1_ros_level_", ros, 
-                                     "_pat_level_", pat, 
-                                     "_trnd_0_n1_400_n2_",n2,
-                                     "_iter_",iter,
-                                     "_rep_",rep,".rds")
           
-          if(file.exists(file_path_theta)){
-            var_name = paste0("results_", ros, "_", pat, "_", n2, "_", iter, "_", rep)
-            results_list_theta[[var_name]] = readRDS(file_path_theta)
+          file_path_theta = paste0(path, "/theta_param_set_id_", param_id,
+                                   "_sterile_0_macspec_0_tregs_1_ros_level_", ros,
+                                   "_pat_level_", pat,
+                                   "_trnd_0_n1_", n1,
+                                   "_n2_", n2,
+                                   "_iter_", iter,
+                                   "_rep_", rep, ".rds")
+          
+          if (file.exists(file_path_theta)) {
+            theta_data = readRDS(file_path_theta)
+            theta_df = as.data.frame(t(theta_data))
+            names(theta_df) = c("diffusion_speed_SAMPs", "add_SAMPs", "SAMPs_decay",
+                                "treg_discrimination_efficiency", "activation_threshold_SAMPs")
+            
+            # Check if this theta matches opt_theta IMMEDIATELY
+            is_match = nrow(semi_join(theta_df, opt_theta, 
+                                      by = c("diffusion_speed_SAMPs", "add_SAMPs", "SAMPs_decay",
+                                             "treg_discrimination_efficiency", "activation_threshold_SAMPs"))) > 0
+            
+            if (is_match) {
+              print(paste0("MATCH FOUND: ", ros, "_", pat, "_", n2, "_", iter, "_", rep))
+              
+              var_name = paste0("results_", ros, "_", pat, "_", n2, "_", iter, "_", rep)
+              
+              # Store theta
+              theta_df$ros = ros
+              theta_df$pat = pat
+              theta_df$n2 = n2
+              theta_df$iter = iter
+              theta_df$rep = rep
+              theta_df$unique_id = paste0('ros_', ros, '_pat_', pat, '_n2_', n2, '_iter_', iter)
+              results_list_theta[[var_name]] = theta_df
+              
+              # Read longitudinal file ONLY for matches
+              file_path_long = paste0(path, "/longitudinal_df_param_set_id_", param_id,
+                                      "_sterile_0_macspec_0_tregs_1_ros_level_", ros,
+                                      "_pat_level_", pat,
+                                      "_trnd_0_n1_", n1,
+                                      "_n2_", n2,
+                                      "_iter_", iter,
+                                      "_rep_", rep, ".rds")
+              
+              if (file.exists(file_path_long)) {
+                results_list_long[[var_name]] = readRDS(file_path_long)
+              }
+            }else{
+              print(paste0("MATCH NOT FOUND: ", ros, "_", pat, "_", n2, "_", iter, "_", rep))
+            }
           }
         }
       }
@@ -56,63 +98,34 @@ for (ros in ros_vals) {
   }
 }
 
-# Combine all results
-results_theta = do.call(rbind, results_list_theta)
+# Combine only the matching results
+matching_rows = do.call(rbind, results_list_theta)
+results_long = do.call(rbind, results_list_long)
 
-param_names = c("diffusion_speed_SAMPs",
-                 "add_SAMPs",
-                 "SAMPs_decay",
-                 "treg_discrimination_efficiency",
-                 "activation_threshold_SAMPs")
 
-results_theta_df = results_theta %>%
-  as.data.frame() %>%
-  tibble::rownames_to_column("id") %>%
-  separate(id, into = c("prefix", "ros", "pat", "n2", "iter", "rep"), 
-           sep = "_", convert = TRUE) %>%
-  select(-prefix)
-
-# Rename V columns using the param_names vector
-names(results_theta_df)[6:10] = param_names
-results_theta_df = results_theta_df %>% dplyr::mutate(unique_id = paste0('ros_',ros,'_pat_',pat,'_n2_',n2,'_iter_',iter))
-
-opt_theta = readRDS(paste0('./df_opt_rnd_75_',param_id,'_use.rds'))
-
-matching_rows = results_theta_df %>%
-  semi_join(opt_theta, by = c("diffusion_speed_SAMPs", "add_SAMPs", "SAMPs_decay", 
-                              "treg_discrimination_efficiency", "activation_threshold_SAMPs"))
-
-### NOW GO BACK AND READ THESE LONGIDUTINAL FILES PRECISELY
-for (ros in unique(matching_rows$ros)) {
-  for (pat in unique(matching_rows$pat)) {
-    for (n2 in unique(matching_rows$n2)) {
-      for (iter in unique(matching_rows$iter)) {
-        for (rep in unique(matching_rows$rep)) {
-          print(paste0("results_", ros, "_", pat, "_", n2, "_", iter, "_", rep))
-          file_path_long = paste0(path,"/longitudinal_df_param_set_id_",param_id,
-                                  "_sterile_0_macspec_0_tregs_1_ros_level_", ros,
-                                  "_pat_level_", pat,
-                                  "_trnd_0_n1_400_n2_",n2,
-                                  "_iter_",iter,
-                                  "_rep_",rep,".rds")
-          
-          if(file.exists(file_path_long)){
-            var_name = paste0("results_", ros, "_", pat, "_", n2, "_", iter, "_", rep)
-            results_list_long[[var_name]] = readRDS(file_path_long)
-          }
-        }
-      }
-    }
-  }
-}
-results_long  = do.call(rbind, results_list_long)
+# Continue with processing
+# results_long_df = results_long %>%
+#   as.data.frame() %>%
+#   tibble::rownames_to_column("id") %>%
+#   separate(id, into = c("prefix", "ros", "pat", "n2", "iter", "rep", "t2"),
+#            sep = "[_.]", convert = TRUE) %>%
+#   select(-prefix)
 
 results_long_df = results_long %>%
   as.data.frame() %>%
   tibble::rownames_to_column("id") %>%
-  separate(id, into = c("prefix", "ros", "pat", "n2", "iter", "rep", "t2"),
-           sep = "[_.]", convert = TRUE) %>%
+  separate(id, into = c("prefix", "ros", "pat", "n2", "iter", "rep_t2"),
+           sep = "_", convert = FALSE) %>%  # Don't auto-convert yet
+  separate(rep_t2, into = c("rep", "t2"), 
+           sep = "\\.", convert = TRUE) %>%  # Split rep.t2 on the dot
+  mutate(
+    ros = as.numeric(ros),
+    pat = as.numeric(pat),
+    n2 = as.numeric(n2),
+    iter = as.numeric(iter)
+  ) %>%
   select(-prefix)
+
 # Check if they match
 all(results_long_df$t == results_long_df$t2) #TRUE
 # If they do, you can drop t2
@@ -122,7 +135,7 @@ results_long_df = results_long_df %>% dplyr::mutate(unique_id = paste0('ros_',ro
 # variables = c("epithelial_score")
 variables = c("epithelial_score","phagocyte_M1", "phagocyte_M2","commensal","pathogen")
 
-alpha_plot = 1
+alpha_plot = 0.5
 max_level_injury = 10*25
 
 ### go through matches
@@ -148,11 +161,20 @@ for(id in id_vec){
     theme_minimal() +
     scale_y_log10(limits = c(NA, max_level_injury)) +
     scale_y_log10() +
-    labs(title = title_opt, x = "Time", y = "Count")
-  print(p)
-  browser()
+    labs(title = paste0("ros_",unique(matching_rows_temp$ros),"_pat_",unique(matching_rows_temp$pat)),
+         subtitle = title_opt, 
+         x = "Time", y = "Count")
+  ggsave(
+    filename = paste0("/Users/burcutepekule/Desktop/opt/i_opt_",id,".png"),
+    plot = p,
+    width = 24,
+    height = 16,
+    dpi = 300,
+    bg='white'
+  )
+  
 }
 
-
-
+matching_rows_distinct = distinct(matching_rows %>% dplyr::select(-rep))
+matching_rows_distinct[1,]
 

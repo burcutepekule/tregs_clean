@@ -3,7 +3,13 @@
 # ============================================================================
 for (t in 1:t_max) {
   
-  source('./MISC/MAIN_SIM.R')
+  source('./MISC/MAIN_SIM.R') #overwrite_in==1 within this now (13/01/2026)
+  
+  # if(overwrite_in==1){
+  #   source('./MISC/MAIN_SIM_OVERWRITE.R')
+  # }else{
+  #   source('./MISC/MAIN_SIM.R')
+  # }
   
   ######## 01.01.2026 - BACKUP IN CASE
   # # Update injury site

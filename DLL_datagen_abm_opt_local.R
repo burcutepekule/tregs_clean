@@ -88,7 +88,7 @@ for (i_opt in loop_over_param_inds){
     macspec_on      = c(0),
     # ros_level       = c(0,1,3,5,10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     ros_level       = c(1,3,5,10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    pat_level       = c(1,2,5,10,100)
+    pat_level       = c(10)
   )
   
   cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")

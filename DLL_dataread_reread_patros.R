@@ -8,26 +8,22 @@ is_under_control = function(epithelial_health, pathogen_load, epithelial_limit, 
 
 message("Re-processing param_set_", param_id)
 
-# Dynamically create file paths to check
-files_to_check = c()
-for (ros in ros_vals) {
-  for (pat in pat_vals) {
-    files_to_check = c(files_to_check,
-                       paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds'))
-  }
-}
-
-files2read = which(file.info(files_to_check)$size>10000)
-
 # Dynamically read all RDS files for this parameter set
 results_list = list()
-for (ros in ros_vals) {
-  for (pat in pat_vals) {
-    print(paste0('Reading ros ',ros,' pat ',pat))
-    var_name = paste0("results_", ros, "_", pat)
-    file_path = paste0(path, 'longitudinal_df_param_set_id_', param_id, '_sterile_',sterile_in,'_macspec_0_tregs_',tregs_on_in,'_ros_level_', ros, '_pat_level_', pat, '_trnd_0.rds')
-    if(file.exists(file_path) & file.info(file_path)$size>10000){
-      results_list[[var_name]] = readRDS(file_path)
+for (ros_in in ros_vals) {
+  for (pat_in in pat_vals) {
+    print(paste0('Reading ros ',ros_in,' pat ',pat_in))
+    var_name = paste0("results_", ros_in, "_", pat_in)
+    file_path_data = paste0(path_data, 'longitudinal_df_param_set_id_', param_id, 
+                            '_sterile_',sterile_in,
+                            '_macspec_',macspec_in,
+                            '_tregs_',tregs_on_in,
+                            '_ros_level_',ros_in,
+                            '_pat_level_',pat_in,
+                            '_trnd_',trnd_in,
+                            '.rds')
+    if(file.exists(file_path_data) & file.info(file_path_data)$size>10000){
+      results_list[[var_name]] = readRDS(file_path_data)
     }
   }
 }
@@ -43,7 +39,7 @@ max_reps  = min(max(rep_ind_vec),max(full_data_comparison$rep_id))
 t_max_ind = max(full_data_comparison$t)
 
 # Dynamically initialize score keeping variables for all combinations
-# PATHOGEN
+# pathogen
 for (ros in ros_vals) {
   for (pat in pat_vals) {
     assign(paste0("scores_", ros, "_", pat, "_p_keep"), c())
@@ -66,11 +62,12 @@ for (rep in min_reps:max_reps) {
   time_ss_vec = c()
   for (ros in ros_vals) {
     for (pat in pat_vals) {
+
       # Filter data
       var_name = paste0("full_data_comparison_scores_", ros, "_", pat)
       assign(var_name, full_data_comparison %>%
-               dplyr::filter(rep_id==rep & sterile==0 & macspec_on==0 & tregs_on==tregs_on_in &
-                               ros_level==ros & pat_level==pat & randomize_tregs==0))
+               dplyr::filter(rep_id==rep & sterile==sterile_in & macspec_on==macspec_in & tregs_on==tregs_on_in &
+                               ros_level==ros & pat_level==pat & randomize_tregs==trnd_in))
       
       # Compute steady state for epithelial score
       time_ss_e_var = paste0("time_ss_", ros, "_", pat, "_e")
@@ -87,6 +84,7 @@ for (rep in min_reps:max_reps) {
       
       assign(time_ss_p_var, time_ss_p_val)
       time_ss_vec = c(time_ss_vec, time_ss_p_val)
+
     }
   }
   
@@ -96,14 +94,23 @@ for (rep in min_reps:max_reps) {
     # Dynamically extract scores and accumulate them
     for (ros in ros_vals) {
       for (pat in pat_vals) {
+      
         # Get the filtered data and steady state times
         scores_df = get(paste0("full_data_comparison_scores_", ros, "_", pat))
         if(dim(scores_df)[1]>0){
           time_ss_p = get(paste0("time_ss_", ros, "_", pat, "_p"))
           time_ss_e = get(paste0("time_ss_", ros, "_", pat, "_e"))
           
-          if(is.na(time_ss_p)){time_ss_p = t_max_ind-50}
-          if(is.na(time_ss_e)){time_ss_e = t_max_ind-50}
+          # # to make sure 
+          # time_ss_p = time_ss_p + 100
+          # time_ss_e = time_ss_e + 100
+          # 
+          # if(is.na(time_ss_p) | time_ss_p>=t_max_ind){time_ss_p = t_max_ind-50}
+          # if(is.na(time_ss_e) | time_ss_e>=t_max_ind){time_ss_e = t_max_ind-50}
+          
+          # Overwrite - just look at last 150 steps
+          time_ss_p = t_max_ind-50
+          time_ss_e = t_max_ind-50
           
           # Extract pathogen scores
           scores_p_var = paste0("scores_", ros, "_", pat, "_p")
@@ -137,7 +144,7 @@ for (rep in min_reps:max_reps) {
     #   }
     # }
     
-
+    
     # # Build vectors for all combinations
     # ros_vec_e = rep(ros_vals, each = length(pat_vals))
     # pat_vec_e = rep(pat_vals, times = length(ros_vals))
@@ -171,7 +178,7 @@ for (rep in min_reps:max_reps) {
       }
     }
     
-    # Pathogen second
+    # pathogen second
     for (ros in ros_vals) {
       for (pat in pat_vals) {
         var_time <- paste0("time_ss_", ros, "_", pat, "_p")
@@ -241,7 +248,7 @@ if(dim(all_comparison_results_reps)[1]>0){
   #   }
   # }
   # 
-  # # ==== PATHOGEN ABUNDANCE
+  # # ==== pathogen ABUNDANCE
   # for (r1 in ros_vals) {
   #   for (p1 in pat_vals) {
   #     for (r2 in ros_vals) {

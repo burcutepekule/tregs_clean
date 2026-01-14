@@ -484,9 +484,7 @@ if (length(active_indices) > 0) {
       }
     }
   }
-  
-  
-  if (overwrite_in==1 && length(candidates_only_suppress) > 0) {
+  if (length(candidates_only_suppress) > 0) {
     # C++ ACCELERATION: Calculate all signals at once
     signals = calculate_phagocyte_signals_cpp(
       candidates_only_suppress, phagocyte_x, phagocyte_y, # phagocyte_bacteria_registry,
@@ -549,7 +547,6 @@ if (length(active_indices) > 0) {
       }
     }
   }
-  
 }
 
 # ========================================================================

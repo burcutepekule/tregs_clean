@@ -7,7 +7,7 @@ param_names = c("diffusion_speed_SAMPs",
                 "treg_discrimination_efficiency",
                 "activation_threshold_SAMPs")
 
-loop_over_all   = 50002
+loop_over_all   = 87503
 df_opt_rnd      = read.table(paste0("/Users/burcutepekule/Dropbox/tregs_clean/merged_",loop_over_all,".txt"), 
                              header = FALSE, 
                              col.names = c("param_set_id" ,"rep", "pat_level", "ros_level",
@@ -25,11 +25,19 @@ summary_df = df_opt_rnd %>%
     .groups = "drop"
   )
 
-summary_df_095 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.95 & mean_pct_above_threshold_p > 0.95 & n_reps>3)
+summary_df_keep = summary_df
+
+# summary_df = summary_df %>% dplyr::filter(pat_level>=9 & ros_level>4)
+
+summary_df_095 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.95 & mean_pct_above_threshold_p > 0.95 & n_reps>=3)
 df_opt_rnd_95  = summary_df_095[param_names]
 saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over_all,'_use.rds'))
 
-summary_df_075 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.75 & mean_pct_above_threshold_p > 0.75 & n_reps>3)
+summary_df_080 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.80 & mean_pct_above_threshold_p > 0.80 & n_reps>=3)
+df_opt_rnd_80  = summary_df_080[param_names]
+saveRDS(df_opt_rnd_80,paste0('./df_opt_rnd_80_',loop_over_all,'_use.rds'))
+
+summary_df_075 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.75 & mean_pct_above_threshold_p > 0.75 & n_reps>=3)
 df_opt_rnd_75  = summary_df_075[param_names]
 saveRDS(df_opt_rnd_75,paste0('./df_opt_rnd_75_',loop_over_all,'_use.rds'))
 
