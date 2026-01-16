@@ -286,20 +286,26 @@ if(dim(all_comparison_results_reps)[1]>0){
 
 df_steps = all_comparison_results %>% dplyr::filter(injury_type == 'pathogenic')
 
-# Dynamically create the controlled status columns for all ros/pat combinations
-for (ros in ros_vals) {
-  for (pat in pat_vals) {
-    col_name = paste0("ros", ros, "_pat", pat, "_controlled")
-    mean_e_col = paste0("mean_ros", ros, "_pat", pat, "_treg0_e")
-    mean_p_col = paste0("mean_ros", ros, "_pat", pat, "_treg0_p")
-    
-    df_steps = df_steps %>%
-      dplyr::mutate(!!col_name := is_under_control(.data[[mean_e_col]], .data[[mean_p_col]], epithelial_limit, pathogen_limit))
-  }
-}
+# Create separate dataframes for epithelium and pathogen scores
+df_epithelium = df_steps %>%
+  dplyr::filter(score_type == "epithelium") %>%
+  dplyr::select(param_set_id, replicate_id, ros_level, pat_level, mean_score) %>%
+  dplyr::rename(mean_epithelium = mean_score)
 
-row = df_steps[df_steps$param_set_id == param_id, ]
-row_vec = unlist(row)
+df_pathogen = df_steps %>%
+  dplyr::filter(score_type == "pathogen") %>%
+  dplyr::select(param_set_id, replicate_id, ros_level, pat_level, mean_score) %>%
+  dplyr::rename(mean_pathogen = mean_score)
+
+# Join epithelium and pathogen data for each replicate
+df_combined = df_epithelium %>%
+  dplyr::inner_join(df_pathogen,
+                    by = c("param_set_id", "replicate_id", "ros_level", "pat_level"))
+
+# Calculate per-replicate control status using the per-replicate mean scores
+df_combined = df_combined %>%
+  dplyr::mutate(is_controlled = is_under_control(mean_epithelium, mean_pathogen,
+                                                  epithelial_limit, pathogen_limit))
 
 # Build the control matrix (now as percentage of controlled replicates)
 control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
@@ -310,16 +316,13 @@ for (i in seq_along(pat_vals)) {
   for (j in seq_along(ros_vals)) {
     pat = pat_vals[i]
     ros = ros_vals[j]
-    col_name = paste0("ros", ros, "_pat", pat, "_controlled")
 
-    # Get all values for this ros/pat combination across replicates
-    # Filter for epithelium score_type to avoid double counting
-    controlled_vals = df_steps %>%
+    # Get all control status values for this ros/pat combination across replicates
+    controlled_vals = df_combined %>%
       dplyr::filter(param_set_id == param_id,
                     ros_level == ros,
-                    pat_level == pat,
-                    score_type == "epithelium") %>%
-      pull(!!col_name)
+                    pat_level == pat) %>%
+      pull(is_controlled)
 
     # Calculate percentage of replicates that are controlled
     if(length(controlled_vals) > 0) {
