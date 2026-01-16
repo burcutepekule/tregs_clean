@@ -26,7 +26,7 @@ split_equal = function(x, n_chunks) {
 }
 
 # ============================================================================
-# FIRST HALF
+# CHUNKS
 # ============================================================================
 
 args   = commandArgs(trailingOnly = TRUE)
@@ -78,8 +78,8 @@ scenarios_df = expand.grid(
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0, 1, 3, 5, 10), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1, 2, 5, 10, 20),
+  ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1, 2, 5, 10),
   overwrite       = c(1)
   # ros_level       = seq(10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   # pat_level       = c(60,70,80,90,100)

@@ -15,18 +15,17 @@ source("./DLL_dataopt_random_read.R")
 
 path = "/Users/burcutepekule/Desktop/sim_opt_random/"
 
-ros_vals  = seq(1,10,1)
-ros_vals  = ros_vals[ros_vals==6]
-pat_vals  = c(seq(13,15,0.5))
-pat_vals  = pat_vals[pat_vals>=13]
+param_id  = 62500
+ros_vals  = c(5:10)
+pat_vals  = seq(8.5, 10, 0.5)
 iter_vals = seq(1, 100, 1)
 rep_vals  = seq(1, 5, 1)
-n1        = 10
+n1        = 408
 n2_vals   = seq(1, n1, 1)
-param_id  = 87503
 
 # 1. Load the optimal theta FIRST
-opt_theta = readRDS(paste0('./df_opt_rnd_80_', param_id, '_use.rds'))
+opt_theta = readRDS(paste0('./df_opt_rnd_75_', param_id, '_use.rds'))
+# opt_theta = readRDS(paste0('./df_opt_rnd_95_', param_id, '_use.rds'))
 print(paste0("opt_theta read"))
 
 # 2. Build file index and read ONLY theta files (smaller), then filter
@@ -140,6 +139,7 @@ max_level_injury = 10*25
 
 ### go through matches
 id_vec = unique(matching_rows$unique_id)
+dir.create(paste0("/Users/burcutepekule/Desktop/opt_",param_id))
 
 for(id in id_vec){
   matching_rows_temp = matching_rows %>% dplyr::filter(unique_id==id)
@@ -165,7 +165,7 @@ for(id in id_vec){
          subtitle = title_opt, 
          x = "Time", y = "Count")
   ggsave(
-    filename = paste0("/Users/burcutepekule/Desktop/opt/i_opt_",id,".png"),
+    filename = paste0("/Users/burcutepekule/Desktop/opt_",param_id,"/i_opt_",id,".png"),
     plot = p,
     width = 24,
     height = 16,

@@ -14,49 +14,20 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-indices          = 62500 # you can either do this at the very top or pick the indices that are complete with the loop below
+indices          = 80750 # 62500, 73750, 80750 - 67250
 save_images_path_data = paste0('timeseries_tri_all_param_ids_',indices)
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data), showWarnings = FALSE)
 
 path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
-# path_data  = "/Users/burcutepekule/Desktop/sim_abm_local/"
-# save_images_path_data = paste0('timeseries_tri_all_param_ids_suppress')
 
 # Define the ros and pat value ranges
 ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
 pat_vals        = c(1, 2, 5, 6, 7, 8, 9, 10)
-# pat_vals        = pat_vals[pat_vals<=30]
-# ros_vals        = c(1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-# pat_vals        = c(20)
-tregs_on_in     = 0
+# pat_vals        = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5)
+tregs_on_in     = 1
 trnd_in         = 0
 sterile_in      = 0
 macspec_in      = 0
-
-# File naming: control_sterile_macspec_tregs_ros_level_pat_level_trnd
-# Dynamically create file lists for all ros/pat combinations
-all_files = list()
-all_indices = list()
-for (ros_in in ros_vals) {
-  for (pat_in in pat_vals) {
-    var_name = paste0("files_", ros_in, "_", pat_in)
-    pattern_str = paste0("^longitudinal_df_param_set_id_\\d+\\_sterile_",sterile_in,
-                         "_macspec_",macspec_in,
-                         "_tregs_",tregs_on_in,
-                         "_ros_level_",ros_in,
-                         "_pat_level_",pat_in,
-                         "_trnd_",trnd_in,".rds$")
-    files_temp = list.files(path_data, pattern = pattern_str, full.names = TRUE)
-    all_files[[var_name]] = files_temp
-
-    # Extract indices
-    indices_name = paste0("indices_", ros_in, "_", pat_in)
-    all_indices[[indices_name]] = str_extract(basename(files_temp), "\\d+") |> as.numeric()
-  }
-}
-
-# Find common indices across all combinations
-indices = Reduce(intersect, all_indices)
 
 # Initialize an empty results dataframe before the loop
 all_comparison_results = data.frame()
@@ -65,11 +36,6 @@ all_comparison_results = data.frame()
 rep_ind_vec  = 0:4 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
 alpha_plot   = 2/length(rep_ind_vec)
 i_opt        = NA
-# variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
-# variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),c("phagocyte_M1M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
-# variables_2_plot = list("epithelial_score","pathogen")
-# variables_2_plot = list("epithelial_score","pathogen")
-# background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 
 variables_2_plot = list("epithelial_score")
 background_on    = c(1)
@@ -79,32 +45,21 @@ pathogen_limit        = 10
 max_level_injury      = 10*25 # 2*x0_in*grid_size
 triangle_df           = c()
 
-if(file.exists('./ids_read_abm_patros.rds')){
-  inds_read = readRDS('./ids_read_abm_patros.rds')
-}else{
-  inds_read = c()
-}
-
-inds2read = sort(setdiff(indices,inds_read))
-length(inds2read)
-processed_indices = c()
-
-for(param_id in inds2read){
+for(param_id in indices){
   
   source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
-  processed_indices = c(processed_indices, param_id) #add 
   TF_matrix = control_matrix
-  
+
   last_row = control_matrix[dim(control_matrix)[1],]
-  triangle_df = rbind(triangle_df, c(param_id, is_inverted_triangle_boundary(control_matrix), is_rectangular_top(control_matrix), all(last_row==FALSE)))
+  # triangle_df = rbind(triangle_df, c(param_id, is_inverted_triangle_boundary(control_matrix), is_rectangular_top(control_matrix), all(last_row==FALSE)))
 
   TF_df = as.data.frame.table(TF_matrix, stringsAsFactors = FALSE)
   colnames(TF_df) = c("pat_level", "ros_level", "controlled")
-  
+
   # Extract numeric values from row/column names
   TF_df$pat_level = as.numeric(gsub("pat", "", TF_df$pat_level))
   TF_df$ros_level = as.numeric(gsub("ros", "", TF_df$ros_level))
-  
+
   # Combine all results
   results = do.call(rbind, results_list)
   
@@ -186,27 +141,3 @@ for(param_id in inds2read){
     )
   }
 } 
-
-saveRDS(triangle_df, 'triangle_df.rds')
-# # 
-triangle_df = as.data.frame(readRDS('triangle_df.rds'))
-colnames(triangle_df) = c('param_id','is_triangle','is_last_row_all_false','is_rectangular')
-
-triangle_df_1 = triangle_df %>% dplyr::filter((is_triangle)|(is_rectangular & is_last_row_all_false))
-
-### pick the one with the smallest active age limit?
-
-params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-params_df_1 = params_df %>% dplyr::filter(param_set_id %in% triangle_df_1$param_id)
-params_df_1 = params_df_1[c('param_set_id','active_age_limit')]
-params_df_1 = params_df_1 %>% arrange(active_age_limit)
-params_df_1 = params_df_1 %>% arrange(param_set_id)
-
-# Update the list of read indices
-if(!file.exists('./ids_read_abm_patros.rds')){
-  saveRDS(processed_indices, './ids_read_abm_patros.rds')
-}else{
-  inds_read_old = readRDS('./ids_read_abm_patros.rds')
-  inds_read_updated = c(inds_read_old, processed_indices)
-  saveRDS(inds_read_updated, './ids_read_abm_patros.rds')
-}

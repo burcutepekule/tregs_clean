@@ -7,7 +7,7 @@ param_names = c("diffusion_speed_SAMPs",
                 "treg_discrimination_efficiency",
                 "activation_threshold_SAMPs")
 
-loop_over_all   = 87503
+loop_over_all   = 62500 # c(62500, 67250, 73750, 80750)
 df_opt_rnd      = read.table(paste0("/Users/burcutepekule/Dropbox/tregs_clean/merged_",loop_over_all,".txt"), 
                              header = FALSE, 
                              col.names = c("param_set_id" ,"rep", "pat_level", "ros_level",
@@ -26,8 +26,6 @@ summary_df = df_opt_rnd %>%
   )
 
 summary_df_keep = summary_df
-
-# summary_df = summary_df %>% dplyr::filter(pat_level>=9 & ros_level>4)
 
 summary_df_095 = summary_df %>% dplyr::filter(mean_pct_above_threshold_e>0.95 & mean_pct_above_threshold_p > 0.95 & n_reps>=3)
 df_opt_rnd_95  = summary_df_095[param_names]

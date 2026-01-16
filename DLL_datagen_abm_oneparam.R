@@ -26,11 +26,23 @@ split_equal = function(x, n_chunks) {
 }
 
 # ============================================================================
-# FIRST HALF
+# CHUNKS
 # ============================================================================
 
-loop_over = split_equal(params_df$param_set_id, 2)[[2]]
+loop_over = 62500
+
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+
+param_names = c("diffusion_speed_SAMPs",
+                "add_SAMPs",
+                "SAMPs_decay",
+                "treg_discrimination_efficiency",
+                "activation_threshold_SAMPs")
+
+# params_df[param_names] = c(0.027, 0.375, 0.016, 0.8, 0.221) #optimized for 68752
+# params_df[param_names] = c(0.07, 0.243, 0.377, 0.939, 0.45) #optimized for 80750
+# params_df[param_names] = c(0.093, 0.224, 0.276, 0.948, 0.637) #optimized for 67250
+params_df[param_names] = c(0.107, 0.058, 0.037, 0.918, 0.806) #optimized for 62500
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -41,16 +53,16 @@ dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
 
-colnames_insert = c('epithelial_healthy','epithelial_inj_1','epithelial_inj_2',
-                    'epithelial_inj_3','epithelial_inj_4','epithelial_inj_5',
-                    'phagocyte_M0','phagocyte_M1','phagocyte_M2',
-                    'commensal','pathogen','treg_resting','treg_active',
-                    'C_ROS','C_M0','C_M1','C_M2','P_ROS','P_M0','P_M1','P_M2')
-
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R')
+
+colnames_insert = c('epithelial_score',
+                    'phagocyte_M0','phagocyte_M1','phagocyte_M2',
+                    'commensal','pathogen','treg_resting','treg_active',
+                    'C_ROS','C_M0','C_M1','C_M2','P_ROS','P_M0','P_M1','P_M2')
+
 
 cat("Simulation parameters:\n")
 cat("  t_max:", t_max, "\n")
@@ -63,14 +75,16 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 scenarios_df = expand.grid(
   sterile         = c(0),
-  allow_tregs     = c(0), # PAY ATTENTION HERE! 
+  allow_tregs     = c(1), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(0:10), # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1,seq(2,10,0.5))
+  ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  pat_level       = c(1, 2, seq(5,10,1)), # for c(62500, 73750, 80750)
+  # pat_level       = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5), # for c(67250)
+  overwrite       = c(1)
 )
 
-dim(scenarios_df) # 198, so first half is 198 cores
+dim(scenarios_df) 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 
@@ -81,9 +95,8 @@ cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
-
 chunks        = split_equal(1:nrow(scenarios_df), n1)
-loop_over_sc = chunks[[n2]]
+loop_over_sc  = chunks[[n2]]
 
 # ============================================================================
 # MAIN SIMULATION LOOP
@@ -101,6 +114,7 @@ for(param_set_id_use in loop_over){
     macspec_on      = scenarios_df[scenario_ind,]$macspec_on
     ros_level       = scenarios_df[scenario_ind,]$ros_level
     pat_level       = scenarios_df[scenario_ind,]$pat_level
+    overwrite_in    = scenarios_df[scenario_ind,]$overwrite
     
     source("./MISC/ASSIGN_PARAMETERS.R")
     

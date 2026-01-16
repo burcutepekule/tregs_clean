@@ -156,6 +156,7 @@ for (rep in min_reps:max_reps) {
     # pat_vec_all = c(pat_vec_e, pat_vec_p)
     
     # Build ss_start, mean_score, and sd_score vectors dynamically
+    
     ss_start_vec = c()
     mean_score_vec = c()
     sd_score_vec = c()
@@ -282,7 +283,6 @@ if(dim(all_comparison_results_reps)[1]>0){
   
   all_comparison_results = bind_rows(all_comparison_results, all_comparison_results_reps)
 }
-
 
 df_steps = all_comparison_results %>% dplyr::filter(injury_type == 'pathogenic')
 

@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=treg_array_chunk_only_params
+#SBATCH --job-name=treg_array_chunk_only_params_24
 #SBATCH --cpus-per-task=1
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --array=0-399
 #SBATCH --mem-per-cpu=4G
 #SBATCH --output=logs_abm/treg_1_%A_%a.out
