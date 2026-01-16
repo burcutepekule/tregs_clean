@@ -54,11 +54,17 @@ for(param_id in indices){
   # triangle_df = rbind(triangle_df, c(param_id, is_inverted_triangle_boundary(control_matrix), is_rectangular_top(control_matrix), all(last_row==FALSE)))
 
   TF_df = as.data.frame.table(TF_matrix, stringsAsFactors = FALSE)
-  colnames(TF_df) = c("pat_level", "ros_level", "controlled")
+  colnames(TF_df) = c("pat_level", "ros_level", "control_percentage")
 
   # Extract numeric values from row/column names
   TF_df$pat_level = as.numeric(gsub("pat", "", TF_df$pat_level))
   TF_df$ros_level = as.numeric(gsub("ros", "", TF_df$ros_level))
+
+  # Convert control_percentage to numeric (it's a proportion from 0 to 1)
+  TF_df$control_percentage = as.numeric(TF_df$control_percentage)
+
+  # Create a label showing the percentage
+  TF_df$control_label = paste0(round(TF_df$control_percentage * 100), "%")
 
   # Combine all results
   results = do.call(rbind, results_list)
@@ -75,20 +81,33 @@ for(param_id in indices){
     
     if(background_on[p_ind]==1){
       p = ggplot(data_long, aes(x = t, y = value)) +
-        # Background
+        # Background with gradient coloring
         geom_rect(data = TF_df,
-                  aes(fill = controlled),
+                  aes(fill = control_percentage),
                   xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
-                  alpha = 0.1, inherit.aes = FALSE) +
-        scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "red"),
-                          name = "Under Control") +
-        # Border
+                  alpha = 0.3, inherit.aes = FALSE) +
+        scale_fill_gradient2(low = "red", mid = "yellow", high = "green",
+                            midpoint = 0.5,
+                            limits = c(0, 1),
+                            name = "% Controlled",
+                            labels = scales::percent) +
+        # Border with gradient coloring
         geom_rect(data = TF_df,
-                  aes(color = controlled),
+                  aes(color = control_percentage),
                   xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
                   fill = NA, linewidth = 1.5, inherit.aes = FALSE,
                   show.legend = FALSE) +
-        scale_color_manual(values = c("TRUE" = "darkgreen", "FALSE" = "darkred")) +
+        scale_color_gradient2(low = "darkred", mid = "orange", high = "darkgreen",
+                             midpoint = 0.5,
+                             limits = c(0, 1)) +
+        # Add percentage text labels in top right corner of each facet
+        geom_text(data = TF_df,
+                  aes(label = control_label),
+                  x = Inf, y = Inf,
+                  hjust = 1.1, vjust = 1.5,
+                  size = 4, fontface = "bold",
+                  color = "black",
+                  inherit.aes = FALSE) +
         # Reset color scale for lines
         new_scale_color() +
         # Horizontal threshold line
@@ -101,7 +120,7 @@ for(param_id in indices){
                    color = "black",
                    linewidth = 0.5) +
         # Lines with agent colors
-        geom_line(aes(color = variable, group = rep_id), 
+        geom_line(aes(color = variable, group = rep_id),
                   alpha = alpha_plot, linewidth = 1) +
         scale_color_manual(values = agent_colors, name = "Agent") +
         facet_grid(pat_level ~ ros_level, labeller = label_both) +

@@ -301,7 +301,7 @@ for (ros in ros_vals) {
 row = df_steps[df_steps$param_set_id == param_id, ]
 row_vec = unlist(row)
 
-# Build the control matrix
+# Build the control matrix (now as percentage of controlled replicates)
 control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
 rownames(control_matrix) = paste0("pat", pat_vals)
 colnames(control_matrix) = paste0("ros", ros_vals)
@@ -311,7 +311,22 @@ for (i in seq_along(pat_vals)) {
     pat = pat_vals[i]
     ros = ros_vals[j]
     col_name = paste0("ros", ros, "_pat", pat, "_controlled")
-    control_matrix[i, j] = as.logical(row[[col_name]][1])
+
+    # Get all values for this ros/pat combination across replicates
+    # Filter for epithelium score_type to avoid double counting
+    controlled_vals = df_steps %>%
+      dplyr::filter(param_set_id == param_id,
+                    ros_level == ros,
+                    pat_level == pat,
+                    score_type == "epithelium") %>%
+      pull(!!col_name)
+
+    # Calculate percentage of replicates that are controlled
+    if(length(controlled_vals) > 0) {
+      control_matrix[i, j] = sum(controlled_vals) / length(controlled_vals)
+    } else {
+      control_matrix[i, j] = 0
+    }
   }
 }
 
