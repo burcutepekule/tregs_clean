@@ -29,7 +29,7 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 
-loop_over = 62500
+loop_over = 67250
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
@@ -41,8 +41,9 @@ param_names = c("diffusion_speed_SAMPs",
 
 # params_df[param_names] = c(0.027, 0.375, 0.016, 0.8, 0.221) #optimized for 68752
 # params_df[param_names] = c(0.07, 0.243, 0.377, 0.939, 0.45) #optimized for 80750
-# params_df[param_names] = c(0.093, 0.224, 0.276, 0.948, 0.637) #optimized for 67250
-params_df[param_names] = c(0.107, 0.058, 0.037, 0.918, 0.806) #optimized for 62500
+# params_df[param_names] = c(0.107, 0.058, 0.037, 0.918, 0.806) #optimized for 62500
+
+params_df[param_names] = c(0.05, 0.494, 0.254, 0.962, 0.99) #optimized for 67250
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -79,8 +80,9 @@ scenarios_df = expand.grid(
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1, 2, seq(5,10,1)), # for c(62500, 73750, 80750)
+  # pat_level       = c(1, 2, seq(5,10,1)), # for c(62500, 73750, 80750)
   # pat_level       = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5), # for c(67250)
+  pat_level       = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8),
   overwrite       = c(1)
 )
 

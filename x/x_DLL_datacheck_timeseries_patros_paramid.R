@@ -14,16 +14,17 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-indices          = 80750 # 62500, 73750, 80750 - 67250
+indices          = 67250 # 62500, 73750, 80750 - 67250
 save_images_path_data = paste0('timeseries_tri_all_param_ids_',indices)
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data), showWarnings = FALSE)
 
+# path_data  = "/Users/burcutepekule/Desktop/sim_abm_picked_tregs_0_higher_res/"
 path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
 
 # Define the ros and pat value ranges
 ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-pat_vals        = c(1, 2, 5, 6, 7, 8, 9, 10)
-# pat_vals        = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5)
+pat_vals        = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8) # for the rest
+# pat_vals        = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5) # for 67250
 tregs_on_in     = 1
 trnd_in         = 0
 sterile_in      = 0
@@ -146,7 +147,6 @@ for(param_id in indices){
     }
     
     ggsave(
-      # filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,"/sterile_",sterile_in,"_tregs_on_",tregs_on_in,"_",param_id,"_",variables[1],".png"),
       filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,"/i_opt_",i_opt,
                         "_sterile_", sterile_in,
                         "_tregs_on_",tregs_on_in,

@@ -15,17 +15,19 @@ source("./DLL_dataopt_random_read.R")
 
 path = "/Users/burcutepekule/Desktop/sim_opt_random/"
 
-param_id  = 62500
-ros_vals  = c(5:10)
-pat_vals  = seq(8.5, 10, 0.5)
+param_id  = 88750
+# ros_vals  = c(1:3)
+# pat_vals  = seq(5, 10, 1)
+ros_vals  = c(4,6,10)
+pat_vals  = 10
 iter_vals = seq(1, 100, 1)
 rep_vals  = seq(1, 5, 1)
-n1        = 408
+n1        = 612
 n2_vals   = seq(1, n1, 1)
 
 # 1. Load the optimal theta FIRST
-opt_theta = readRDS(paste0('./df_opt_rnd_75_', param_id, '_use.rds'))
-# opt_theta = readRDS(paste0('./df_opt_rnd_95_', param_id, '_use.rds'))
+# opt_theta = readRDS(paste0('./df_opt_rnd_75_', param_id, '_use.rds'))
+opt_theta = readRDS(paste0('./df_opt_rnd_95_', param_id, '_use.rds'))
 print(paste0("opt_theta read"))
 
 # 2. Build file index and read ONLY theta files (smaller), then filter
@@ -55,6 +57,7 @@ for (ros in ros_vals) {
             theta_df = as.data.frame(t(theta_data))
             names(theta_df) = c("diffusion_speed_SAMPs", "add_SAMPs", "SAMPs_decay",
                                 "treg_discrimination_efficiency", "activation_threshold_SAMPs")
+            print(theta_df)
             
             # Check if this theta matches opt_theta IMMEDIATELY
             is_match = nrow(semi_join(theta_df, opt_theta, 

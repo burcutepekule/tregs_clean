@@ -30,18 +30,10 @@ split_equal = function(x, n_chunks) {
 # ============================================================================
 
 # ============================================================================
-loop_over = c(62500, 67250, 73750, 80750)
+loop_over = c(81250, 88750, 30000, 45500, 92000, 50250)
 # ============================================================================
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
-
-param_names = c("diffusion_speed_SAMPs",
-                "add_SAMPs",
-                "SAMPs_decay",
-                "treg_discrimination_efficiency",
-                "activation_threshold_SAMPs")
-
-# params_df[param_names] = c(0.027, 0.375, 0.016, 0.8, 0.221) #optimized for 68752
 
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -56,6 +48,7 @@ cat("Output directory:", dir_name_data, "\n\n")
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R')
+num_reps = 10 # MAKE THIS HIGHER TO MAKE SURE
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -71,29 +64,109 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 # SCENARIO DEFINITIONS
 # ============================================================================
-scenarios_df_1 = expand.grid(
-  param_set_id    = c(62500, 73750, 80750),
+
+# ===================== When running allow_tregs=0 ===========================
+# scenarios_df_1 = expand.grid(
+#   param_set_id    = c(30000),
+#   sterile         = c(0),
+#   allow_tregs     = c(0), # PAY ATTENTION HERE! 
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#   pat_level       = c(1, seq(2, 5, 0.5)),
+#   overwrite       = c(1),
+#   diffusion_speed_SAMPs          = 0,
+#   add_SAMPs                      = 0,
+#   SAMPs_decay                    = 0,
+#   treg_discrimination_efficiency = 0,
+#   activation_threshold_SAMPs     = 0,
+#   opt_index                      = 0
+# )
+
+
+# ===================== When running allow_tregs=1, optimized ================
+
+scenarios_df = c()
+param_id_in  = 50250
+# params_opt   = readRDS(paste0('./summary_df_095_',param_id_in,'_use.rds'))
+# params_opt   = params_opt %>% dplyr::filter(pat_level>=8)
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE! 
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = c(1, 2, seq(5, 10, 1)),
+#     overwrite       = c(0, 1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   )) 
+# }
+
+# no tregs
+scenarios_df = rbind(scenarios_df, expand.grid(
+  param_set_id    = param_id_in,
   sterile         = c(0),
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1, 2, 5, 6, 7, 8, 9, 10),
-  overwrite       = c(1)
-)
+  pat_level       = c(1, 2, seq(5, 10, 1)),
+  overwrite       = c(0, 1),
+  diffusion_speed_SAMPs          = 0,
+  add_SAMPs                      = 0,
+  SAMPs_decay                    = 0,
+  treg_discrimination_efficiency = 0,
+  activation_threshold_SAMPs     = 0,
+  opt_index                      = 0
+)) 
 
-scenarios_df_2 = expand.grid(
-  param_set_id    = c(67250),
+param_id_in  = 88750
+# params_opt   = readRDS(paste0('./summary_df_095_',param_id_in,'_use.rds'))
+# params_opt   = params_opt %>% dplyr::filter(pat_level>=8)
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE!
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = c(1, 2, seq(5, 10, 1)),
+#     overwrite       = c(0, 1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   ))
+# }
+
+# no tregs
+scenarios_df = rbind(scenarios_df, expand.grid(
+  param_set_id    = param_id_in,
   sterile         = c(0),
   allow_tregs     = c(0), # PAY ATTENTION HERE! 
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  pat_level       = c(1, 2, 2.5, 3, 3.5, 4, 4.5, 5),
-  overwrite       = c(1)
-)
+  pat_level       = c(1, 2, seq(5, 10, 1)),
+  overwrite       = c(0, 1),
+  diffusion_speed_SAMPs          = 0,
+  add_SAMPs                      = 0,
+  SAMPs_decay                    = 0,
+  treg_discrimination_efficiency = 0,
+  activation_threshold_SAMPs     = 0,
+  opt_index                      = 0
+)) 
 
-scenarios_df = rbind(scenarios_df_1, scenarios_df_2)
 dim(scenarios_df) 
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
@@ -107,7 +180,7 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
-chunks        = split_equal(1:nrow(scenarios_df), n1)
+chunks       = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]
 
 # ============================================================================
@@ -128,6 +201,19 @@ for (scenario_ind in loop_over_sc){
   ros_level       = scenarios_df[scenario_ind,]$ros_level
   pat_level       = scenarios_df[scenario_ind,]$pat_level
   overwrite_in    = scenarios_df[scenario_ind,]$overwrite
+  opt_index       = scenarios_df[scenario_ind,]$opt_index
+  
+  param_names = c("diffusion_speed_SAMPs",
+                  "add_SAMPs",
+                  "SAMPs_decay",
+                  "treg_discrimination_efficiency",
+                  "activation_threshold_SAMPs")
+  
+  param_set_use[param_names] = c(scenarios_df[scenario_ind,]$diffusion_speed_SAMPs, 
+                                 scenarios_df[scenario_ind,]$add_SAMPs, 
+                                 scenarios_df[scenario_ind,]$SAMPs_decay, 
+                                 scenarios_df[scenario_ind,]$treg_discrimination_efficiency,
+                                 scenarios_df[scenario_ind,]$activation_threshold_SAMPs) #optimized for 68752
   
   source("./MISC/ASSIGN_PARAMETERS.R")
   
@@ -156,6 +242,8 @@ for (scenario_ind in loop_over_sc){
                                        '_ros_level_',ros_level,
                                        '_pat_level_',pat_level,
                                        '_trnd_',randomize_tregs,
+                                       '_overwrite_',overwrite_in,
+                                       '_optidx_',opt_index,
                                        '.rds'))
   
 }

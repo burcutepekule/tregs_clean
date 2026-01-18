@@ -6,13 +6,13 @@ is_under_control = function(epithelial_health, pathogen_load, epithelial_limit, 
   return(epithelial_health < epithelial_limit & pathogen_load < pathogen_limit)
 }
 
-message("Re-processing param_set_", param_id)
+message(paste0("Re-processing param_set_", param_id,", optimization index ",i_opt,", for overwrite_in=", overwrite_in))
 
 # Dynamically read all RDS files for this parameter set
 results_list = list()
 for (ros_in in ros_vals) {
   for (pat_in in pat_vals) {
-    print(paste0('Reading ros ',ros_in,' pat ',pat_in))
+    # print(paste0('Reading ros ',ros_in,' pat ',pat_in))
     var_name = paste0("results_", ros_in, "_", pat_in)
     file_path_data = paste0(path_data, 'longitudinal_df_param_set_id_', param_id, 
                             '_sterile_',sterile_in,
@@ -21,6 +21,8 @@ for (ros_in in ros_vals) {
                             '_ros_level_',ros_in,
                             '_pat_level_',pat_in,
                             '_trnd_',trnd_in,
+                            '_overwrite_',overwrite_in,
+                            '_optidx_',i_opt,
                             '.rds')
     if(file.exists(file_path_data) & file.info(file_path_data)$size>10000){
       results_list[[var_name]] = readRDS(file_path_data)
@@ -312,10 +314,16 @@ control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
 rownames(control_matrix) = paste0("pat", pat_vals)
 colnames(control_matrix) = paste0("ros", ros_vals)
 
+control_matrix_long = c()
 for (i in seq_along(pat_vals)) {
   for (j in seq_along(ros_vals)) {
     pat = pat_vals[i]
     ros = ros_vals[j]
+    
+    df_combined %>%
+      dplyr::filter(param_set_id == param_id,
+                    ros_level == ros,
+                    pat_level == pat)
 
     # Get all control status values for this ros/pat combination across replicates
     controlled_vals = df_combined %>%
@@ -327,6 +335,7 @@ for (i in seq_along(pat_vals)) {
     # Calculate percentage of replicates that are controlled
     if(length(controlled_vals) > 0) {
       control_matrix[i, j] = sum(controlled_vals) / length(controlled_vals)
+      control_matrix_long  = rbind(control_matrix_long, c(param_id, pat, ros, sum(controlled_vals) / length(controlled_vals)))
     } else {
       control_matrix[i, j] = 0
     }
