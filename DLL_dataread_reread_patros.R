@@ -186,11 +186,13 @@ for (rep in min_reps:max_reps) {
       for (pat in pat_vals) {
         var_time <- paste0("time_ss_", ros, "_", pat, "_p")
         var_scores <- paste0("scores_", ros, "_", pat, "_p")
-        
+
         if (exists(var_time) && exists(var_scores)) {
           ss_start_vec = c(ss_start_vec, get(var_time))
           mean_score_vec = c(mean_score_vec, mean(get(var_scores)))
           sd_score_vec = c(sd_score_vec, sd(get(var_scores)))
+          ros_vec_all = c(ros_vec_all, ros)
+          pat_vec_all = c(pat_vec_all, pat)
         }
       }
     }
