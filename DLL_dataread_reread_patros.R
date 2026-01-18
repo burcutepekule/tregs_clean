@@ -6,6 +6,9 @@ is_under_control = function(epithelial_health, pathogen_load, epithelial_limit, 
   return(epithelial_health < epithelial_limit & pathogen_load < pathogen_limit)
 }
 
+# Clean up dynamically created variables from previous iterations
+rm(list = ls(pattern = "^(scores_|time_ss_|full_data_comparison_scores_|osc_)"))
+
 message(paste0("Re-processing param_set_", param_id,", optimization index ",i_opt,", for overwrite_in=", overwrite_in))
 
 # Dynamically read all RDS files for this parameter set
