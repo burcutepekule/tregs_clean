@@ -14,18 +14,17 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
-indices = 88750 # or 88750 # you can either do this at the very top or pick the indices that are complete with the loop below
-# indices = c(81250, 88750, 45500, 92000, 50250)
+# 45500, 92000, 30000, 81250, 88750, 50250
+indices = c(45500, 92000, 30000, 81250, 88750, 50250, 62500)## you can either do this at the very top or pick the indices that are complete with the loop below
 
 save_images_path_data = "timeseries_tri_all_param_ids_suppress"
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
 
+# path_data  = "/Users/burcutepekule/Desktop/sim_abm_50250_88750/"
 path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
 
 # Define the ros and pat value ranges
 ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-pat_vals        = c(1, 2, seq(5, 10, 1))
-tregs_on_in     = 1
 trnd_in         = 0
 sterile_in      = 0
 macspec_in      = 0
@@ -39,7 +38,7 @@ all_comparison_results = data.frame()
 # ===== reread to include local results 
 rep_ind_vec  = 0:9 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
 alpha_plot   = 2/length(rep_ind_vec)
-i_opt_vec    = c(2:8) # 0 means no optimization - up to 4 for 50250, up to 8 for 88750 
+i_opt_vec    = c(0) # 0 means no optimization - up to 4 for 50250, up to 8 for 88750 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
 # background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 
@@ -61,9 +60,23 @@ length(inds2read)
 processed_indices = c()
 plot_in = 1
 
-
 for(param_id in inds2read){
+  
+  if(param_id %in% c(30000, 81250)){
+    pat_vals = c(1, 2, seq(2.5, 5, 0.5))
+  }else if(param_id %in% c(45500, 88750, 50250, 62500)){
+    pat_vals = c(1, 2, seq(5, 10, 1))
+  }else if(param_id %in% c(92000)){
+    pat_vals = c(1, 5, 7,seq(8, 12, 1))
+  }
   for(i_opt in i_opt_vec){
+    
+    if(i_opt ==0){
+      tregs_on_in = 0
+    }else{
+      tregs_on_in = 1
+    }
+    
     for(overwrite_in in overwrite_in_vec){
       source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
       
@@ -172,12 +185,14 @@ for(param_id in inds2read){
           }
           
           ggsave(
-            filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,"/i_opt_",i_opt,
+            filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,
+                              "/param_",param_id,
+                              "_i_opt_",i_opt,
                               "_overwrite_",overwrite_in,
                               "_sterile_", sterile_in,
                               "_tregs_on_",tregs_on_in,
                               "_tregs_rnd_",trnd_in,
-                              "_",param_id,"_",variables[1],".png"),
+                              "_",variables[1],".png"),
             plot = p,
             width = 24,
             height = 16,

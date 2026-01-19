@@ -208,7 +208,7 @@ for (iter in 1:max_iterations) {
     is_success_e = (pct_above_threshold_e > success_rate)
     is_success_p = (pct_below_threshold_p > success_rate)
     
-    cat(paste0(param_set_id_use," ", reps, " ", pat_level, " ", ros_level, " "),file = success_log_file, append = TRUE)
+    cat(paste0(param_set_id_use," ", reps, " ", pat_level, " ", ros_level, " ", overwrite_in, " "),file = success_log_file, append = TRUE)
     cat(paste0(current_theta[1]," ", 
                current_theta[2]," ",
                current_theta[3]," ", 
@@ -221,7 +221,9 @@ for (iter in 1:max_iterations) {
                pct_above_threshold_e," ",
                pct_below_threshold_p,"\n"),file = success_log_file, append = TRUE)
     
-    saveRDS(current_theta, paste0(dir_name_data,'/theta_param_set_id_',param_set_id_use,
+    saveRDS(current_theta, paste0(dir_name_data,
+                                  '/theta_param_set_id_',param_set_id_use,
+                                  '_overwrite_',overwrite_in,
                                   '_sterile_',sterile,
                                   '_macspec_',macspec_on,
                                   '_tregs_',allow_tregs,
@@ -235,18 +237,20 @@ for (iter in 1:max_iterations) {
                                   '.rds'))
     
     ## SAVE TO COME BACK TO IT LATER?
-    saveRDS(longitudinal_df, paste0(dir_name_data,'/longitudinal_df_param_set_id_',param_set_id_use,
-                                         '_sterile_',sterile,
-                                         '_macspec_',macspec_on,
-                                         '_tregs_',allow_tregs,
-                                         '_ros_level_',ros_level,
-                                         '_pat_level_',pat_level,
-                                         '_trnd_',randomize_tregs,
-                                         '_n1_',n1,
-                                         '_n2_',n2,
-                                         '_iter_',iter,
-                                         '_rep_',reps,
-                                         '.rds'))
-
+    saveRDS(longitudinal_df, paste0(dir_name_data,
+                                    '/longitudinal_df_param_set_id_',param_set_id_use,
+                                    '_overwrite_',overwrite_in,
+                                    '_sterile_',sterile,
+                                    '_macspec_',macspec_on,
+                                    '_tregs_',allow_tregs,
+                                    '_ros_level_',ros_level,
+                                    '_pat_level_',pat_level,
+                                    '_trnd_',randomize_tregs,
+                                    '_n1_',n1,
+                                    '_n2_',n2,
+                                    '_iter_',iter,
+                                    '_rep_',reps,
+                                    '.rds'))
+    
   }
 }

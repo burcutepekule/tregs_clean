@@ -26,7 +26,7 @@ split_equal = function(x, n_chunks) {
 }
 
 # ============================================================================
-loop_over = c(30000, 45500, 92000, 62500) ### PAY ATTENTION HERE!
+loop_over = c(81250, 30000, 45500, 92000, 62500) ### PAY ATTENTION HERE!
 # ============================================================================
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
@@ -36,7 +36,7 @@ param_names = c("diffusion_speed_SAMPs",
                 "treg_discrimination_efficiency",
                 "activation_threshold_SAMPs")
 
-params_df_treg = params_df[param_names]
+# params_df_treg = params_df[param_names]
 param_bounds = data.frame(
   lower = c(0.001, 0.001, 0.001, 0.750, 0.001),
   upper = c(0.120, 0.500, 0.500, 1.000, 1.000),
@@ -66,54 +66,63 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 # SCENARIO DEFINITIONS
 # ============================================================================
-scenarios_df_1 = expand.grid(
+
+scenarios_df = c()
+scenarios_df = rbind(scenarios_df, expand.grid(
   param_set_id    = c(30000),
   sterile         = c(0),
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = seq(3, 5, 0.5),
-  overwrite       = c(1)
-)
-scenarios_df_2 = expand.grid(
-  param_set_id    = c(45500),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = seq(8, 10, 1),
-  overwrite       = c(1)
-)
-scenarios_df_3 = expand.grid(
+  ros_level       = c(3:10),
+  pat_level       = seq(2.5, 5, 0.5),
+  overwrite       = c(0, 1)
+))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_set_id    = c(81250),
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(5:10),
+#   pat_level       = seq(3.5, 5, 0.5),
+#   overwrite       = c(0, 1)
+# ))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_set_id    = c(45500),
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(3:10),
+#   pat_level       = seq(5, 8, 1),
+#   overwrite       = c(0, 1)
+# ))
+scenarios_df = rbind(scenarios_df, expand.grid(
   param_set_id    = c(92000),
   sterile         = c(0),
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = c(5:10),
-  pat_level       = c(10),
-  overwrite       = c(1)
-)
-scenarios_df_4 = expand.grid(
-  param_set_id    = c(62500),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(5:10),
   pat_level       = c(9,10),
-  overwrite       = c(1)
-)
-
-scenarios_df = rbind(scenarios_df_1, scenarios_df_2, scenarios_df_3, scenarios_df_4)
+  overwrite       = c(0, 1)
+))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_set_id    = c(62500),
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(3:10),
+#   pat_level       = c(8:10),
+#   overwrite       = c(0, 1)
+# ))
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 7), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 1), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
-
-dim(scenarios_df) 
+dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
