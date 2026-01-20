@@ -35,10 +35,43 @@ overwrite_in_vec= c(0,1)
 # Initialize an empty results dataframe before the loop
 all_comparison_results = data.frame()
 
-# ===== reread to include local results 
+# ===== reread to include local results
 rep_ind_vec  = 0:9 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
 alpha_plot   = 2/length(rep_ind_vec)
-i_opt_vec    = c(0) # 0 means no optimization - up to 4 for 50250, up to 8 for 88750 
+
+# Function to dynamically determine i_opt_vec based on param_id
+get_i_opt_vec = function(param_id, path_data) {
+  # Default mapping based on known param_id optimization ranges
+  i_opt_map = list(
+    "50250" = 0:4,   # up to 4 for 50250
+    "88750" = 0:8,   # up to 8 for 88750
+    "62500" = 0:4,   # similar parameter set, assume similar range
+    "default" = 0    # 0 means no optimization for others
+  )
+
+  # Check if param_id has a specific mapping
+  param_id_str = as.character(param_id)
+  if (param_id_str %in% names(i_opt_map)) {
+    return(i_opt_map[[param_id_str]])
+  }
+
+  # Otherwise, try to detect from available files in path_data
+  if (dir.exists(path_data)) {
+    files = list.files(path_data, pattern = paste0("longitudinal_df_param_set_id_", param_id, "_.*_optidx_"))
+    if (length(files) > 0) {
+      # Extract optidx values from filenames
+      opt_indices = unique(as.numeric(gsub(".*_optidx_(\\d+)\\.rds$", "\\1", files)))
+      opt_indices = opt_indices[!is.na(opt_indices)]
+      if (length(opt_indices) > 0) {
+        return(sort(opt_indices))
+      }
+    }
+  }
+
+  # Fallback to default
+  return(i_opt_map[["default"]])
+}
+
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
 # background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
 
@@ -61,7 +94,7 @@ processed_indices = c()
 plot_in = 1
 
 for(param_id in inds2read){
-  
+
   if(param_id %in% c(30000, 81250)){
     pat_vals = c(1, 2, seq(2.5, 5, 0.5))
   }else if(param_id %in% c(45500, 88750, 50250, 62500)){
@@ -69,6 +102,11 @@ for(param_id in inds2read){
   }else if(param_id %in% c(92000)){
     pat_vals = c(1, 5, 7,seq(8, 12, 1))
   }
+
+  # Dynamically determine i_opt_vec based on param_id
+  i_opt_vec = get_i_opt_vec(param_id, path_data)
+  message(paste0("Processing param_id ", param_id, " with i_opt_vec: ", paste(i_opt_vec, collapse = ", ")))
+
   for(i_opt in i_opt_vec){
     
     if(i_opt ==0){
