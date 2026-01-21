@@ -15,13 +15,16 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 
 # 45500, 92000, 30000, 81250, 88750, 50250
-indices = c(45500, 92000, 30000, 81250, 88750, 50250, 62500)## you can either do this at the very top or pick the indices that are complete with the loop below
+# indices = c(45500, 92000, 30000, 81250, 88750, 50250, 62500)## you can either do this at the very top or pick the indices that are complete with the loop below
+indices = c(92000)## you can either do this at the very top or pick the indices that are complete with the loop below
 
 save_images_path_data = "timeseries_tri_all_param_ids_suppress"
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
 
 # path_data  = "/Users/burcutepekule/Desktop/sim_abm_50250_88750/"
-path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
+# path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
+path_data  = "/Users/burcutepekule/Desktop/sim_abm_local/"
+
 
 # Define the ros and pat value ranges
 ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
@@ -41,21 +44,7 @@ alpha_plot   = 2/length(rep_ind_vec)
 
 # Function to dynamically determine i_opt_vec based on param_id
 get_i_opt_vec = function(param_id, path_data) {
-  # Default mapping based on known param_id optimization ranges
-  i_opt_map = list(
-    "50250" = 0:4,   # up to 4 for 50250
-    "88750" = 0:8,   # up to 8 for 88750
-    "62500" = 0:4,   # similar parameter set, assume similar range
-    "default" = 0    # 0 means no optimization for others
-  )
-
-  # Check if param_id has a specific mapping
-  param_id_str = as.character(param_id)
-  if (param_id_str %in% names(i_opt_map)) {
-    return(i_opt_map[[param_id_str]])
-  }
-
-  # Otherwise, try to detect from available files in path_data
+  #detect from available files in path_data
   if (dir.exists(path_data)) {
     files = list.files(path_data, pattern = paste0("longitudinal_df_param_set_id_", param_id, "_.*_optidx_"))
     if (length(files) > 0) {
@@ -67,10 +56,23 @@ get_i_opt_vec = function(param_id, path_data) {
       }
     }
   }
-
-  # Fallback to default
-  return(i_opt_map[["default"]])
 }
+
+get_pat_vals = function(param_id, path_data) {
+  #detect from available files in path_data
+  if (dir.exists(path_data)) {
+    files = list.files(path_data, pattern = paste0("longitudinal_df_param_set_id_", param_id, "_.*_pat_level_"))
+    if (length(files) > 0) {
+      # Extract pat_level values from filenames (handles both integers and decimals)
+      pat_levels = unique(as.numeric(gsub(".*_pat_level_([0-9.]+)_.*", "\\1", files)))
+      pat_levels = pat_levels[!is.na(pat_levels)]
+      if (length(pat_levels) > 0) {
+        return(sort(pat_levels))
+      }
+    }
+  }
+}
+
 
 # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
 # background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
@@ -95,18 +97,15 @@ plot_in = 1
 
 for(param_id in inds2read){
 
-  if(param_id %in% c(30000, 81250)){
-    pat_vals = c(1, 2, seq(2.5, 5, 0.5))
-  }else if(param_id %in% c(45500, 88750, 50250, 62500)){
-    pat_vals = c(1, 2, seq(5, 10, 1))
-  }else if(param_id %in% c(92000)){
-    pat_vals = c(1, 5, 7,seq(8, 12, 1))
-  }
-
-  # Dynamically determine i_opt_vec based on param_id
+  # Dynamically determine pat_vals and i_opt_vec based on param_id
+  pat_vals = get_pat_vals(param_id, path_data)
   i_opt_vec = get_i_opt_vec(param_id, path_data)
-  message(paste0("Processing param_id ", param_id, " with i_opt_vec: ", paste(i_opt_vec, collapse = ", ")))
+  
+  # i_opt_vec = i_opt_vec[i_opt_vec>0] # IF YOU ALREADY PRINTED THE VANILLA!
 
+  message(paste0("Processing param_id ", param_id, " with pat_vals: ", paste(pat_vals, collapse = ", "), 
+                 " and i_opt_vec: ", paste(i_opt_vec, collapse = ", ")))
+  
   for(i_opt in i_opt_vec){
     
     if(i_opt ==0){

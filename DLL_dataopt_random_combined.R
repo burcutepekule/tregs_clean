@@ -74,8 +74,8 @@ scenarios_df = rbind(scenarios_df, expand.grid(
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(3:10),
-  pat_level       = seq(2.5, 5, 0.5),
+  ros_level       = c(1:10),
+  pat_level       = seq(2.5, 3),
   overwrite       = c(0, 1)
 ))
 # scenarios_df = rbind(scenarios_df, expand.grid(
@@ -104,8 +104,8 @@ scenarios_df = rbind(scenarios_df, expand.grid(
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = c(9,10),
+  ros_level       = c(1:10),
+  pat_level       = c(7, 8),
   overwrite       = c(0, 1)
 ))
 # scenarios_df = rbind(scenarios_df, expand.grid(
@@ -120,7 +120,7 @@ scenarios_df = rbind(scenarios_df, expand.grid(
 # ))
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 1), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 7), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
 dim(scenarios_df)[1]
 

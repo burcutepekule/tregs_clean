@@ -64,26 +64,6 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 # SCENARIO DEFINITIONS
 # ============================================================================
-
-# ===================== When running allow_tregs=0 ===========================
-# scenarios_df_1 = expand.grid(
-#   param_set_id    = c(30000),
-#   sterile         = c(0),
-#   allow_tregs     = c(0), # PAY ATTENTION HERE! 
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-#   pat_level       = c(1, seq(2, 5, 0.5)),
-#   overwrite       = c(1),
-#   diffusion_speed_SAMPs          = 0,
-#   add_SAMPs                      = 0,
-#   SAMPs_decay                    = 0,
-#   treg_discrimination_efficiency = 0,
-#   activation_threshold_SAMPs     = 0,
-#   opt_index                      = 0
-# )
-
-
 # ===================== When running allow_tregs=0 ================
 scenarios_df = c()
 
@@ -146,8 +126,7 @@ scenarios_df = rbind(scenarios_df, expand.grid(
   randomize_tregs = c(0),
   macspec_on      = c(0),
   ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  # pat_level       = c(1, 2, seq(2.5, 5, 0.5)),
-  pat_level       = c(3, 4, 5),
+  pat_level       = c(1, seq(2, 5, 0.5)),
   overwrite       = c(0, 1),
   diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
   add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere

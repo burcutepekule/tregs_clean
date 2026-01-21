@@ -11,7 +11,6 @@ max_total_phagocytes = round(grid_size*grid_size*0.80)
 
 injury_percentage = 60
 
-
 max_cell_value_ROS   = 1
 max_cell_value_DAMPs = 1
 max_cell_value_SAMPs = 1
