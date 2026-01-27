@@ -36,6 +36,11 @@ for (ros_in in ros_vals) {
 # Combine all results
 results = do.call(rbind, results_list)
 
+if (is.null(results) || nrow(results) == 0) {
+  message("No results found. Skipping.")
+  next
+}
+
 full_data_comparison = results %>% dplyr::select(param_set_id, sterile, macspec_on, tregs_on, 
                                                  randomize_tregs, ros_level, pat_level, rep_id, 
                                                  t, time_ss_e, time_ss_p, epithelial_score, pathogen)

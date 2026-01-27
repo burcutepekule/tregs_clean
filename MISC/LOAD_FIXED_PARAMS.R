@@ -1,7 +1,7 @@
 plot_on    = 0
 plot_every = 0
 t_max      = 2500
-num_reps   = 5
+num_reps   = 10
 
 grid_size       = 25
 n_phagocytes    = round(grid_size*grid_size*0.20)

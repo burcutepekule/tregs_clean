@@ -15,9 +15,11 @@ source("./DLL_dataopt_random_read.R")
 
 path = "/Users/burcutepekule/Desktop/sim_opt_random/"
 
-# param_id  = 92000
-param_id   = 30000
-params_opt = readRDS(paste0('./summary_df_095_',param_id,'_use.rds'))
+param_id  = 92000
+# param_id   = 30000
+params_opt = readRDS(paste0('./summary_df_035_',param_id,'_use.rds'))
+# ros_vals  = unique(params_opt$ros_level)
+# pat_vals  = unique(params_opt$pat_level)
 ros_vals  = unique(params_opt$ros_level)
 pat_vals  = unique(params_opt$pat_level)
 
@@ -28,7 +30,7 @@ n2_vals   = seq(1, n1, 1)
 
 # 1. Load the optimal theta FIRST
 # opt_theta = readRDS(paste0('./df_opt_rnd_75_', param_id, '_use.rds'))
-opt_theta = readRDS(paste0('./df_opt_rnd_95_', param_id, '_use.rds'))
+opt_theta = readRDS(paste0('./df_opt_rnd_35_', param_id, '_use.rds'))
 print(paste0("opt_theta read"))
 
 # 2. Build file index and read ONLY theta files (smaller), then filter

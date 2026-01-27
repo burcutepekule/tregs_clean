@@ -39,7 +39,7 @@ param_names = c("diffusion_speed_SAMPs",
 # params_df_treg = params_df[param_names]
 param_bounds = data.frame(
   lower = c(0.001, 0.001, 0.001, 0.750, 0.001),
-  upper = c(0.120, 0.500, 0.500, 1.000, 1.000),
+  upper = c(0.120, 0.500, 0.500, 1.000, 1.000), ### TRY LOWER UPPERBOUND FOR ACTIVATION TH SAMPS?
   row.names = param_names
 )
 
@@ -68,59 +68,59 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 
 scenarios_df = c()
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_set_id    = c(30000),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(1:10),
-  pat_level       = seq(2.5, 3),
-  overwrite       = c(0, 1)
-))
 # scenarios_df = rbind(scenarios_df, expand.grid(
-#   param_set_id    = c(81250),
+#   param_set_id    = c(30000),
+#   sterile         = c(0),
+#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = c(6:10),
+#   pat_level       = c(3),
+#   overwrite       = c(0)
+# ))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_set_id    = c(92000),
 #   sterile         = c(0),
 #   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
 #   randomize_tregs = c(0),
 #   macspec_on      = c(0),
 #   ros_level       = c(5:10),
-#   pat_level       = seq(3.5, 5, 0.5),
-#   overwrite       = c(0, 1)
-# ))
-# scenarios_df = rbind(scenarios_df, expand.grid(
-#   param_set_id    = c(45500),
-#   sterile         = c(0),
-#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(3:10),
-#   pat_level       = seq(5, 8, 1),
-#   overwrite       = c(0, 1)
+#   pat_level       = c(7,8,9),
+#   overwrite       = c(0,1)
 # ))
 scenarios_df = rbind(scenarios_df, expand.grid(
-  param_set_id    = c(92000),
+  param_set_id    = c(81250),
   sterile         = c(0),
   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
   randomize_tregs = c(0),
   macspec_on      = c(0),
-  ros_level       = c(1:10),
-  pat_level       = c(7, 8),
-  overwrite       = c(0, 1)
+  ros_level       = c(5:10),
+  pat_level       = c(3.5,4),
+  overwrite       = c(0) # active_age_limit=3 anyway
 ))
-# scenarios_df = rbind(scenarios_df, expand.grid(
-#   param_set_id    = c(62500),
-#   sterile         = c(0),
-#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(3:10),
-#   pat_level       = c(8:10),
-#   overwrite       = c(0, 1)
-# ))
+scenarios_df = rbind(scenarios_df, expand.grid(
+  param_set_id    = c(45500),
+  sterile         = c(0),
+  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
+  ros_level       = c(5:10),
+  pat_level       = c(5,6,7),
+  overwrite       = c(0,1)
+))
+scenarios_df = rbind(scenarios_df, expand.grid(
+  param_set_id    = c(62500),
+  sterile         = c(0),
+  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
+  randomize_tregs = c(0),
+  macspec_on      = c(0),
+  ros_level       = c(5:10),
+  pat_level       = c(8:10),
+  overwrite       = c(0,1)
+))
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 7), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 5), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
 dim(scenarios_df)[1]
 
