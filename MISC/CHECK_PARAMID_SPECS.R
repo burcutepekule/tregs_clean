@@ -16,7 +16,8 @@ cat("Loaded", nrow(params_df), "parameter sets\n\n")
 # ============================================================================
 
 # ============================================================================
-loop_over = c(81250, 88750, 30000, 45500, 92000, 50250, 62500, 68752)
+source('./MISC/LOAD_PAT_LEVELS.R') # loads pat_level_vectors
+loop_over = as.numeric(names(pat_level_vectors))
 # ============================================================================
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
@@ -27,10 +28,10 @@ params_df[order(params_df$DAMPs_decay),c('param_set_id','DAMPs_decay')]
 params_df[order(params_df$SAMPs_decay),c('param_set_id','SAMPs_decay')]
 params_df[order(params_df$PAMPs_decay),c('param_set_id','PAMPs_decay')]
 params_df[order(params_df$recruitment_rate_danger),c('param_set_id','recruitment_rate_danger')]
-
+params_df[order(params_df$active_age_limit),c('param_set_id','active_age_limit')]
+params_df[order(params_df$activity_engulf_M1_baseline),c('param_set_id','activity_engulf_M1_baseline')]
 
 params_df[order(params_df$PAMPs_decay),c('param_set_id','PAMPs_decay','recruitment_rate_danger',
-                                         'diffusion_speed_DAMPs','SAMPs_decay')]
-
+                                         'diffusion_speed_DAMPs','SAMPs_decay','active_age_limit')]
 
 params_df_long = pivot_longer(params_df, cols = -c('param_set_id'), names_to='parameter', values_to = 'value')

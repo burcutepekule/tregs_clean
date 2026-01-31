@@ -337,14 +337,14 @@ if (length(M0_indices) > 0) {
     # Combine DAMPs + PAMPs as danger signal
     danger_signal      = avg_DAMPs + avg_PAMPs
     
-    SAMPS_above_th     = avg_SAMPs >= activation_threshold_SAMPs
-    SAMPS_below_th     = avg_SAMPs < activation_threshold_SAMPs
-    
-    DANGER_above_th    = danger_signal >= activation_threshold_danger
-    DANGER_below_th    = danger_signal < activation_threshold_danger
-    
-    SAMPS_above_DANGER = avg_SAMPs > danger_signal
-    DANGER_above_SAMPS = avg_SAMPs <= danger_signal
+    # SAMPS_above_th     = avg_SAMPs >= activation_threshold_SAMPs
+    # SAMPS_below_th     = avg_SAMPs < activation_threshold_SAMPs
+    # 
+    # DANGER_above_th    = danger_signal >= activation_threshold_danger
+    # DANGER_below_th    = danger_signal < activation_threshold_danger
+    # 
+    # SAMPS_above_DANGER = avg_SAMPs > danger_signal
+    # DANGER_above_SAMPS = avg_SAMPs <= danger_signal
     
     SAMPS_diff  = max(0,avg_SAMPs-activation_threshold_SAMPs)/activation_threshold_SAMPs
     DANGER_diff = max(0,danger_signal-activation_threshold_danger)/activation_threshold_danger

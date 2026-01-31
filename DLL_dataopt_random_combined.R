@@ -26,9 +26,16 @@ split_equal = function(x, n_chunks) {
 }
 
 # ============================================================================
-loop_over = c(81250, 30000, 45500, 92000, 62500) ### PAY ATTENTION HERE!
-# ============================================================================
+# PAY ATTENTION HERE!
+source('./MISC/LOAD_PAT_LEVELS.R') # loads pat_level_vectors
+# loop_over = as.numeric(names(pat_level_vectors))
+loop_over = c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
+
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+params_df$activity_engulf_M0_baseline = 0.00
+params_df$activity_engulf_M1_baseline = 0.05
+params_df$activity_engulf_M2_baseline = 0.05
+# ============================================================================
 
 param_names = c("diffusion_speed_SAMPs",
                 "add_SAMPs",
@@ -68,59 +75,29 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 
 scenarios_df = c()
-# scenarios_df = rbind(scenarios_df, expand.grid(
-#   param_set_id    = c(30000),
-#   sterile         = c(0),
-#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(6:10),
-#   pat_level       = c(3),
-#   overwrite       = c(0)
-# ))
-# scenarios_df = rbind(scenarios_df, expand.grid(
-#   param_set_id    = c(92000),
-#   sterile         = c(0),
-#   allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-#   randomize_tregs = c(0),
-#   macspec_on      = c(0),
-#   ros_level       = c(5:10),
-#   pat_level       = c(7,8,9),
-#   overwrite       = c(0,1)
-# ))
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_set_id    = c(81250),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = c(3.5,4),
-  overwrite       = c(0) # active_age_limit=3 anyway
-))
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_set_id    = c(45500),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = c(5,6,7),
-  overwrite       = c(0,1)
-))
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_set_id    = c(62500),
-  sterile         = c(0),
-  allow_tregs     = c(1), # THIS NEEDS TO BE 1 AT ALL TIMES!
-  randomize_tregs = c(0),
-  macspec_on      = c(0),
-  ros_level       = c(5:10),
-  pat_level       = c(8:10),
-  overwrite       = c(0,1)
-))
+
+for (param_id in loop_over){
+  scenarios_df = rbind(scenarios_df, expand.grid(
+    param_set_id    = param_id,
+    sterile         = c(0),
+    allow_tregs     = c(1), # PAY ATTENTION HERE! ALWAYS NEEDS TO BE 1 FOR OPTIMIZATION!
+    randomize_tregs = c(0),
+    macspec_on      = c(0),
+    ros_level       = opt_ros_level_vectors[[as.character(param_id)]],
+    pat_level       = opt_pat_level_vectors[[as.character(param_id)]],
+    overwrite       = c(0, 1),
+    diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
+    add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
+    SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
+    treg_discrimination_efficiency = 1, # numbers so that it doesn't give NA or Inf somewhere
+    activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
+    opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
+  ))
+}
+
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 5), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 1), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
 dim(scenarios_df)[1]
 
@@ -155,7 +132,7 @@ success_threshold_e = 5
 success_threshold_p = 10
 success_duration    = 150
 success_rate        = 0.95
-max_iterations      = 10000 # Number of random samples to try
+max_iterations      = 1000 # Number of random samples to try
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================

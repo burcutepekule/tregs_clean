@@ -29,12 +29,15 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 
-# ============================================================================
-loop_over = c(81250, 88750, 30000, 45500, 92000, 50250, 62500, 68752)
-# ============================================================================
-
+# PAY ATTENTION HERE!
+source('./MISC/LOAD_PAT_LEVELS.R') # loads pat_level_vectors
+# loop_over = as.numeric(names(pat_level_vectors))
+loop_over = c(17, 23, 55, 58, 88)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
+params_df$activity_engulf_M0_baseline = 0.00
+params_df$activity_engulf_M1_baseline = 0.05
+params_df$activity_engulf_M2_baseline = 0.05
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -66,7 +69,33 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 # ===================== When running allow_tregs=1, optimized ================
 scenarios_df = c()
+for (param_id_in in loop_over){
+  params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+  params_opt   = params_opt[params_opt$mean_pct_above_threshold_e>=.9,]
+  params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+  params_opt   = na.omit(params_opt[1:2,])
+  print(params_opt)
+  for (ind_opt in 1:dim(params_opt)[1]){
+    scenarios_df = rbind(scenarios_df, expand.grid(
+      param_set_id    = param_id_in,
+      sterile         = c(0),
+      allow_tregs     = c(1), # PAY ATTENTION HERE!
+      randomize_tregs = c(0),
+      macspec_on      = c(0),
+      ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+      pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+      overwrite       = c(0,1),
+      diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+      add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+      SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+      treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+      activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+      opt_index                      = ind_opt
+    ))
+  }
+}
 
+dim(scenarios_df) 
 # param_names = c("diffusion_speed_SAMPs",
 #                 "add_SAMPs",
 #                 "SAMPs_decay",
@@ -143,74 +172,127 @@ scenarios_df = c()
 #   ))
 # }
 
+# for(param_id_in in c(250, 47500, 66250, 78750, 97250)){
+#   params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+#   params_opt   = params_opt[params_opt$mean_pct_above_threshold_e==1,]
+#   params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+#   params_opt   = params_opt[1:3,]
+#   params_opt   = na.omit(params_opt) # in case less than 10
+#   for (ind_opt in 1:dim(params_opt)[1]){
+#     scenarios_df = rbind(scenarios_df, expand.grid(
+#       param_set_id    = param_id_in,
+#       sterile         = c(0),
+#       allow_tregs     = c(1), # PAY ATTENTION HERE!
+#       randomize_tregs = c(0),
+#       macspec_on      = c(0),
+#       ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#       pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+#       overwrite       = c(0,1),
+#       diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#       add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#       SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#       treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#       activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#       opt_index                      = ind_opt
+#     ))
+#   }
+# }
+# 
+# param_id_in  = 67250
+# params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+# params_opt   = params_opt[params_opt$mean_pct_above_threshold_e>=0.4,]
+# params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+# params_opt   = params_opt[1,]
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE!
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+#     overwrite       = c(0,1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   ))
+# }
+# 
+# param_id_in  = 80750
+# params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+# params_opt   = params_opt[params_opt$mean_pct_above_threshold_e>=0.4,]
+# params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+# params_opt   = params_opt[1,]
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE!
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+#     overwrite       = c(0,1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   ))
+# }
+# 
+# param_id_in  = 90250
+# params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+# params_opt   = params_opt[params_opt$mean_pct_above_threshold_e>=0.4,]
+# params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+# params_opt   = params_opt[1,]
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE!
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+#     overwrite       = c(0,1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   ))
+# }
 
-param_id_in  = 62500
-params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
-params_opt   = params_opt[1:3,]
-for (ind_opt in 1:dim(params_opt)[1]){
-  scenarios_df = rbind(scenarios_df, expand.grid(
-    param_set_id    = param_id_in,
-    sterile         = c(0),
-    allow_tregs     = c(1), # PAY ATTENTION HERE!
-    randomize_tregs = c(0),
-    macspec_on      = c(0),
-    ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    pat_level       = c(1, 2, seq(5, 10, 1)),
-    overwrite       = c(1),
-    diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
-    add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
-    SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
-    treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
-    activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
-    opt_index                      = ind_opt
-  ))
-}
-
-param_id_in  = 81250
-params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
-params_opt   = params_opt[1,]
-for (ind_opt in 1:dim(params_opt)[1]){
-  scenarios_df = rbind(scenarios_df, expand.grid(
-    param_set_id    = param_id_in,
-    sterile         = c(0),
-    allow_tregs     = c(1), # PAY ATTENTION HERE!
-    randomize_tregs = c(0),
-    macspec_on      = c(0),
-    ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    pat_level       = c(1, seq(2, 5, 0.5)),
-    overwrite       = c(0),
-    diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
-    add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
-    SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
-    treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
-    activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
-    opt_index                      = ind_opt
-  ))
-}
-
-param_id_in  = 45500
-params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
-params_opt   = params_opt[1:2,]
-for (ind_opt in 1:dim(params_opt)[1]){
-  scenarios_df = rbind(scenarios_df, expand.grid(
-    param_set_id    = param_id_in,
-    sterile         = c(0),
-    allow_tregs     = c(1), # PAY ATTENTION HERE!
-    randomize_tregs = c(0),
-    macspec_on      = c(0),
-    ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    pat_level       = c(1, 2, seq(5, 10, 1)),
-    overwrite       = c(0),
-    diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
-    add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
-    SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
-    treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
-    activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
-    opt_index                      = ind_opt
-  ))
-}
-
-dim(scenarios_df) 
+# param_id_in  = 73750
+# params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+# params_opt   = params_opt[params_opt$mean_pct_above_threshold_e>=0.4,]
+# params_opt   = params_opt[order(params_opt$pat_level, params_opt$ros_level, decreasing = TRUE),]
+# params_opt   = params_opt[1:3,]
+# for (ind_opt in 1:dim(params_opt)[1]){
+#   scenarios_df = rbind(scenarios_df, expand.grid(
+#     param_set_id    = param_id_in,
+#     sterile         = c(0),
+#     allow_tregs     = c(1), # PAY ATTENTION HERE!
+#     randomize_tregs = c(0),
+#     macspec_on      = c(0),
+#     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+#     overwrite       = c(0,1),
+#     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+#     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+#     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+#     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+#     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+#     opt_index                      = ind_opt
+#   ))
+# }
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
