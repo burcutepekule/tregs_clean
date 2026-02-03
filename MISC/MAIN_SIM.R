@@ -5,6 +5,27 @@
 injury_site_updated = which(epithelium$level_injury > 0)
 
 # ========================================================================
+# AGE BACTERIA & REMOVE THOSE EXCEEDING age_max_bacteria
+# ========================================================================
+if (nrow(pathogen_coords) > 0) {
+  pathogen_ages = pathogen_ages + 1
+  old_pathogens = which(pathogen_ages > age_max_bacteria)
+  if (length(old_pathogens) > 0) {
+    pathogen_coords = pathogen_coords[-old_pathogens, , drop = FALSE]
+    pathogen_ages = pathogen_ages[-old_pathogens]
+  }
+}
+
+if (nrow(commensal_coords) > 0) {
+  commensal_ages = commensal_ages + 1
+  old_commensals = which(commensal_ages > age_max_bacteria)
+  if (length(old_commensals) > 0) {
+    commensal_coords = commensal_coords[-old_commensals, , drop = FALSE]
+    commensal_ages = commensal_ages[-old_commensals]
+  }
+}
+
+# ========================================================================
 # UPDATE SAMPs (from activated Tregs)
 # ========================================================================
 active_tregs = which(treg_phenotype == 1)
@@ -264,6 +285,7 @@ if (n_pathogens_lp_new > 0) {
   ), ncol = 3)
   colnames(new_pathogen_coords) = c("x", "y", "id")
   pathogen_coords = rbind(pathogen_coords, new_pathogen_coords)
+  pathogen_ages = c(pathogen_ages, rep(0, n_pathogens_lp_new))
   last_id_pathogen = last_id_pathogen + n_pathogens_lp_new
 }
 
@@ -285,6 +307,7 @@ if (total_new_commensals > 0) {
   ), ncol = 3)
   colnames(new_commensal_coords) = c("x", "y", "id")
   commensal_coords = rbind(commensal_coords, new_commensal_coords)
+  commensal_ages = c(commensal_ages, rep(0, total_new_commensals))
   last_id_commensal = last_id_commensal + total_new_commensals
 }
 
@@ -593,7 +616,8 @@ for (i in 1:length(phagocyte_x)) {
       
       if (length(indices_to_engulf) > 0) {
         pathogen_coords = pathogen_coords[-indices_to_engulf, , drop = FALSE]
-        
+        pathogen_ages = pathogen_ages[-indices_to_engulf]
+
         # C++ ACCELERATION: shift_insert with -1 for pathogens
         phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
           phagocyte_bacteria_registry[i, ],
@@ -620,7 +644,8 @@ for (i in 1:length(phagocyte_x)) {
       
       if (length(indices_to_engulf) > 0) {
         commensal_coords = commensal_coords[-indices_to_engulf, , drop = FALSE]
-        
+        commensal_ages = commensal_ages[-indices_to_engulf]
+
         # C++ ACCELERATION: shift_insert with +1 for commensals
         phagocyte_bacteria_registry[i, ] = shift_insert_fast_cpp(
           phagocyte_bacteria_registry[i, ],
@@ -715,19 +740,29 @@ if (allow_tregs == 1 && length(M_activate_phagocyte_indices) > 0) {
 # C++ ACCELERATION: Batch killing with single function call (HUGE SPEEDUP)
 # ========================================================================
 if (nrow(pathogen_coords) > 0) {
+  old_pathogen_ids = pathogen_coords[, "id"]
   result = kill_microbes_with_ros_cpp(
     pathogen_coords, ROS, act_radius_ROS, th_ROS_microbe, grid_size
   )
   pathogen_coords = result$surviving_microbes
   pathogens_killed_by_ROS = pathogens_killed_by_ROS + result$n_killed
+  if (result$n_killed > 0) {
+    surviving_idx = match(pathogen_coords[, "id"], old_pathogen_ids)
+    pathogen_ages = pathogen_ages[surviving_idx]
+  }
 }
 
 if (nrow(commensal_coords) > 0) {
+  old_commensal_ids = commensal_coords[, "id"]
   result = kill_microbes_with_ros_cpp(
     commensal_coords, ROS, act_radius_ROS, th_ROS_microbe, grid_size
   )
   commensal_coords = result$surviving_microbes
   commensals_killed_by_ROS = commensals_killed_by_ROS + result$n_killed
+  if (result$n_killed > 0) {
+    surviving_idx = match(commensal_coords[, "id"], old_commensal_ids)
+    commensal_ages = commensal_ages[surviving_idx]
+  }
 }
 
 # ========================================================================

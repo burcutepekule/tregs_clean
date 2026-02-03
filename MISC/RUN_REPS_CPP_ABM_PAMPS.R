@@ -59,6 +59,10 @@ for (reps_in in 0:(num_reps-1)){
   ), ncol = 3)
   colnames(commensal_coords) = c("x", "y", "id")
   
+  # Initialize bacteria ages (parallel vectors to pathogen_coords / commensal_coords rows)
+  pathogen_ages = rep(0, nrow(pathogen_coords))
+  commensal_ages = rep(0, nrow(commensal_coords))
+
   last_id_pathogen = n_pathogens_lp
   last_id_commensal = n_commensals_lp
   
