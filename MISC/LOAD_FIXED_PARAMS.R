@@ -33,5 +33,8 @@ c_in_log  = 5
 # # Exponential function parameters (for epithelial injury calculation)
 k_in  = 0.01
 x0_in = 5
-max_level_injury     = 2*x0_in # that's where both functions are converging from pathogen and ROS based injury! - this is per cell 
+max_level_injury     = 2*x0_in # that's where both functions are converging from pathogen and ROS based injury! - this is per cell
 initial_injury_level = 1
+
+# Bacteria natural lifespan (in time steps)
+age_max_bacteria = 100

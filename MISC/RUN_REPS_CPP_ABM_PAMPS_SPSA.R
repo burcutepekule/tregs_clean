@@ -74,9 +74,12 @@ reset_simulation_state = function() {
   ), ncol = 3)
   colnames(commensal_coords) <<- c("x", "y", "id")
   
+  pathogen_ages <<- rep(0, nrow(pathogen_coords))
+  commensal_ages <<- rep(0, nrow(commensal_coords))
+
   last_id_pathogen <<- n_pathogens_lp
   last_id_commensal <<- n_commensals_lp
-  
+
   phagocyte_x <<- sample(1:grid_size, n_phagocytes, TRUE)
   phagocyte_y <<- sample(1:grid_size, n_phagocytes, TRUE)
   phagocyte_phenotype <<- rep(0, n_phagocytes)
@@ -149,6 +152,9 @@ commensal_coords = matrix(c(
   seq(1, n_commensals_lp)
 ), ncol = 3)
 colnames(commensal_coords) = c("x", "y", "id")
+
+pathogen_ages = rep(0, nrow(pathogen_coords))
+commensal_ages = rep(0, nrow(commensal_coords))
 
 last_id_pathogen = n_pathogens_lp
 last_id_commensal = n_commensals_lp
