@@ -37,4 +37,4 @@ max_level_injury     = 2*x0_in # that's where both functions are converging from
 initial_injury_level = 1
 
 # Bacteria natural lifespan (in time steps)
-age_max_bacteria = 100
+age_max_bacteria = 30
