@@ -27,7 +27,10 @@ logistic_scaled_0_to_5_quantized(0)
 logistic_scaled_0_to_5_quantized(1)
 
 # Logistic function parameters (for epithelial injury calculation)
-k_in  = 0.044
-x0_in = 50
-c_in  = 5
-lines(logistic_scaled_0_to_5_quantized(pat_vec), col='red')
+k_in_log  = 0.044
+x0_in_log = 50
+c_in_log  = 5
+plot(logistic_scaled_0_to_5_quantized(pat_vec,k_in_log, x0_in_log, c_in_log), col='red')
+lines(logistic_scaled_0_to_5_quantized(pat_vec,k_in_log, x0_in_log, c_in_log), col='red')
+
+
