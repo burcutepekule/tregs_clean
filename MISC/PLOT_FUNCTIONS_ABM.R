@@ -1,3 +1,34 @@
+
+# Function to dynamically determine i_opt_vec based on param_id
+get_i_opt_vec = function(param_id, path_data) {
+  #detect from available files in path_data
+  if (dir.exists(path_data)) {
+    files = list.files(path_data, pattern = paste0("longitudinal_df_param_set_id_", param_id, "_.*_optidx_"))
+    if (length(files) > 0) {
+      # Extract optidx values from filenames
+      opt_indices = unique(as.numeric(gsub(".*_optidx_(\\d+)\\.rds$", "\\1", files)))
+      opt_indices = opt_indices[!is.na(opt_indices)]
+      if (length(opt_indices) > 0) {
+        return(sort(opt_indices))
+      }
+    }
+  }
+}
+
+get_pat_vals = function(param_id, path_data) {
+  #detect from available files in path_data
+  if (dir.exists(path_data)) {
+    files = list.files(path_data, pattern = paste0("longitudinal_df_param_set_id_", param_id, "_.*_pat_level_"))
+    if (length(files) > 0) {
+      # Extract pat_level values from filenames (handles both integers and decimals)
+      pat_levels = unique(as.numeric(gsub(".*_pat_level_([0-9.]+)_.*", "\\1", files)))
+      pat_levels = pat_levels[!is.na(pat_levels)]
+      if (length(pat_levels) > 0) {
+        return(sort(pat_levels))
+      }
+    }
+  }
+}
 overlay_histograms = function(x, y, 
                                x_name = "X", 
                                y_name = "Y",

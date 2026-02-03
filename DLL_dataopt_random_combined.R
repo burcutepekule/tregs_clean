@@ -26,15 +26,25 @@ split_equal = function(x, n_chunks) {
 }
 
 # ============================================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================================
+
+args   = commandArgs(trailingOnly = TRUE)
+n1     = as.integer(args[1])
+n2     = as.integer(args[2])
+n3     = as.integer(args[3])
+
+# ============================================================================
 # PAY ATTENTION HERE!
 source('./MISC/LOAD_PAT_LEVELS.R') # loads pat_level_vectors
 # loop_over = as.numeric(names(pat_level_vectors))
-loop_over = c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
+# loop_over = c(43587)
+# loop_over = c(43591, 43604) 
+# loop_over = 43600 + c(30, 46, 70, 72) 
+loop_over = 43600 + n3
 
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 params_df$activity_engulf_M0_baseline = 0.00
-params_df$activity_engulf_M1_baseline = 0.05
-params_df$activity_engulf_M2_baseline = 0.05
 # ============================================================================
 
 param_names = c("diffusion_speed_SAMPs",
@@ -97,20 +107,19 @@ for (param_id in loop_over){
 
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 1), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 100), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
+scenarios_df = scenarios_df[1:100,]
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
 
+
 # ============================================================================
-# COMMAND LINE ARGUMENTS
+# CHUNKS
 # ============================================================================
 
-args   = commandArgs(trailingOnly = TRUE)
-n1     = as.integer(args[1])
-n2     = as.integer(args[2])
 
 chunks        = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]

@@ -9,12 +9,14 @@ param_names = c("diffusion_speed_SAMPs",
 # c(250, 47500, 66250, 67250, 73750, 78750, 80750, 90250, 97250,
 #   30000, 45500, 92000, 81250, 88750, 50250, 62500, 68752)
 # loop_over_all = c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
-loop_over_all =  c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
-# loop_over_all = c(58)
+loop_over_all =  c(43587)
+loop_over_all =  c(43591, 43604)
+loop_over_all =  43600 + c(30, 46, 70)
+loop_over_all =  43646
 
 for (loop_over in loop_over_all){
   # loop_over = 90 # c(92000, 30000, 81250, 45500, 62500)
-  min_reps      = 5 #max is 10
+  min_reps      = 10 #max is 10
   df_opt_rnd    = read.table(paste0("/Users/burcutepekule/Dropbox/tregs_clean/merged_",loop_over,".txt"),
                              header = FALSE,
                              col.names = c("param_set_id" ,"rep", "pat_level", "ros_level", 
@@ -77,11 +79,12 @@ for (loop_over in loop_over_all){
   # 
   # saveRDS(df_opt_rnd_95,paste0('./df_opt_rnd_95_',loop_over,'_use.rds'))
   # print(summary_df_095)
-  
-  summary_df_10 = summary_df_10[order(summary_df_10$mean_pct_above_threshold_e, decreasing = TRUE),]
+  summary_df_10 = summary_df_10 %>% dplyr::rowwise() %>% dplyr::mutate(mean_pct_above_threshold_min = min(mean_pct_above_threshold_e,mean_pct_above_threshold_p))
   saveRDS(summary_df_10,paste0('./summary_df_10rep_',loop_over,'_use.rds'))
   
+  summary_df_10 = summary_df_10[order(summary_df_10$mean_pct_above_threshold_min, decreasing = TRUE),]
+  
   summary_df_10_only_1 = summary_df_10 %>% dplyr::filter(mean_pct_above_threshold_e>0.8 & mean_pct_above_threshold_p>0.8)
-  print(head(summary_df_10[, c('param_set_id','pat_level','ros_level','mean_pct_above_threshold_e', 'mean_pct_above_threshold_p','overwrite_in','n_reps')], 5))
+  print(head(summary_df_10[, c('param_set_id','pat_level','ros_level','mean_pct_above_threshold_e', 'mean_pct_above_threshold_p','overwrite_in','n_reps')], 10))
   browser()
 }

@@ -6,7 +6,6 @@ library(zoo)
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
-source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
 
 # ============================================================================
 # READ PARAMETERS FROM CSV
@@ -15,6 +14,11 @@ source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
 cat("Reading parameters...\n")
 params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
 cat("Loaded", nrow(params_df), "parameter sets\n\n")
+
+# ============================================================================
+# IMPORTANT! SET M0_BASELINE TO ZERO!
+params_df$activity_engulf_M0_baseline = 0.00
+# ============================================================================
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -30,15 +34,18 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 
-# loop_over = c(81250, 88750, 30000, 45500, 92000, 50250, 62500, 68752)
-# loop_over = c(250, 47500, 66250, 67250, 73750, 78750, 80750, 90250, 97250)
+# loop_over = c(43587:43596) # batch 1
+# loop_over = c(43597:43606) # batch 2
+# loop_over = c(43591, 43604) 
+# loop_over = c(43606:43676) 
+source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
+loop_over = 43600 +c(12, 14, 15, 17, 30, 46, 59, 70, 72) 
 
-loop_over = c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 
-params_df$activity_engulf_M0_baseline = 0.00
-params_df$activity_engulf_M1_baseline = 0.05
-params_df$activity_engulf_M2_baseline = 0.05
+# params_df = params_df[sample(nrow(params_df)), ] # randomly scramble
+# loop_over = params_df$param_set_id
+
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
@@ -74,11 +81,12 @@ for (param_id in loop_over){
   scenarios_df = rbind(scenarios_df, expand.grid(
     param_set_id    = param_id,
     sterile         = c(0),
-    allow_tregs     = c(0), # PAY ATTENTION HERE! 
+    allow_tregs     = c(0), # PAY ATTENTION HERE! - THIS IS 0!
     randomize_tregs = c(0),
     macspec_on      = c(0),
     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     pat_level       = pat_level_vectors[[as.character(param_id)]],
+    # pat_level       = c(1,5,10,15,20),
     overwrite       = c(0),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
@@ -90,6 +98,29 @@ for (param_id in loop_over){
 }
 
 dim(scenarios_df) 
+
+# scenarios_df_excl = expand.grid(
+#   param_set_id    = 43587,
+#   sterile         = c(0),
+#   allow_tregs     = c(0), # PAY ATTENTION HERE! 
+#   randomize_tregs = c(0),
+#   macspec_on      = c(0),
+#   ros_level       = seq(0,10,2), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+#   # pat_level       = pat_level_vectors[[as.character(param_id)]],
+#   pat_level       = c(1,2,5,7,10,12),
+#   overwrite       = c(0),
+#   diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
+#   add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
+#   SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
+#   treg_discrimination_efficiency = 1, # numbers so that it doesn't give NA or Inf somewhere
+#   activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
+#   opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
+# )
+# dim(scenarios_df_excl) 
+# scenarios_df = setdiff(scenarios_df, scenarios_df_excl)
+
+dim(scenarios_df) 
+
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 cat("Total simulations:", length(loop_over)*nrow(scenarios_df)*num_reps, "\n\n")
