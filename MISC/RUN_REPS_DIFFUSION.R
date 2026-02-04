@@ -31,19 +31,19 @@ for (reps_in in 0:(num_reps-1)){
   # ========================================================================
   # Pathogen density: initial concentration at injury sites at epithelium (row 1)
   density_pathogen = matrix(0, grid_size, grid_size)
-  if (n_pathogens_lp > 0) {
-    initial_pathogen_density = n_pathogens_lp / length(injury_site)
-    initial_pathogen_density = min(initial_pathogen_density, max_density_microbe)
-    density_pathogen[1, injury_site] = initial_pathogen_density
-  }
+  # if (n_pathogens_lp > 0) {
+  #   initial_pathogen_density = n_pathogens_lp / length(injury_site)
+  #   initial_pathogen_density = min(initial_pathogen_density, max_density_microbe)
+  #   density_pathogen[1, injury_site] = initial_pathogen_density
+  # }
 
   # Commensal density: initial concentration spread across grid
   density_commensal = matrix(0, grid_size, grid_size)
-  if (n_commensals_lp > 0) {
-    initial_commensal_density = n_commensals_lp / (grid_size * grid_size)
-    initial_commensal_density = min(initial_commensal_density, max_density_microbe)
-    density_commensal = matrix(initial_commensal_density, grid_size, grid_size)
-  }
+  # if (n_commensals_lp > 0) {
+  #   initial_commensal_density = n_commensals_lp / (grid_size * grid_size)
+  #   initial_commensal_density = min(initial_commensal_density, max_density_microbe)
+  #   density_commensal = matrix(initial_commensal_density, grid_size, grid_size)
+  # }
 
   # ========================================================================
   # INITIALIZE MACROPHAGE DENSITY GRID

@@ -12,15 +12,6 @@ diffusion_speed_SAMPs = param_set_use$diffusion_speed_SAMPs
 diffusion_speed_PAMPs = param_set_use$diffusion_speed_PAMPs
 diffusion_speed_ROS   = param_set_use$diffusion_speed_ROS
 
-# Signal production - OLD
-# if(ros_level==2){
-#   add_ROS = 1
-# }else{
-#   add_ROS = ros_level*param_set_use$add_ROS # to see whether infection resolves without ROS 
-# }
-
-# add_ROS = ros_level*param_set_use$add_ROS # ros_level=0, control
-
 # ==============================================================================
 # ====================== OVERWRITE - easiest for now
 add_ROS                   = ros_level*0.1 # ros_level=0, control, until 10, which is max 1=10*0.1
@@ -79,15 +70,15 @@ recruitment_rate_danger   = param_set_use$recruitment_rate_danger
 # DIFFUSION MODEL PARAMETERS (hardcoded - bacteria/cells slower than signals)
 # ============================================================================
 # Microbe diffusion (slower than signaling molecules)
-diffusion_speed_microbe = 0.01   # ~10x slower than typical signal diffusion
+diffusion_speed_microbe = 0.1   # ~10x slower than typical signal diffusion
 decay_rate_microbe = 1/20        # Natural death: ~1/age_max_bacteria per step
 
 # Macrophage pool diffusion (cells move slower than signals)
-diffusion_speed_macro = 0.005    # Very slow - cells don't diffuse much
+diffusion_speed_macro = 0.05    # Very slow - cells don't diffuse much
 decay_rate_macro = 0.0           # No natural decay - conserved pool
 
 # Treg pool diffusion
-diffusion_speed_treg = 0.005     # Same as macrophages
+diffusion_speed_treg = 0.05     # Same as macrophages
 decay_rate_treg = 0.0            # No natural decay - conserved pool
 
 # Max density values (normalized to 1.0)

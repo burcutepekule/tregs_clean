@@ -47,8 +47,8 @@ params_df$activity_engulf_M0_baseline = 0.00
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
 
-dir_name_data = '/scratch/gpfs/CMETCALF/sim_diffusion'
-# dir_name_data = '/Users/burcutepekule/Desktop/sim_diffusion_local' # PAY ATTENTION HERE!
+# dir_name_data = '/scratch/gpfs/CMETCALF/sim_diffusion'
+dir_name_data = '/Users/burcutepekule/Desktop/sim_diffusion_local' # PAY ATTENTION HERE!
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -57,8 +57,8 @@ cat("Output directory:", dir_name_data, "\n\n")
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
-# t_max      = 25
-num_reps   = 100
+t_max    = 500
+num_reps = 1
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -87,7 +87,7 @@ for (param_id_in in loop_over){
     macspec_on      = c(0),
     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-    overwrite       = c(1),
+    overwrite       = c(0),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
@@ -109,16 +109,18 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
+# n1 = 1
+# n2 = 1
+
 chunks       = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]
 
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
+scenario_elapsed_total = 0
 
 for (scenario_ind in loop_over_sc){
-
-  scenario_elapsed_total = 0
 
   param_set_id_use = scenarios_df[scenario_ind,]$param_set_id
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)

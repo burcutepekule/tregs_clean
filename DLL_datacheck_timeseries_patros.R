@@ -14,7 +14,8 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
-path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
+# path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
+path_data  = "/Users/burcutepekule/Desktop/sim_diffusion_local/"
 
 # indices_vec = c(43596)
 # indices_vec = c(43597:43606)
@@ -68,24 +69,24 @@ split_equal = function(x, n_chunks) {
   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
 }
 
-args   = commandArgs(trailingOnly = TRUE)
-n1     = as.integer(args[1])
-n2     = as.integer(args[2])
-# n1     = 1
-# n2     = 1
+# args   = commandArgs(trailingOnly = TRUE)
+# n1     = as.integer(args[1])
+# n2     = as.integer(args[2])
+n1     = 1
+n2     = 1
 
 chunks       = split_equal(indices_vec, n1)
 loop_over_sc = chunks[[n2]]
 
 skip_opt_0  = 0
-save_images_path_data = "timeseries_tri_all_param_ids_suppress"
+save_images_path_data = "ts_diffusion"
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
 
 # path_data  = "/Users/burcutepekule/Desktop/sim_abm_local/"
 
 for (indices in loop_over_sc){
   # Define the ros and pat value ranges
-  ros_vals        = seq(1,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   trnd_in         = 0
   sterile_in      = 0
   macspec_in      = 0

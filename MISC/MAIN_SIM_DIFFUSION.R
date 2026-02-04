@@ -16,13 +16,13 @@
 # 1. MICROBE SOURCE TERMS (at epithelium, y=1)
 # ============================================================================
 # Pathogens leak through injured epithelium
-pathogen_source = epithelium$level_injury * rate_leak_pathogen_injury / grid_size
+pathogen_source       = epithelium$level_injury*rate_leak_pathogen_injury*0.01 # this is because I don't wanna change the rate_leak_pathogen_injury in ASSIGN_PARAMETERS.R
 density_pathogen[1, ] = density_pathogen[1, ] + pathogen_source
 density_pathogen[1, ] = pmin(density_pathogen[1, ], max_density_microbe)
 
 # Commensals: baseline leak + injury-enhanced leak
-commensal_source_baseline = rep(rate_leak_commensal_baseline / grid_size, grid_size)
-commensal_source_injury = epithelium$level_injury * rate_leak_commensal_injury / grid_size
+commensal_source_baseline = rep(rate_leak_commensal_baseline*0.01)
+commensal_source_injury   = epithelium$level_injury*rate_leak_commensal_injury*0.01
 density_commensal[1, ] = density_commensal[1, ] + commensal_source_baseline + commensal_source_injury
 density_commensal[1, ] = pmin(density_commensal[1, ], max_density_microbe)
 
@@ -51,36 +51,36 @@ ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect
 # 3. DECAY ALL GRIDS
 # ============================================================================
 # Microbe decay (natural death)
-density_pathogen = density_pathogen * (1 - decay_rate_microbe)
-density_commensal = density_commensal * (1 - decay_rate_microbe)
+density_pathogen  = density_pathogen*(1-decay_rate_microbe)
+density_commensal = density_commensal*(1-decay_rate_microbe)
 
-# Macrophage and Treg pools (no decay if conserved)
-density_macro = density_macro * (1 - decay_rate_macro)
-density_treg = density_treg * (1 - decay_rate_treg)
+# # Macrophage and Treg pools (no decay if conserved)
+# density_macro = density_macro * (1-decay_rate_macro)
+# density_treg  = density_treg * (1 - decay_rate_treg)
 
 # Signal decay
-DAMPs = DAMPs * (1 - DAMPs_decay)
-SAMPs = SAMPs * (1 - SAMPs_decay)
-PAMPs = PAMPs * (1 - PAMPs_decay)
-ROS   = ROS * (1 - ros_decay)
+DAMPs = DAMPs * (1-DAMPs_decay)
+SAMPs = SAMPs * (1-SAMPs_decay)
+PAMPs = PAMPs * (1-PAMPs_decay)
+ROS   = ROS * (1-ros_decay)
 
 # ============================================================================
 # 4. SIGNAL PRODUCTION
 # ============================================================================
 # DAMPs from epithelial injury (at y=1)
-DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury * add_DAMPs
+DAMPs[1, ] = DAMPs[1, ] + epithelium$level_injury*add_DAMPs
 
 # DAMPs from microbes at epithelium (both pathogens and commensals cause tissue stress)
 microbe_density_at_epith = density_pathogen[1, ] + density_commensal[1, ]
-DAMPs[1, ] = DAMPs[1, ] + microbe_density_at_epith * add_DAMPs
+DAMPs[1, ] = DAMPs[1, ] + microbe_density_at_epith*add_DAMPs
 DAMPs = pmin(DAMPs, max_cell_value_DAMPs)
 
 # PAMPs from pathogen density (throughout the grid)
-PAMPs = PAMPs + density_pathogen * add_PAMPs
+PAMPs = PAMPs + density_pathogen*add_PAMPs
 PAMPs = pmin(PAMPs, max_cell_value_PAMPs)
 
 # ROS from M1 macrophage density
-ROS = ROS + density_M1 * activity_ROS_M1_baseline * add_ROS
+ROS = ROS + density_M1*activity_ROS_M1_baseline * add_ROS
 ROS = pmin(ROS, max_cell_value_ROS)
 
 # SAMPs from active Treg density
@@ -111,7 +111,7 @@ commensals_killed_by_ROS = commensals_killed_by_ROS + commensals_killed_by_ROS_t
 # 6. UPDATE EPITHELIAL INJURY
 # ============================================================================
 # Injury from pathogens at epithelium
-pathogen_injury = density_pathogen[1, ] * c_in_log  # Scale factor for injury
+pathogen_injury = density_pathogen[1, ]*c_in_log  # Scale factor for injury
 epithelium$level_injury = epithelium$level_injury + pathogen_injury
 
 # Injury from ROS (ROS above threshold damages epithelium)
@@ -205,18 +205,19 @@ total_M2 = sum(density_M2)
 total_macro = sum(density_macro)
 total_M0 = max(0, total_macro - total_M1 - total_M2)
 
-macrophages_longitudinal[t, ] = c(total_M0, total_M1, total_M2) * grid_size^2 / max_density_macro
+macrophages_longitudinal[t, ] = c(total_M0, total_M1, total_M2)/grid_size^2
 
 # Microbe densities (sum across grid, scaled)
 total_commensal = sum(density_commensal)
 total_pathogen = sum(density_pathogen)
-microbes_longitudinal[t, ] = c(total_commensal, total_pathogen) * grid_size^2 / max_density_microbe
+microbes_longitudinal[t, ] = c(total_commensal, total_pathogen)/grid_size^2
 
 # Treg densities
 total_treg = sum(density_treg)
 total_treg_active = sum(density_Treg_active)
 total_treg_resting = max(0, total_treg - total_treg_active)
-tregs_longitudinal[t, ] = c(total_treg_resting, total_treg_active) * grid_size^2 / max_density_treg
+# tregs_longitudinal[t, ] = c(total_treg_resting, total_treg_active) * grid_size^2 / max_density_treg
+tregs_longitudinal[t, ] = c(total_treg_resting, total_treg_active)/grid_size^2
 
 # Cumulative death tracking (scaled for comparability)
 # Note: In diffusion model, "killed by Mac" doesn't apply - only ROS killing
