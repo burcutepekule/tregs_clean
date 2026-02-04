@@ -44,6 +44,10 @@ ros_levels_plot = c(8)
 pat_levels_plot = c(3)
 i_opt_vec_plot  = c(0,1)
 
+indices_vec = c(43646)
+ros_levels_plot = c(6)
+pat_levels_plot = c(12)
+i_opt_vec_plot  = c(0,8)
 
 # ros_vals = seq(0,10,1)
 # pat_vals = c(1,5,10,15,20)
@@ -143,7 +147,7 @@ for (indices in loop_over_sc){
     pat_vals = get_pat_vals(param_id, path_data) # from /MISC/PLOT_FUNCTIONS_ABM.R
     # i_opt_vec = get_i_opt_vec(param_id, path_data) # from /MISC/PLOT_FUNCTIONS_ABM.R
     i_opt_vec = i_opt_vec_plot # from /MISC/PLOT_FUNCTIONS_ABM.R
-    
+
     if(length(i_opt_vec)<1){
       message("Skipping id ", param_id, " due to data")
       skip_id = 1

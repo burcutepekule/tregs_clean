@@ -12,8 +12,9 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 cat("Reading parameters...\n")
-params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
-cat("Loaded", nrow(params_df), "parameter sets\n\n")
+# params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+params_df = readRDS("./params_df.rds")
+cat("Loaded", nrow(params_df), "parameter sets\n")
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -34,6 +35,45 @@ source('./MISC/LOAD_PAT_LEVELS.R') # loads pat_level_vectors
 # loop_over = as.numeric(names(pat_level_vectors))
 loop_over = 43646
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
+# ============================================================================
+# HARDCODED PARAMETERS FOR PARAM_SET_ID 43646
+# ============================================================================
+
+cat("Using hardcoded parameters for param_set_id 43646...\n")
+
+# params_df = data.frame(
+#   param_set_id = 43646,
+#   rate_leak_pathogen_injury = 0.5,
+#   rate_leak_commensal_injury = 0.25,
+#   rate_leak_commensal_baseline = 0.05,
+#   epith_recovery_chance = 0.05,
+#   th_ROS_microbe = 0.1088882,
+#   th_ROS_epith_injury = 0.6158904,
+#   diffusion_speed_DAMPs = 0.01648709,
+#   diffusion_speed_PAMPs = 0.07892915,
+#   diffusion_speed_SAMPs = 0.06675038,
+#   diffusion_speed_ROS = 0.06533034,
+#   add_ROS = 0.442411,
+#   add_DAMPs = 0.09279615,
+#   add_SAMPs = 0.06391013,
+#   add_PAMPs = 0.3279585,
+#   ros_decay = 0.1147807,
+#   DAMPs_decay = 0.03812688,
+#   SAMPs_decay = 0.1390501,
+#   PAMPs_decay = 0.01297679,
+#   activation_threshold_danger = 0.9478865,
+#   activation_threshold_SAMPs = 0.4551507,
+#   activity_engulf_M0_baseline = 0.05,
+#   activity_engulf_M1_baseline = 0.2884559,
+#   activity_ROS_M1_baseline = 0.4665152,
+#   cc_phagocyte = 11,
+#   active_age_limit = 7,
+#   treg_discrimination_efficiency = 0.2402565,
+#   recruitment_rate_danger = 0.2169343,
+#   activity_engulf_M2_baseline = 0.2884559
+# )
+# cat("Loaded 1 parameter set (hardcoded)\n\n")
+
 params_df$activity_engulf_M0_baseline = 0.00
 
 # ============================================================================
@@ -51,7 +91,7 @@ cat("Output directory:", dir_name_data, "\n\n")
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
 # t_max      = 25
-# num_reps   = 1
+num_reps   = 100
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -80,7 +120,7 @@ for (param_id_in in loop_over){
     macspec_on      = c(0),
     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-    overwrite       = c(0),
+    overwrite       = c(1),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
@@ -92,7 +132,7 @@ for (param_id_in in loop_over){
   # params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
   # # params_opt   = params_opt %>% dplyr::filter(pat_level==2) # for 630
   # params_opt   = params_opt[order(params_opt$mean_pct_above_threshold_min, params_opt$pat_level, decreasing = TRUE),]
-  # params_opt   = na.omit(params_opt[1:4,])
+  # params_opt   = na.omit(params_opt[c(1,3,6,14),])
   # print(params_opt)
   # for (ind_opt in 1:dim(params_opt)[1]){
   #   scenarios_df = rbind(scenarios_df, expand.grid(

@@ -12,7 +12,8 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 cat("Reading parameters...\n")
-params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+# params_df = read.csv("./lhs_parameters_della.csv", stringsAsFactors = FALSE)
+params_df = readRDS("./params_df.rds")
 cat("Loaded", nrow(params_df), "parameter sets\n\n")
 
 # ============================================================================
@@ -55,7 +56,8 @@ param_names = c("diffusion_speed_SAMPs",
 
 # params_df_treg = params_df[param_names]
 param_bounds = data.frame(
-  lower = c(0.001, 0.001, 0.001, 0.750, 0.001),
+  # lower = c(0.001, 0.001, 0.001, 0.750, 0.001),
+  lower = c(0.001, 0.001, 0.001, 1.000, 0.001),
   upper = c(0.120, 0.500, 0.500, 1.000, 1.000), ### TRY LOWER UPPERBOUND FOR ACTIVATION TH SAMPS?
   row.names = param_names
 )
@@ -66,7 +68,8 @@ param_bounds = data.frame(
 # ============================================================================
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
-source('./MISC/LOAD_FIXED_PARAMS.R')
+source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
+num_reps = 5 # for speed
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -107,9 +110,9 @@ for (param_id in loop_over){
 
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 100), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 400), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
-scenarios_df = scenarios_df[1:100,]
+scenarios_df = scenarios_df[1:400,]
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")

@@ -68,11 +68,11 @@ split_equal = function(x, n_chunks) {
   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
 }
 
-# args   = commandArgs(trailingOnly = TRUE)
-# n1     = as.integer(args[1])
-# n2     = as.integer(args[2])
-n1     = 1
-n2     = 1
+args   = commandArgs(trailingOnly = TRUE)
+n1     = as.integer(args[1])
+n2     = as.integer(args[2])
+# n1     = 1
+# n2     = 1
 
 chunks       = split_equal(indices_vec, n1)
 loop_over_sc = chunks[[n2]]
@@ -85,11 +85,11 @@ dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
 
 for (indices in loop_over_sc){
   # Define the ros and pat value ranges
-  ros_vals        = seq(0,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  ros_vals        = seq(1,10,1) # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
   trnd_in         = 0
   sterile_in      = 0
   macspec_in      = 0
-  overwrite_in_vec= c(1)
+  overwrite_in_vec= c(0, 1)
   
   # source("~/Dropbox/tregs_clean/MISC/FIND_COMPLETE_PARAMIDS.R")
   # ===== reread to include local results
@@ -130,7 +130,7 @@ for (indices in loop_over_sc){
     # Dynamically determine pat_vals and i_opt_vec based on param_id
     pat_vals = get_pat_vals(param_id, path_data) # from /MISC/PLOT_FUNCTIONS_ABM.R
     i_opt_vec = get_i_opt_vec(param_id, path_data) # from /MISC/PLOT_FUNCTIONS_ABM.R
-    
+
     if(length(i_opt_vec)<1){
       message("Skipping id ", param_id, " due to data")
       skip_id = 1
@@ -378,7 +378,7 @@ for (indices in loop_over_sc){
                                   "_sterile_", sterile_in,
                                   "_tregs_on_",tregs_on_in,
                                   "_tregs_rnd_",trnd_in,
-                                  "_",variables[1],".png"),
+                                  "_",variables[1],"_20.png"),
                 plot = p,
                 width = 24,
                 height = 16,
@@ -422,6 +422,15 @@ for (indices in loop_over_sc){
       custom_colors = c("0" = "red", setNames(blues_cols, as.character(opt_vals[opt_vals != 0])))
     }
     
+    # Extract the opt_ind=0, overwrite=0 data
+    opt0_ow0 = col_avg_keep %>% filter(opt_ind == 0, overwrite == 0)
+    
+    # Create a copy with overwrite=1
+    opt0_ow1 = opt0_ow0 %>% mutate(overwrite = 1)
+    
+    # Bind it to your original data
+    col_avg_keep = bind_rows(col_avg_keep, opt0_ow1)
+    
     p_opt = ggplot(col_avg_keep, aes(x = ros_level, y = avg_pct, color = factor(opt_ind))) +
       geom_line(linewidth = 1) +
       geom_point(size = 2) +
@@ -448,13 +457,55 @@ for (indices in loop_over_sc){
                         "_i_opt_ALL",
                         "_sterile_", sterile_in,
                         "_tregs_on_",tregs_on_in,
-                        "_tregs_rnd_",trnd_in,".png"),
+                        "_tregs_rnd_",trnd_in,"_20.png"),
       plot = p_opt,
       width = 16,
       height = 8,
       dpi = 300,
       bg='white'
     )
+    
+    all_nz_inds = unique(col_avg_keep$opt_ind)
+    all_nz_inds = all_nz_inds[all_nz_inds>0]
+    
+    for (i in all_nz_inds){
+      
+      col_avg_keep_temp = col_avg_keep %>% dplyr::filter(opt_ind %in% c(0,i))
+      
+      p_opt = ggplot(col_avg_keep_temp, aes(x = ros_level, y = avg_pct, color = factor(opt_ind))) +
+        geom_line(linewidth = 1) +
+        geom_point(size = 2) +
+        scale_y_continuous(labels = scales::percent) +
+        labs(
+          x = "ROS Level",
+          y = "Average % Controlled",
+          color = "opt_ind"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.text = element_text(size = 12),
+          axis.title = element_text(size = 14),
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 11),
+          strip.text = element_text(size = 12)
+        ) + 
+        scale_color_manual(values = custom_colors)+
+        facet_wrap(~ overwrite, labeller = label_both, nrow = 1)
+      
+      ggsave(
+        filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,
+                          "/A_param_",param_id,
+                          "_i_opt_ALL",
+                          "_sterile_", sterile_in,
+                          "_tregs_on_",tregs_on_in,
+                          "_tregs_rnd_",trnd_in,"_20_oi_",i,".png"),
+        plot = p_opt,
+        width = 16,
+        height = 8,
+        dpi = 300,
+        bg='white'
+      )
+    }
   }
 }
 
