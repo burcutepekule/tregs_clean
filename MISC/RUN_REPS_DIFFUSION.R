@@ -48,27 +48,21 @@ for (reps_in in 0:(num_reps-1)){
   # ========================================================================
   # INITIALIZE MACROPHAGE DENSITY GRID
   # ========================================================================
-  # Total macrophage pool (M0 + M1 + M2) - conserved quantity
-  density_macro = matrix(n_phagocytes / (grid_size * grid_size), grid_size, grid_size)
-  density_macro = pmin(density_macro, max_density_macro)
-
-  # M1 and M2 phenotype densities (initially zero - all are M0)
+  # M0 M1 and M2 phenotype densities (initially zero - all are M0)
+  density_M0 = matrix(0.25, grid_size, grid_size)
   density_M1 = matrix(0, grid_size, grid_size)
   density_M2 = matrix(0, grid_size, grid_size)
 
   # ========================================================================
   # INITIALIZE TREG DENSITY GRID
   # ========================================================================
-  density_treg = matrix(n_tregs / (grid_size * grid_size), grid_size, grid_size)
-  density_treg = pmin(density_treg, max_density_treg)
-
-  # Active Treg density (initially zero - all are resting)
-  density_Treg_active = matrix(0, grid_size, grid_size)
+  density_treg = matrix(0.25, grid_size, grid_size)
+  density_treg_active = matrix(0, grid_size, grid_size)
 
   # ========================================================================
   # INITIALIZE DEATH COUNTERS
   # ========================================================================
-  pathogens_killed_by_ROS = 0
+  pathogens_killed_by_ROS  = 0
   commensals_killed_by_ROS = 0
 
   # ========================================================================

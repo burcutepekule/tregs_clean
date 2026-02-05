@@ -14,8 +14,7 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
-# path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
-path_data  = "/Users/burcutepekule/Desktop/sim_diffusion_local/"
+path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
 
 # indices_vec = c(43596)
 # indices_vec = c(43597:43606)
@@ -69,11 +68,9 @@ split_equal = function(x, n_chunks) {
   split(x, cut(seq_along(x), breaks = n_chunks, labels = FALSE))
 }
 
-# args   = commandArgs(trailingOnly = TRUE)
-# n1     = as.integer(args[1])
-# n2     = as.integer(args[2])
-n1     = 1
-n2     = 1
+args   = commandArgs(trailingOnly = TRUE)
+n1     = as.integer(args[1])
+n2     = as.integer(args[2])
 
 chunks       = split_equal(indices_vec, n1)
 loop_over_sc = chunks[[n2]]

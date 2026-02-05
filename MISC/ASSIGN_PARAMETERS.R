@@ -67,28 +67,34 @@ if(macspec_on == 2){# PERFECT DISCRIMINATION
 recruitment_rate_danger   = param_set_use$recruitment_rate_danger
 
 # ============================================================================
+# INITIALIZE SIMULATION
+# ============================================================================
+injury_site = get_middle_percent(seq(1, grid_size), injury_percentage)
+n_pathogens_lp = round(rate_leak_pathogen_injury*length(injury_site))
+
+# ============================================================================
 # DIFFUSION MODEL PARAMETERS (hardcoded - bacteria/cells slower than signals)
 # ============================================================================
-# Microbe diffusion (slower than signaling molecules)
-diffusion_speed_microbe = 0.1   # ~10x slower than typical signal diffusion
-decay_rate_microbe = 1/20        # Natural death: ~1/age_max_bacteria per step
+# # Microbe diffusion (slower than signaling molecules)
+# diffusion_speed_microbe = 0.1   # ~10x slower than typical signal diffusion
+# decay_rate_microbe = 1/20        # Natural death: ~1/age_max_bacteria per step
+
+diffusion_speed_microbe = param_set_use$diffusion_speed_microbe
+decay_rate_microbe      = param_set_use$decay_rate_microbe
 
 # Macrophage pool diffusion (cells move slower than signals)
-diffusion_speed_macro = 0.05    # Very slow - cells don't diffuse much
-decay_rate_macro = 0.0           # No natural decay - conserved pool
+# diffusion_speed_macro = 0.05    # Very slow - cells don't diffuse much
+diffusion_speed_macro = param_set_use$diffusion_speed_macro
+decay_rate_macro = 0.0 # No natural decay - conserved pool
 
 # Treg pool diffusion
-diffusion_speed_treg = 0.05     # Same as macrophages
-decay_rate_treg = 0.0            # No natural decay - conserved pool
+diffusion_speed_treg = diffusion_speed_microbe     # Same as macrophages
+decay_rate_treg = 0.0 # No natural decay - conserved pool
 
 # Max density values (normalized to 1.0)
 max_density_microbe = 1.0
 max_density_macro = 1.0
 max_density_treg = 1.0
 
-# ============================================================================
-# INITIALIZE SIMULATION
-# ============================================================================
-injury_site = get_middle_percent(seq(1, grid_size), injury_percentage)
-n_pathogens_lp = round(rate_leak_pathogen_injury*length(injury_site))
+
 
