@@ -177,6 +177,9 @@ if (t %% active_age_limit == 0) {
   density_M1 = pmin(density_M1, max_density_macro)
   density_M2 = pmin(density_M2, max_density_macro)
 
+  # recalculate remaining M0
+  density_M0 = density_M0 - (density_M1 + density_M2) # here all of them are turning so 
+
   # ========================================================================
   # TREG ACTIVATION
   # ========================================================================
@@ -217,8 +220,7 @@ epithelium_longitudinal[t, 1] = epithelial_score
 # M0 = total macro pool-M1-M2
 total_M1    = sum(density_M1)
 total_M2    = sum(density_M2)
-total_macro = sum(density_macro)
-total_M0    = max(0, total_macro-total_M1-total_M2)
+total_M0    = sum(density_M0)
 
 macrophages_longitudinal[t, ] = c(total_M0, total_M1, total_M2)
 
@@ -240,3 +242,40 @@ microbes_cumdeath_longitudinal[t, ] = c(
   commensals_killed_by_ROS, 0, 0, 0,  # C_ROS, C_M0, C_M1, C_M2
   pathogens_killed_by_ROS, 0, 0, 0    # P_ROS, P_M0, P_M1, P_M2
 )
+
+# Add this at the end of your simulation loop (replacing the image() call)
+
+# Function to plot matrix in "natural" orientation
+plot_grid = function(mat, title, zlim = NULL) {
+  if (is.null(zlim)) zlim <- range(mat, na.rm = TRUE)
+  image(t(mat)[, nrow(mat):1], main = title, zlim = zlim, 
+        col = hcl.colors(50, "viridis"), axes = FALSE)
+}
+
+# Create faceted plot
+png(filename = paste0(dir_name_data,"/grids_",t,".png"), width = 1200, height = 800)
+par(mfrow = c(3, 4), mar = c(2, 2, 3, 1))
+
+plot_grid(density_pathogen, "Pathogen")
+plot_grid(density_commensal, "Commensal")
+plot_grid(density_M0, "M0")
+plot_grid(density_M1, "M1")
+plot_grid(density_M2, "M2")
+plot_grid(density_treg, "Treg (resting)")
+plot_grid(density_treg_active, "Treg (active)")
+
+plot_grid(DAMPs, "DAMPs")
+plot_grid(PAMPs, "PAMPs")
+plot_grid(SAMPs, "SAMPs")
+plot_grid(ROS, "ROS")
+
+# Epithelial injury as a 1D barplot
+barplot(epithelium$level_injury, main = "Epithelial injury", 
+        col = "firebrick", border = NA, ylim = c(0, max_level_injury))
+
+# Add overall title
+mtext(sprintf("Time: %d", t), outer = TRUE, line = -1.5, cex = 1.5, font = 2)
+
+dev.off()
+
+

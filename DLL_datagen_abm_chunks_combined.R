@@ -90,8 +90,7 @@ cat("Output directory:", dir_name_data, "\n\n")
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
-# t_max      = 25
-num_reps   = 100
+# num_reps = 25 # make it more reliable?
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -120,7 +119,7 @@ for (param_id_in in loop_over){
     macspec_on      = c(0),
     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-    overwrite       = c(1),
+    overwrite       = c(0, 1),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
@@ -129,29 +128,29 @@ for (param_id_in in loop_over){
     opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
   ))
   
-  # params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
-  # # params_opt   = params_opt %>% dplyr::filter(pat_level==2) # for 630
-  # params_opt   = params_opt[order(params_opt$mean_pct_above_threshold_min, params_opt$pat_level, decreasing = TRUE),]
-  # params_opt   = na.omit(params_opt[c(1,3,6,14),])
-  # print(params_opt)
-  # for (ind_opt in 1:dim(params_opt)[1]){
-  #   scenarios_df = rbind(scenarios_df, expand.grid(
-  #     param_set_id    = param_id_in,
-  #     sterile         = c(0),
-  #     allow_tregs     = c(1), # PAY ATTENTION HERE!
-  #     randomize_tregs = c(0),
-  #     macspec_on      = c(0),
-  #     ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-  #     pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-  #     overwrite       = c(1),
-  #     diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
-  #     add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
-  #     SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
-  #     treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
-  #     activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
-  #     opt_index                      = ind_opt
-  #   ))
-  # }
+  params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+  # params_opt   = params_opt %>% dplyr::filter(pat_level==2) # for 630
+  params_opt   = params_opt[order(params_opt$mean_pct_above_threshold_min, params_opt$pat_level, decreasing = TRUE),]
+  params_opt   = na.omit(params_opt[1:3,])
+  print(params_opt)
+  for (ind_opt in 1:dim(params_opt)[1]){
+    scenarios_df = rbind(scenarios_df, expand.grid(
+      param_set_id    = param_id_in,
+      sterile         = c(0),
+      allow_tregs     = c(1), # PAY ATTENTION HERE!
+      randomize_tregs = c(0),
+      macspec_on      = c(0),
+      ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+      pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+      overwrite       = c(0, 1),
+      diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+      add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+      SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+      treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency,
+      activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+      opt_index                      = ind_opt
+    ))
+  }
 }
 
 dim(scenarios_df) 

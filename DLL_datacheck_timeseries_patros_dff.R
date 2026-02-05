@@ -18,7 +18,7 @@ source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
 path_data  = "/Users/burcutepekule/Desktop/sim_diffusion_local/"
 
 # indices_vec = 0:249
-indices_vec = c(0, 31, 63, 94, 125, 156, 187, 218)
+indices_vec = c(0, 63)
 
 # ============================================================================
 # HELPER FUNCTIONS
