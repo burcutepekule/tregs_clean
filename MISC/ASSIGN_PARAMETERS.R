@@ -91,6 +91,13 @@ decay_rate_macro = 0.0 # No natural decay - conserved pool
 diffusion_speed_treg = diffusion_speed_microbe     # Same as macrophages
 decay_rate_treg = 0.0 # No natural decay - conserved pool
 
+# Chemotactic sensitivity (Keller-Segel chi parameter)
+# Macrophages chemotax toward danger signals (DAMPs + PAMPs)
+# Tregs chemotax toward DAMPs
+# Set chi = 0 to recover isotropic (homogeneous) diffusion
+chi_macro = 0.01
+chi_treg  = 0.01
+
 # Max density values (normalized to 1.0)
 max_density_microbe = 1.0
 max_density_macro = 1.0

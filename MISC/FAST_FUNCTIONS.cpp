@@ -331,6 +331,100 @@ NumericMatrix diffuse_matrix_cpp(
 }
 
 // ============================================================================
+// BIASED DIFFUSION WITH CHEMOTAXIS (KELLER-SEGEL)
+// ============================================================================
+// Implements: du/dt = D * Laplacian(u) - chi * div(u * grad(c))
+// where u = cell density, c = chemoattractant
+// Uses upwind scheme for u at cell faces for numerical stability
+// When chi = 0, reduces to standard isotropic diffusion
+
+// [[Rcpp::export]]
+NumericMatrix diffuse_matrix_biased_cpp(
+    NumericMatrix mat,
+    NumericMatrix attractant,
+    double D,
+    double chi,
+    double max_cell_value,
+    bool reflect_top = false)
+{
+  int nr = mat.nrow();
+  int nc = mat.ncol();
+
+  // Create padded matrices for cell density and chemoattractant
+  NumericMatrix padded_u(nr + 2, nc + 2);
+  NumericMatrix padded_c(nr + 2, nc + 2);
+  for (int i = 0; i < nr; i++)
+  {
+    for (int j = 0; j < nc; j++)
+    {
+      padded_u(i + 1, j + 1) = mat(i, j);
+      padded_c(i + 1, j + 1) = attractant(i, j);
+    }
+  }
+
+  // REFLECTIVE boundary at TOP (y=0, epithelium boundary)
+  if (reflect_top)
+  {
+    for (int j = 0; j < nc; j++)
+    {
+      padded_u(0, j + 1) = mat(0, j);
+      padded_c(0, j + 1) = attractant(0, j);
+    }
+  }
+
+  NumericMatrix result(nr, nc);
+
+  // 8 neighbor offsets relative to padded position (i+1, j+1)
+  int di[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  int dj[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+  for (int i = 0; i < nr; i++)
+  {
+    for (int j = 0; j < nc; j++)
+    {
+      double u_center = mat(i, j);
+      double c_center = padded_c(i + 1, j + 1);
+
+      // Standard 8-neighbor Laplacian (identical to diffuse_matrix_cpp)
+      double laplacian =
+          padded_u(i, j) +         // top-left
+          padded_u(i, j + 1) +     // top
+          padded_u(i, j + 2) +     // top-right
+          padded_u(i + 1, j) +     // left
+          padded_u(i + 1, j + 2) + // right
+          padded_u(i + 2, j) +     // bottom-left
+          padded_u(i + 2, j + 1) + // bottom
+          padded_u(i + 2, j + 2) - // bottom-right
+          8.0 * u_center;          // center
+
+      // Chemotaxis flux: chi * sum_k [ u_face_k * (c_k - c_center) ]
+      // Upwind: if c_k > c_center (flow outward), u_face = u_center
+      //         if c_k < c_center (flow inward),  u_face = u_neighbor
+      double chemotaxis_flux = 0.0;
+      for (int k = 0; k < 8; k++)
+      {
+        int ni = i + 1 + di[k];
+        int nj = j + 1 + dj[k];
+
+        double dc = padded_c(ni, nj) - c_center;
+        double u_face = (dc > 0) ? u_center : padded_u(ni, nj);
+
+        chemotaxis_flux += u_face * dc;
+      }
+
+      double new_val = u_center + D * laplacian - chi * chemotaxis_flux;
+
+      // Clamp to [0, max_cell_value]
+      new_val = std::max(0.0, new_val);
+      new_val = std::min(max_cell_value, new_val);
+      result(i, j) = new_val;
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 

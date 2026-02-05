@@ -109,6 +109,61 @@ diffuse_matrix <- function(mat, D, max_cell_value) {
   return(mat_new)
 }
 
+# Biased diffusion with chemotaxis (R fallback)
+# Keller-Segel: du/dt = D * Laplacian(u) - chi * div(u * grad(c))
+diffuse_matrix_biased <- function(mat, attractant, D, chi, max_cell_value, reflect_top = FALSE) {
+  nr <- nrow(mat)
+  nc <- ncol(mat)
+
+  # Pad cell density
+  padded_u <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+  padded_u[2:(nr + 1), 2:(nc + 1)] <- mat
+
+  # Pad chemoattractant
+  padded_c <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+  padded_c[2:(nr + 1), 2:(nc + 1)] <- attractant
+
+  if (reflect_top) {
+    padded_u[1, 2:(nc + 1)] <- mat[1, ]
+    padded_c[1, 2:(nc + 1)] <- attractant[1, ]
+  }
+
+  # Standard Laplacian (same as diffuse_matrix)
+  laplacian <- (
+    padded_u[1:nr,     1:nc    ] +
+    padded_u[1:nr,     2:(nc+1)] +
+    padded_u[1:nr,     3:(nc+2)] +
+    padded_u[2:(nr+1), 1:nc    ] +
+    padded_u[2:(nr+1), 3:(nc+2)] +
+    padded_u[3:(nr+2), 1:nc    ] +
+    padded_u[3:(nr+2), 2:(nc+1)] +
+    padded_u[3:(nr+2), 3:(nc+2)]
+    - 8 * mat
+  )
+
+  # Chemotaxis flux (loop over 8 neighbors)
+  di <- c(-1, -1, -1, 0, 0, 1, 1, 1)
+  dj <- c(-1, 0, 1, -1, 1, -1, 0, 1)
+
+  chemotaxis_flux <- matrix(0, nrow = nr, ncol = nc)
+  for (k in 1:8) {
+    c_neighbor <- padded_c[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
+    u_neighbor <- padded_u[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
+    c_center   <- attractant
+
+    dc <- c_neighbor - c_center
+    # Upwind: dc > 0 means flow outward, use u_center; dc < 0, use u_neighbor
+    u_face <- ifelse(dc > 0, mat, u_neighbor)
+    chemotaxis_flux <- chemotaxis_flux + u_face * dc
+  }
+
+  mat_new <- mat + D * laplacian - chi * chemotaxis_flux
+  mat_new <- pmax(0, mat_new)
+  mat_new <- matrix(pmin(max_cell_value, mat_new), nrow = nr, ncol = nc)
+
+  return(mat_new)
+}
+
 shift_insert <- function(current_registry, new_elements_vector) {
   combined_registry <- c(new_elements_vector, current_registry)
   target_length <- length(current_registry)
@@ -191,6 +246,7 @@ check_cpp_status <- function() {
     "find_nearby_tregs_cpp",
     "calculate_epithelial_ros_cpp",
     "diffuse_matrix_cpp",
+    "diffuse_matrix_biased_cpp",
     "shift_insert_fast_cpp",
     "iszero_coordinates_cpp",
     "update_SAMPs_batch_cpp",
