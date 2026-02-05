@@ -350,9 +350,9 @@ NumericMatrix diffuse_matrix_biased_cpp(
   int nr = mat.nrow();
   int nc = mat.ncol();
 
-  // Create padded matrices for cell density and chemoattractant
-  NumericMatrix padded_u(nr + 2, nc + 2);
-  NumericMatrix padded_c(nr + 2, nc + 2);
+  // Create padded matrices
+  NumericMatrix padded_u(nr + 2, nc + 2); // cell density: zero-padded (no-flux for u)
+  NumericMatrix padded_c(nr + 2, nc + 2); // attractant: reflective on all sides
   for (int i = 0; i < nr; i++)
   {
     for (int j = 0; j < nc; j++)
@@ -362,13 +362,40 @@ NumericMatrix diffuse_matrix_biased_cpp(
     }
   }
 
-  // REFLECTIVE boundary at TOP (y=0, epithelium boundary)
+  // Reflective (Neumann) boundary for attractant on ALL sides
+  // This prevents spurious inward gradients at domain edges
+  // Top row
+  for (int j = 0; j < nc; j++)
+  {
+    padded_c(0, j + 1) = attractant(0, j);
+  }
+  // Bottom row
+  for (int j = 0; j < nc; j++)
+  {
+    padded_c(nr + 1, j + 1) = attractant(nr - 1, j);
+  }
+  // Left column
+  for (int i = 0; i < nr; i++)
+  {
+    padded_c(i + 1, 0) = attractant(i, 0);
+  }
+  // Right column
+  for (int i = 0; i < nr; i++)
+  {
+    padded_c(i + 1, nc + 1) = attractant(i, nc - 1);
+  }
+  // Corners
+  padded_c(0, 0) = attractant(0, 0);
+  padded_c(0, nc + 1) = attractant(0, nc - 1);
+  padded_c(nr + 1, 0) = attractant(nr - 1, 0);
+  padded_c(nr + 1, nc + 1) = attractant(nr - 1, nc - 1);
+
+  // REFLECTIVE boundary for cell density at TOP (y=0, epithelium)
   if (reflect_top)
   {
     for (int j = 0; j < nc; j++)
     {
       padded_u(0, j + 1) = mat(0, j);
-      padded_c(0, j + 1) = attractant(0, j);
     }
   }
 

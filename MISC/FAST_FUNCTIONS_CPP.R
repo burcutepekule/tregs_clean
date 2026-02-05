@@ -115,17 +115,24 @@ diffuse_matrix_biased <- function(mat, attractant, D, chi, max_cell_value, refle
   nr <- nrow(mat)
   nc <- ncol(mat)
 
-  # Pad cell density
+  # Pad cell density (zero-padded: no-flux for u)
   padded_u <- matrix(0, nrow = nr + 2, ncol = nc + 2)
   padded_u[2:(nr + 1), 2:(nc + 1)] <- mat
 
-  # Pad chemoattractant
+  # Pad chemoattractant (reflective on ALL sides to avoid spurious edge gradients)
   padded_c <- matrix(0, nrow = nr + 2, ncol = nc + 2)
   padded_c[2:(nr + 1), 2:(nc + 1)] <- attractant
+  padded_c[1, 2:(nc + 1)]          <- attractant[1, ]       # top
+  padded_c[nr + 2, 2:(nc + 1)]     <- attractant[nr, ]      # bottom
+  padded_c[2:(nr + 1), 1]          <- attractant[, 1]       # left
+  padded_c[2:(nr + 1), nc + 2]     <- attractant[, nc]      # right
+  padded_c[1, 1]                   <- attractant[1, 1]      # corners
+  padded_c[1, nc + 2]              <- attractant[1, nc]
+  padded_c[nr + 2, 1]              <- attractant[nr, 1]
+  padded_c[nr + 2, nc + 2]         <- attractant[nr, nc]
 
   if (reflect_top) {
     padded_u[1, 2:(nc + 1)] <- mat[1, ]
-    padded_c[1, 2:(nc + 1)] <- attractant[1, ]
   }
 
   # Standard Laplacian (same as diffuse_matrix)
