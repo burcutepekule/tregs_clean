@@ -42,21 +42,25 @@ PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, r
 ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top = FALSE)
 
 
-# Macrophage and Treg pools
-# CURRENTLY THE DIFFUSION IS HOMOGENIOUS!
-# BUT TREGS SHOULD MOVE TOWARD DAMPS
-# MACROPHAGES SHOULD MOVE TOWARDS danger_signal_grid = DAMPs + PAMPs
+# Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
+danger_signal_grid = DAMPs + PAMPs
+density_M0   = diffuse_matrix_biased_cpp(density_M0, danger_signal_grid,
+                                         diffusion_speed_macro, chi_macro,
+                                         max_density_macro, reflect_top = FALSE)
+density_M1   = diffuse_matrix_biased_cpp(density_M1, danger_signal_grid,
+                                         diffusion_speed_macro, chi_macro,
+                                         max_density_macro, reflect_top = FALSE)
+density_M2   = diffuse_matrix_biased_cpp(density_M2, danger_signal_grid,
+                                         diffusion_speed_macro, chi_macro,
+                                         max_density_macro, reflect_top = FALSE)
 
-density_M0   = diffuse_matrix_cpp(density_M0, diffusion_speed_macro,
-                                    max_density_macro, reflect_top = FALSE)
-density_M1   = diffuse_matrix_cpp(density_M1, diffusion_speed_macro,
-                                  max_density_macro, reflect_top = FALSE)
-density_M2   = diffuse_matrix_cpp(density_M2, diffusion_speed_macro,
-                                  max_density_macro, reflect_top = FALSE)
-density_treg = diffuse_matrix_cpp(density_treg, diffusion_speed_treg,
-                                   max_density_treg, reflect_top = FALSE)
-density_treg_active = diffuse_matrix_cpp(density_treg_active, diffusion_speed_treg,
-                                  max_density_treg, reflect_top = FALSE)
+# Treg pools: chemotax toward DAMPs
+density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
+                                         diffusion_speed_treg, chi_treg,
+                                         max_density_treg, reflect_top = FALSE)
+density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
+                                                diffusion_speed_treg, chi_treg,
+                                                max_density_treg, reflect_top = FALSE)
 
 # ============================================================================
 # 3. DECAY ALL GRIDS
