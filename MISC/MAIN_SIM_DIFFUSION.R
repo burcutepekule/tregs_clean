@@ -18,9 +18,9 @@ density_treg = matrix(1, nrow = dim(density_treg)[1], ncol = dim(density_treg)[1
 # 0. EXTINCTION
 # ============================================================================
 epithelium[epithelium<extinction_limit]=0
-density_pathogen[density_pathogen<extinction_limit]  =0
+density_pathogen[density_pathogen<extinction_limit] =0
 density_commensal[density_commensal<extinction_limit]=0
-DAMPs[DAMPs<extinction_limit]=0
+DAMPs[DAMPs<extinction_limit] =0
 SAMPs[SAMPs<extinction_limit]=0
 PAMPs[PAMPs<extinction_limit]=0
 ROS[ROS<extinction_limit]=0
@@ -35,16 +35,17 @@ density_treg_active[density_treg_active<extinction_limit]=0
 # 1. MICROBE SOURCE TERMS (at epithelium, y=1)
 # ============================================================================
 
+
 # Pathogens leak through injured epithelium
-pathogen_source       = epithelium$level_injury*rate_leak_pathogen_injury # this is because I don't wanna change the rate_leak_pathogen_injury in ASSIGN_PARAMETERS.R
+pathogen_source       = epithelium$level_injury*rate_leak_pathogen_injury*0.01 # this is because I don't wanna change the rate_leak_pathogen_injury in ASSIGN_PARAMETERS.R
 density_pathogen[1, ] = density_pathogen[1, ]+pathogen_source
 density_pathogen[1, ] = pmin(density_pathogen[1, ], max_density_microbe)
 
 # Commensals: baseline leak+injury-enhanced leak
-commensal_source_baseline = rep(rate_leak_commensal_baseline)
-commensal_source_injury   = epithelium$level_injury*rate_leak_commensal_injury
-density_commensal[1, ]    = density_commensal[1, ]+commensal_source_baseline+commensal_source_injury
-density_commensal[1, ]    = pmin(density_commensal[1, ], max_density_microbe)
+commensal_source_baseline = rep(rate_leak_commensal_baseline*0.01)
+commensal_source_injury   = epithelium$level_injury*rate_leak_commensal_injury*0.01
+density_commensal[1, ] = density_commensal[1, ]+commensal_source_baseline+commensal_source_injury
+density_commensal[1, ] = pmin(density_commensal[1, ], max_density_microbe)
 
 # ============================================================================
 # 2. DIFFUSE ALL DENSITY GRIDS
@@ -64,7 +65,6 @@ ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect
 
 # Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
 danger_signal_grid = DAMPs + PAMPs
-## NO NEED TO DIFFUSE density_M0, ALWAYS 1 EVERYWHERE
 # density_M0   = diffuse_matrix_biased_cpp(density_M0, danger_signal_grid,
 #                                          diffusion_speed_macro, chi_macro,
 #                                          max_density_macro, reflect_top = TRUE)
@@ -76,7 +76,6 @@ density_M2   = diffuse_matrix_biased_cpp(density_M2, danger_signal_grid,
                                          max_density_macro, reflect_top = TRUE)
 
 # Treg pools: chemotax toward DAMPs
-## NO NEED TO DIFFUSE density_treg, ALWAYS 1 EVERYWHERE
 # density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
 #                                          diffusion_speed_treg, chi_treg,
 #                                          max_density_treg, reflect_top = TRUE)
@@ -90,6 +89,10 @@ density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
 # Microbe decay (natural death)
 density_pathogen  = density_pathogen*(1-decay_rate_microbe)
 density_commensal = density_commensal*(1-decay_rate_microbe)
+
+# # Macrophage and Treg pools (no decay if conserved)
+# density_macro = density_macro*(1-decay_rate_macro)
+# density_treg  = density_treg*(1-decay_rate_treg)
 
 # Signal decay
 DAMPs = DAMPs*(1-DAMPs_decay)
@@ -211,10 +214,9 @@ frac_M2_add = safe_divide(SAMPS_diff, total_diff)
 #                        ncol = ncol(frac_M_remove))
 # frac_M_remove+frac_M1_add+frac_M2_add should be 1!
 
-# Smooth deactivation: scales from 1 (no signal) to 0 (strong signal)
-# Replaces the hard floor() threshold that caused banding artifacts
-frac_M1_remove = 1 - frac_M1_add
-frac_M2_remove = 1 - frac_M2_add
+# when both signals are off
+frac_M1_remove = floor(1-frac_M1_add)
+frac_M2_remove = floor(1-frac_M2_add)
 
 # avoid depleting all at the same time when frac=1
 d_frac_M1 = density_M0*rate_of_activation*frac_M1_add - density_M1*rate_of_deactivation*frac_M1_remove - density_M1*rate_of_activation*frac_M2_add
@@ -331,8 +333,8 @@ if(plot_grid_t==1){
   }
   
   # Create faceted plot
-  png(filename = paste0(dir_name_data,"/grids_",t,".png"), width = 1400, height = 1200)
-  par(mfrow = c(4, 4), mar = c(2, 2, 3, 1))
+  png(filename = paste0(dir_name_data,"/grids_",t,".png"), width = 1200, height = 800)
+  par(mfrow = c(3, 4), mar = c(2, 2, 3, 1))
   
   plot_grid(density_pathogen, "Pathogen", zlim = c(0, 1.01*max(density_pathogen)))
   plot_grid(density_commensal, "Commensal", zlim = c(0, 1.01*max(density_commensal)))
@@ -341,7 +343,7 @@ if(plot_grid_t==1){
   plot_grid(density_M2, "M2", zlim = c(0, 1.01*max(density_M2)))
   plot_grid(density_treg, "Treg (resting)", zlim = c(0, 1.01*max(density_treg)))
   plot_grid(density_treg_active, "Treg (active)", zlim = c(0, 1.01*max(density_treg_active)))
-
+  
   plot_grid(DAMPs, "DAMPs", zlim = c(0, 1.01*max(DAMPs)))
   plot_grid(PAMPs, "PAMPs", zlim = c(0, 1.01*max(PAMPs)))
   plot_grid(SAMPs, "SAMPs", zlim = c(0, 1.01*max(SAMPs)))
@@ -351,10 +353,7 @@ if(plot_grid_t==1){
   barplot(epithelium$level_injury, main = "Epithelial injury", 
           col = "darkblue", border = NA, ylim = c(0, max_level_injury))
   
-  plot_grid(density_M0*rate_of_activation*frac_M1_add, "M1 activation from M0", zlim = c(0, 1.01*max(density_M0*rate_of_activation*frac_M1_add)))
-  plot_grid(density_M1*rate_of_deactivation*frac_M1_remove, "M1 deactivation", zlim = c(0, 1.01*max(density_M1*rate_of_deactivation*frac_M1_remove)))
-  plot_grid(density_M1*rate_of_activation*frac_M2_add, "M1 => M2", zlim = c(0, 1.01*max(density_M1*rate_of_activation*frac_M2_add)))
-  
+
   # Add overall title
   mtext(sprintf("Time: %d", t), outer = TRUE, line = -1.5, cex = 1.5, font = 2)
   

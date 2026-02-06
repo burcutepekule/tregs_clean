@@ -12,7 +12,8 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 cat("Reading parameters...\n")
-params_df = readRDS('./lhs_parameters_dff.rds')
+# params_df = read.csv("./lhs_parameters_diff.csv", stringsAsFactors = FALSE)
+params_df = readRDS('./params_df_diff.rds')
 cat("Loaded", nrow(params_df), "parameter sets\n")
 
 # ============================================================================
@@ -29,7 +30,7 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 
-loop_over = c(0)
+loop_over = c(77)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
@@ -46,10 +47,10 @@ cat("Output directory:", dir_name_data, "\n\n")
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
 grid_size   = 25
-t_max       = 50
+t_max       = 500
 num_reps    = 1
 plot_grid_t = 1
-save_png    = 0
+save_gif    = 1
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -174,7 +175,7 @@ for (scenario_ind in loop_over_sc){
 cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 
 
-if(save_png==1){
+if(save_gif==1){
   library(av)
   
   # Define file list and output
