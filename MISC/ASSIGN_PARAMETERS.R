@@ -92,12 +92,17 @@ decay_rate_treg = 0.0 # No natural decay - conserved pool
 # Tregs chemotax toward DAMPs
 # Set chi = 0 to recover isotropic (homogeneous) diffusion
 #
-# Scale chi with D to keep the Peclet number (chi*|grad_c|/D) bounded.
-# With Pe_max ~ 20, the diffusion can smooth the chemotactic front and
-# prevent artificial banding artifacts.
-Pe_max = 20
-chi_macro = Pe_max * diffusion_speed_macro
-chi_treg  = Pe_max * diffusion_speed_treg
+# If your attractant is 0–1 and changes smoothly, maybe neighbor jumps are ~0.05–0.2
+# χ_max safe ~ 2.5
+
+chi_macro = 2.5
+chi_treg  = 2.5
+
+# Number of extra smoothing passes applied to the danger signal before using
+# it as the chemotactic attractant. This extends the effective sensing range
+# of macrophages/Tregs beyond the sharp concentration field, preventing
+# banding artifacts from steep signal gradients.
+n_chemotaxis_smooth = 3
 
 # Max density values (normalized to 1.0)
 max_density_microbe = 1.0

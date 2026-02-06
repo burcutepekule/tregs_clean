@@ -63,24 +63,41 @@ ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect
 
 
 # Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
+# Smooth the chemotactic field so the gradient extends further into tissue.
+# The raw DAMPs+PAMPs field decays too steeply from the epithelium
+# (exp(-x*sqrt(decay/D)) ≈ near-zero by row 3-4), concentrating the
+# chemotactic gradient in 1-2 rows and creating banding artifacts.
+# Extra diffusion passes spread the gradient without changing actual signals.
 danger_signal_grid = DAMPs + PAMPs
+chemotaxis_field = danger_signal_grid
+for (s in seq_len(n_chemotaxis_smooth)) {
+  chemotaxis_field = diffuse_matrix_cpp(chemotaxis_field, 0.12,
+                                        max(chemotaxis_field) + 1e-10,
+                                        reflect_top = TRUE)
+}
 ## NO NEED TO DIFFUSE density_M0, ALWAYS 1 EVERYWHERE
-# density_M0   = diffuse_matrix_biased_cpp(density_M0, danger_signal_grid,
+# density_M0   = diffuse_matrix_biased_cpp(density_M0, chemotaxis_field,
 #                                          diffusion_speed_macro, chi_macro,
 #                                          max_density_macro, reflect_top = TRUE)
-density_M1   = diffuse_matrix_biased_cpp(density_M1, danger_signal_grid,
+density_M1   = diffuse_matrix_biased_cpp(density_M1, chemotaxis_field,
                                          diffusion_speed_macro, chi_macro,
                                          max_density_macro, reflect_top = TRUE)
-density_M2   = diffuse_matrix_biased_cpp(density_M2, danger_signal_grid,
+density_M2   = diffuse_matrix_biased_cpp(density_M2, chemotaxis_field,
                                          diffusion_speed_macro, chi_macro,
                                          max_density_macro, reflect_top = TRUE)
 
-# Treg pools: chemotax toward DAMPs
+# Treg pools: chemotax toward DAMPs (also smoothed)
+chemotaxis_field_treg = DAMPs
+for (s in seq_len(n_chemotaxis_smooth)) {
+  chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12,
+                                              max(chemotaxis_field_treg) + 1e-10,
+                                              reflect_top = TRUE)
+}
 ## NO NEED TO DIFFUSE density_treg, ALWAYS 1 EVERYWHERE
-# density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
+# density_treg = diffuse_matrix_biased_cpp(density_treg, chemotaxis_field_treg,
 #                                          diffusion_speed_treg, chi_treg,
 #                                          max_density_treg, reflect_top = TRUE)
-density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
+density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, chemotaxis_field_treg,
                                                 diffusion_speed_treg, chi_treg,
                                                 max_density_treg, reflect_top = TRUE)
 
