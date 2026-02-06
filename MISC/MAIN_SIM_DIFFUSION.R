@@ -211,9 +211,10 @@ frac_M2_add = safe_divide(SAMPS_diff, total_diff)
 #                        ncol = ncol(frac_M_remove))
 # frac_M_remove+frac_M1_add+frac_M2_add should be 1!
 
-# when both signals are off
-frac_M1_remove = floor(1-frac_M1_add)
-frac_M2_remove = floor(1-frac_M2_add)
+# Smooth deactivation: scales from 1 (no signal) to 0 (strong signal)
+# Replaces the hard floor() threshold that caused banding artifacts
+frac_M1_remove = 1 - frac_M1_add
+frac_M2_remove = 1 - frac_M2_add
 
 # avoid depleting all at the same time when frac=1
 d_frac_M1 = density_M0*rate_of_activation*frac_M1_add - density_M1*rate_of_deactivation*frac_M1_remove - density_M1*rate_of_activation*frac_M2_add
