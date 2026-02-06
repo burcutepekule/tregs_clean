@@ -76,7 +76,7 @@ chunks       = split_equal(indices_vec, n1)
 loop_over_sc = chunks[[n2]]
 
 skip_opt_0  = 0
-save_images_path_data = "ts_diffusion"
+save_images_path_data = "ts_abm"
 dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
 
 # path_data  = "/Users/burcutepekule/Desktop/sim_abm_local/"

@@ -23,7 +23,7 @@ add_SAMPs = param_set_use$add_SAMPs
 add_PAMPs = param_set_use$add_PAMPs
 
 # Decay rates
-ros_decay = param_set_use$ros_decay
+ros_decay   = param_set_use$ros_decay
 DAMPs_decay = param_set_use$DAMPs_decay
 SAMPs_decay = param_set_use$SAMPs_decay
 PAMPs_decay = param_set_use$PAMPs_decay
@@ -76,14 +76,10 @@ n_pathogens_lp = round(rate_leak_pathogen_injury*length(injury_site))
 # DIFFUSION MODEL PARAMETERS (hardcoded - bacteria/cells slower than signals)
 # ============================================================================
 # # Microbe diffusion (slower than signaling molecules)
-# diffusion_speed_microbe = 0.1   # ~10x slower than typical signal diffusion
-# decay_rate_microbe = 1/20        # Natural death: ~1/age_max_bacteria per step
-
 diffusion_speed_microbe = param_set_use$diffusion_speed_microbe
 decay_rate_microbe      = param_set_use$decay_rate_microbe
 
 # Macrophage pool diffusion (cells move slower than signals)
-# diffusion_speed_macro = 0.05    # Very slow - cells don't diffuse much
 diffusion_speed_macro = param_set_use$diffusion_speed_macro
 decay_rate_macro = 0.0 # No natural decay - conserved pool
 
@@ -95,13 +91,26 @@ decay_rate_treg = 0.0 # No natural decay - conserved pool
 # Macrophages chemotax toward danger signals (DAMPs + PAMPs)
 # Tregs chemotax toward DAMPs
 # Set chi = 0 to recover isotropic (homogeneous) diffusion
-chi_macro = 0.01
-chi_treg  = 0.01
+# 
+# If your attractant is 0–1 and changes smoothly, maybe neighbor jumps are ~0.05–0.2
+# χ_max safe ~ 2.5
+
+chi_macro = 2.5
+chi_treg  = 2.5
 
 # Max density values (normalized to 1.0)
 max_density_microbe = 1.0
-max_density_macro = 1.0
-max_density_treg = 1.0
+max_density_macro   = 1.0
+max_density_treg    = 1.0
 
+active_age_limit = 1 # OVERWRITE FOR DIFFUSION MODEL!
+
+density_M0_0   = 1
+density_treg_0 = 1
+
+extinction_limit = 1e-6
+
+rate_of_activation   = 0.05
+rate_of_deactivation = 0.05
 
 

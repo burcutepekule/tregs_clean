@@ -338,6 +338,18 @@ NumericMatrix diffuse_matrix_cpp(
 // Uses upwind scheme for u at cell faces for numerical stability
 // When chi = 0, reduces to standard isotropic diffusion
 
+// ============================================================================
+// BIASED DIFFUSION WITH CHEMOTAXIS (KELLER-SEGEL)
+// Implements: du/dt = D * Laplacian(u) - chi * div(u * grad(c))
+// - Diffusion: 8-neighbor Laplacian (as in your original)
+// - Chemotaxis: conservative 4-neighbor flux divergence with upwind u at faces
+// Boundaries:
+// - attractant c: reflective (Neumann) on ALL sides
+// - density u: reflective on left/right/bottom (no-flux), and
+//              top is reflective only if reflect_top==true,
+//              otherwise top ghost row stays 0 (absorbing)
+// ============================================================================
+
 // [[Rcpp::export]]
 NumericMatrix diffuse_matrix_biased_cpp(
     NumericMatrix mat,
@@ -347,103 +359,149 @@ NumericMatrix diffuse_matrix_biased_cpp(
     double max_cell_value,
     bool reflect_top = false)
 {
-  int nr = mat.nrow();
-  int nc = mat.ncol();
+  const int nr = mat.nrow();
+  const int nc = mat.ncol();
 
-  // Create padded matrices
-  NumericMatrix padded_u(nr + 2, nc + 2); // cell density: zero-padded (no-flux for u)
-  NumericMatrix padded_c(nr + 2, nc + 2); // attractant: reflective on all sides
+  // Padded grids (ghost cells)
+  NumericMatrix u(nr + 2, nc + 2); // density
+  NumericMatrix c(nr + 2, nc + 2); // attractant
+
+  // Fill interior
   for (int i = 0; i < nr; i++)
   {
     for (int j = 0; j < nc; j++)
     {
-      padded_u(i + 1, j + 1) = mat(i, j);
-      padded_c(i + 1, j + 1) = attractant(i, j);
+      u(i + 1, j + 1) = mat(i, j);
+      c(i + 1, j + 1) = attractant(i, j);
     }
   }
 
-  // Reflective (Neumann) boundary for attractant on ALL sides
-  // This prevents spurious inward gradients at domain edges
-  // Top row
+  // -------------------------
+  // Reflective boundary for c (ALL sides)
+  // -------------------------
+  // Top / bottom
   for (int j = 0; j < nc; j++)
   {
-    padded_c(0, j + 1) = attractant(0, j);
+    c(0, j + 1) = attractant(0, j);
+    c(nr + 1, j + 1) = attractant(nr - 1, j);
   }
-  // Bottom row
-  for (int j = 0; j < nc; j++)
-  {
-    padded_c(nr + 1, j + 1) = attractant(nr - 1, j);
-  }
-  // Left column
+  // Left / right
   for (int i = 0; i < nr; i++)
   {
-    padded_c(i + 1, 0) = attractant(i, 0);
-  }
-  // Right column
-  for (int i = 0; i < nr; i++)
-  {
-    padded_c(i + 1, nc + 1) = attractant(i, nc - 1);
+    c(i + 1, 0) = attractant(i, 0);
+    c(i + 1, nc + 1) = attractant(i, nc - 1);
   }
   // Corners
-  padded_c(0, 0) = attractant(0, 0);
-  padded_c(0, nc + 1) = attractant(0, nc - 1);
-  padded_c(nr + 1, 0) = attractant(nr - 1, 0);
-  padded_c(nr + 1, nc + 1) = attractant(nr - 1, nc - 1);
+  c(0, 0) = attractant(0, 0);
+  c(0, nc + 1) = attractant(0, nc - 1);
+  c(nr + 1, 0) = attractant(nr - 1, 0);
+  c(nr + 1, nc + 1) = attractant(nr - 1, nc - 1);
 
-  // REFLECTIVE boundary for cell density at TOP (y=0, epithelium)
+  // -------------------------
+  // Boundary for u (density)
+  // - left/right/bottom: reflective (no-flux)
+  // - top: reflective only if reflect_top==true, else absorbing (0)
+  // -------------------------
+
+  // Left/right reflective
+  for (int i = 0; i < nr; i++)
+  {
+    u(i + 1, 0) = mat(i, 0);
+    u(i + 1, nc + 1) = mat(i, nc - 1);
+  }
+
+  // Bottom reflective
+  for (int j = 0; j < nc; j++)
+  {
+    u(nr + 1, j + 1) = mat(nr - 1, j);
+  }
+
+  // Top: either reflective or absorbing
   if (reflect_top)
   {
     for (int j = 0; j < nc; j++)
     {
-      padded_u(0, j + 1) = mat(0, j);
+      u(0, j + 1) = mat(0, j);
     }
   }
+  else
+  {
+    // leave u(0, j+1) as 0.0 (absorbing), matching your prior behavior
+  }
+
+  // Corners for u (consistent)
+  u(0, 0) = reflect_top ? mat(0, 0) : 0.0;
+  u(0, nc + 1) = reflect_top ? mat(0, nc - 1) : 0.0;
+  u(nr + 1, 0) = mat(nr - 1, 0);
+  u(nr + 1, nc + 1) = mat(nr - 1, nc - 1);
 
   NumericMatrix result(nr, nc);
-
-  // 8 neighbor offsets relative to padded position (i+1, j+1)
-  int di[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
-  int dj[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
 
   for (int i = 0; i < nr; i++)
   {
     for (int j = 0; j < nc; j++)
     {
-      double u_center = mat(i, j);
-      double c_center = padded_c(i + 1, j + 1);
 
-      // Standard 8-neighbor Laplacian (identical to diffuse_matrix_cpp)
-      double laplacian =
-          padded_u(i, j) +         // top-left
-          padded_u(i, j + 1) +     // top
-          padded_u(i, j + 2) +     // top-right
-          padded_u(i + 1, j) +     // left
-          padded_u(i + 1, j + 2) + // right
-          padded_u(i + 2, j) +     // bottom-left
-          padded_u(i + 2, j + 1) + // bottom
-          padded_u(i + 2, j + 2) - // bottom-right
-          8.0 * u_center;          // center
+      // center indices in padded grid
+      const int pi = i + 1;
+      const int pj = j + 1;
 
-      // Chemotaxis flux: chi * sum_k [ u_face_k * (c_k - c_center) ]
-      // Upwind: if c_k > c_center (flow outward), u_face = u_center
-      //         if c_k < c_center (flow inward),  u_face = u_neighbor
-      double chemotaxis_flux = 0.0;
-      for (int k = 0; k < 8; k++)
-      {
-        int ni = i + 1 + di[k];
-        int nj = j + 1 + dj[k];
+      const double uC = u(pi, pj);
 
-        double dc = padded_c(ni, nj) - c_center;
-        double u_face = (dc > 0) ? u_center : padded_u(ni, nj);
+      // -------------------------
+      // 8-neighbor Laplacian for diffusion (your original)
+      // -------------------------
+      const double laplacian =
+          u(pi - 1, pj - 1) + u(pi - 1, pj) + u(pi - 1, pj + 1) +
+          u(pi, pj - 1) + u(pi, pj + 1) +
+          u(pi + 1, pj - 1) + u(pi + 1, pj) + u(pi + 1, pj + 1) -
+          8.0 * uC;
 
-        chemotaxis_flux += u_face * dc;
-      }
+      // -------------------------
+      // Chemotaxis: -chi * div( u * grad c )
+      // Conservative 4-neighbor upwind fluxes at faces
+      // -------------------------
+      const double cC = c(pi, pj);
 
-      double new_val = u_center + D * laplacian - chi * chemotaxis_flux;
+      const double cE = c(pi, pj + 1);
+      const double cW = c(pi, pj - 1);
+      const double cN = c(pi - 1, pj);
+      const double cS = c(pi + 1, pj);
 
-      // Clamp to [0, max_cell_value]
+      const double uE = u(pi, pj + 1);
+      const double uW = u(pi, pj - 1);
+      const double uN = u(pi - 1, pj);
+      const double uS = u(pi + 1, pj);
+
+      // Differences defined as "forward" in +x (east) and +y (south/down)
+      const double dcE = cE - cC; // +x
+      const double dcW = cC - cW; // +x at west face (from W -> C)
+      const double dcS = cS - cC; // +y (down)
+      const double dcN = cC - cN; // +y at north face (from N -> C)
+
+      // Upwind densities at faces (donor depends on sign of dc)
+      const double u_face_E = (dcE > 0.0) ? uC : uE;
+      const double u_face_W = (dcW > 0.0) ? uW : uC;
+
+      // For south face: positive dcS means flux DOWN from center; negative means flux UP from south neighbor
+      const double u_face_S = (dcS > 0.0) ? uC : uS;
+
+      // For north face: positive dcN means flux DOWN from north neighbor into center; negative means flux UP from center
+      const double u_face_N = (dcN > 0.0) ? uN : uC;
+
+      const double fluxE = u_face_E * dcE; // +x
+      const double fluxW = u_face_W * dcW; // +x
+      const double fluxS = u_face_S * dcS; // +y (down)
+      const double fluxN = u_face_N * dcN; // +y (down)
+
+      const double chemotaxis_div = (fluxE - fluxW) + (fluxS - fluxN);
+
+      double new_val = uC + D * laplacian - chi * chemotaxis_div;
+
+      // Clamp
       new_val = std::max(0.0, new_val);
       new_val = std::min(max_cell_value, new_val);
+
       result(i, j) = new_val;
     }
   }

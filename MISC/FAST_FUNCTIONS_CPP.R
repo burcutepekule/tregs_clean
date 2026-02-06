@@ -1,3 +1,21 @@
+get_middle_percent <- function(seq_vector, percent) {
+  n_total <- length(seq_vector)
+  n_select <- ceiling(n_total * percent / 100)
+  
+  mid <- floor(n_total / 2)
+  half_window <- floor(n_select / 2)
+  
+  start_idx <- max(1, mid - half_window + 1)
+  end_idx <- min(n_total, start_idx + n_select - 1)
+  
+  return(seq_vector[start_idx:end_idx])
+}
+
+safe_divide <- function(x, y) {
+  result <- x / y
+  replace(result, is.nan(result), 0)
+}
+
 # ============================================================================
 # C++ ACCELERATED FUNCTIONS FOR TREGS SIMULATION
 # ============================================================================
@@ -39,208 +57,197 @@ tryCatch({
   USE_CPP <- FALSE
 })
 
-# ============================================================================
-# ORIGINAL R FUNCTIONS (FALLBACK IF C++ FAILS)
-# ============================================================================
+# # ============================================================================
+# # ORIGINAL R FUNCTIONS (FALLBACK IF C++ FAILS)
+# # ============================================================================
+# 
+# # Logistic function
+# logistic_function <- function(x, k = k_in, x0 = x0_in) {
+#   return(1 / (1 + exp(-k * (x - x0))))
+# }
+# 
+# logistic_scaled_0_to_5_quantized <- function(x,  k = k_in, x0 = x0_in, c=c_in) {
+#   return(round(c*plogis(x, location = x0, scale = 1 / k)))
+# }
+# 
+# # Original R implementation (kept as fallback)
+# get_8n_avg_signal_fast <- function(x, y, act_radius_signal, signal_matrix) {
+#   loc  = c(x, y)
+#   x_coordinates = (loc[1]-act_radius_signal):(loc[1]+act_radius_signal)
+#   x_coordinates = x_coordinates[x_coordinates>0 & x_coordinates<=grid_size]
+#   y_coordinates = (loc[2]-act_radius_signal):(loc[2]+act_radius_signal)
+#   y_coordinates = y_coordinates[y_coordinates>0 & y_coordinates<=grid_size]
+#   dval = signal_matrix[y_coordinates, x_coordinates]
+#   return(mean(dval))
+# }
+# 
+# # Fast shift_insert for matrix operations
+# shift_insert_fast <- function(vec, insert_vals) {
+#   n_insert <- length(insert_vals)
+#   n_vec <- length(vec)
+#   
+#   if(n_insert >= n_vec) {
+#     return(insert_vals[1:n_vec])
+#   } else {
+#     return(c(insert_vals, vec[1:(n_vec - n_insert)]))
+#   }
+# }
+# 
+# # Optimized version of iszero_coordinates
+# iszero_coordinates <- function(x) {
+#   y <- sample(c(-1, 0, 1), length(x), replace = TRUE)
+#   zero_idx <- which(x == 0)
+#   y[zero_idx] <- sample(c(-1, 1), length(zero_idx), replace = TRUE)
+#   return(y)
+# }
+# 
+# # Diffusion matrix (R version)
+# diffuse_matrix <- function(mat, D, max_cell_value) {
+#   nr <- nrow(mat)
+#   nc <- ncol(mat)
+#   
+#   padded <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+#   padded[2:(nr + 1), 2:(nc + 1)] <- mat
+#   
+#   laplacian <- (
+#     padded[1:nr,     1:nc    ] +
+#       padded[1:nr,     2:(nc+1)] +
+#       padded[1:nr,     3:(nc+2)] +
+#       padded[2:(nr+1), 1:nc    ] +
+#       padded[2:(nr+1), 3:(nc+2)] +
+#       padded[3:(nr+2), 1:nc    ] +
+#       padded[3:(nr+2), 2:(nc+1)] +
+#       padded[3:(nr+2), 3:(nc+2)]
+#     - 8 * mat
+#   )
+#   
+#   mat_new <- mat + D * laplacian
+#   mat_new <- matrix(pmin(max_cell_value, mat_new), nrow = nrow(mat), ncol = ncol(mat))
+#   
+#   return(mat_new)
+# }
+# 
+# # Biased diffusion with chemotaxis (R fallback)
+# # Keller-Segel: du/dt = D * Laplacian(u) - chi * div(u * grad(c))
+# diffuse_matrix_biased <- function(mat, attractant, D, chi, max_cell_value, reflect_top = FALSE) {
+#   nr <- nrow(mat)
+#   nc <- ncol(mat)
+# 
+#   # Pad cell density (zero-padded: no-flux for u)
+#   padded_u <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+#   padded_u[2:(nr + 1), 2:(nc + 1)] <- mat
+# 
+#   # Pad chemoattractant (reflective on ALL sides to avoid spurious edge gradients)
+#   padded_c <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+#   padded_c[2:(nr + 1), 2:(nc + 1)] <- attractant
+#   padded_c[1, 2:(nc + 1)]          <- attractant[1, ]       # top
+#   padded_c[nr + 2, 2:(nc + 1)]     <- attractant[nr, ]      # bottom
+#   padded_c[2:(nr + 1), 1]          <- attractant[, 1]       # left
+#   padded_c[2:(nr + 1), nc + 2]     <- attractant[, nc]      # right
+#   padded_c[1, 1]                   <- attractant[1, 1]      # corners
+#   padded_c[1, nc + 2]              <- attractant[1, nc]
+#   padded_c[nr + 2, 1]              <- attractant[nr, 1]
+#   padded_c[nr + 2, nc + 2]         <- attractant[nr, nc]
+# 
+#   if (reflect_top) {
+#     padded_u[1, 2:(nc + 1)] <- mat[1, ]
+#   }
+# 
+#   # Standard Laplacian (same as diffuse_matrix)
+#   laplacian <- (
+#     padded_u[1:nr,     1:nc    ] +
+#     padded_u[1:nr,     2:(nc+1)] +
+#     padded_u[1:nr,     3:(nc+2)] +
+#     padded_u[2:(nr+1), 1:nc    ] +
+#     padded_u[2:(nr+1), 3:(nc+2)] +
+#     padded_u[3:(nr+2), 1:nc    ] +
+#     padded_u[3:(nr+2), 2:(nc+1)] +
+#     padded_u[3:(nr+2), 3:(nc+2)]
+#     - 8 * mat
+#   )
+# 
+#   # Chemotaxis flux (loop over 8 neighbors)
+#   di <- c(-1, -1, -1, 0, 0, 1, 1, 1)
+#   dj <- c(-1, 0, 1, -1, 1, -1, 0, 1)
+# 
+#   chemotaxis_flux <- matrix(0, nrow = nr, ncol = nc)
+#   for (k in 1:8) {
+#     c_neighbor <- padded_c[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
+#     u_neighbor <- padded_u[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
+#     c_center   <- attractant
+# 
+#     dc <- c_neighbor - c_center
+#     # Upwind: dc > 0 means flow outward, use u_center; dc < 0, use u_neighbor
+#     u_face <- ifelse(dc > 0, mat, u_neighbor)
+#     chemotaxis_flux <- chemotaxis_flux + u_face * dc
+#   }
+# 
+#   mat_new <- mat + D * laplacian - chi * chemotaxis_flux
+#   mat_new <- pmax(0, mat_new)
+#   mat_new <- matrix(pmin(max_cell_value, mat_new), nrow = nr, ncol = nc)
+# 
+#   return(mat_new)
+# }
+# 
+# shift_insert <- function(current_registry, new_elements_vector) {
+#   combined_registry <- c(new_elements_vector, current_registry)
+#   target_length <- length(current_registry)
+#   result_registry <- combined_registry[1:target_length]
+#   
+#   return(result_registry)
+# }
+# 
 
-# Logistic function
-logistic_function <- function(x, k = k_in, x0 = x0_in) {
-  return(1 / (1 + exp(-k * (x - x0))))
-}
-
-logistic_scaled_0_to_5_quantized <- function(x,  k = k_in, x0 = x0_in, c=c_in) {
-  return(round(c*plogis(x, location = x0, scale = 1 / k)))
-}
-
-# Original R implementation (kept as fallback)
-get_8n_avg_signal_fast <- function(x, y, act_radius_signal, signal_matrix) {
-  loc  = c(x, y)
-  x_coordinates = (loc[1]-act_radius_signal):(loc[1]+act_radius_signal)
-  x_coordinates = x_coordinates[x_coordinates>0 & x_coordinates<=grid_size]
-  y_coordinates = (loc[2]-act_radius_signal):(loc[2]+act_radius_signal)
-  y_coordinates = y_coordinates[y_coordinates>0 & y_coordinates<=grid_size]
-  dval = signal_matrix[y_coordinates, x_coordinates]
-  return(mean(dval))
-}
-
-# Fast shift_insert for matrix operations
-shift_insert_fast <- function(vec, insert_vals) {
-  n_insert <- length(insert_vals)
-  n_vec <- length(vec)
-  
-  if(n_insert >= n_vec) {
-    return(insert_vals[1:n_vec])
-  } else {
-    return(c(insert_vals, vec[1:(n_vec - n_insert)]))
-  }
-}
-
-# Optimized version of iszero_coordinates
-iszero_coordinates <- function(x) {
-  y <- sample(c(-1, 0, 1), length(x), replace = TRUE)
-  zero_idx <- which(x == 0)
-  y[zero_idx] <- sample(c(-1, 1), length(zero_idx), replace = TRUE)
-  return(y)
-}
-
-# Diffusion matrix (R version)
-diffuse_matrix <- function(mat, D, max_cell_value) {
-  nr <- nrow(mat)
-  nc <- ncol(mat)
-  
-  padded <- matrix(0, nrow = nr + 2, ncol = nc + 2)
-  padded[2:(nr + 1), 2:(nc + 1)] <- mat
-  
-  laplacian <- (
-    padded[1:nr,     1:nc    ] +
-      padded[1:nr,     2:(nc+1)] +
-      padded[1:nr,     3:(nc+2)] +
-      padded[2:(nr+1), 1:nc    ] +
-      padded[2:(nr+1), 3:(nc+2)] +
-      padded[3:(nr+2), 1:nc    ] +
-      padded[3:(nr+2), 2:(nc+1)] +
-      padded[3:(nr+2), 3:(nc+2)]
-    - 8 * mat
-  )
-  
-  mat_new <- mat + D * laplacian
-  mat_new <- matrix(pmin(max_cell_value, mat_new), nrow = nrow(mat), ncol = ncol(mat))
-  
-  return(mat_new)
-}
-
-# Biased diffusion with chemotaxis (R fallback)
-# Keller-Segel: du/dt = D * Laplacian(u) - chi * div(u * grad(c))
-diffuse_matrix_biased <- function(mat, attractant, D, chi, max_cell_value, reflect_top = FALSE) {
-  nr <- nrow(mat)
-  nc <- ncol(mat)
-
-  # Pad cell density (zero-padded: no-flux for u)
-  padded_u <- matrix(0, nrow = nr + 2, ncol = nc + 2)
-  padded_u[2:(nr + 1), 2:(nc + 1)] <- mat
-
-  # Pad chemoattractant (reflective on ALL sides to avoid spurious edge gradients)
-  padded_c <- matrix(0, nrow = nr + 2, ncol = nc + 2)
-  padded_c[2:(nr + 1), 2:(nc + 1)] <- attractant
-  padded_c[1, 2:(nc + 1)]          <- attractant[1, ]       # top
-  padded_c[nr + 2, 2:(nc + 1)]     <- attractant[nr, ]      # bottom
-  padded_c[2:(nr + 1), 1]          <- attractant[, 1]       # left
-  padded_c[2:(nr + 1), nc + 2]     <- attractant[, nc]      # right
-  padded_c[1, 1]                   <- attractant[1, 1]      # corners
-  padded_c[1, nc + 2]              <- attractant[1, nc]
-  padded_c[nr + 2, 1]              <- attractant[nr, 1]
-  padded_c[nr + 2, nc + 2]         <- attractant[nr, nc]
-
-  if (reflect_top) {
-    padded_u[1, 2:(nc + 1)] <- mat[1, ]
-  }
-
-  # Standard Laplacian (same as diffuse_matrix)
-  laplacian <- (
-    padded_u[1:nr,     1:nc    ] +
-    padded_u[1:nr,     2:(nc+1)] +
-    padded_u[1:nr,     3:(nc+2)] +
-    padded_u[2:(nr+1), 1:nc    ] +
-    padded_u[2:(nr+1), 3:(nc+2)] +
-    padded_u[3:(nr+2), 1:nc    ] +
-    padded_u[3:(nr+2), 2:(nc+1)] +
-    padded_u[3:(nr+2), 3:(nc+2)]
-    - 8 * mat
-  )
-
-  # Chemotaxis flux (loop over 8 neighbors)
-  di <- c(-1, -1, -1, 0, 0, 1, 1, 1)
-  dj <- c(-1, 0, 1, -1, 1, -1, 0, 1)
-
-  chemotaxis_flux <- matrix(0, nrow = nr, ncol = nc)
-  for (k in 1:8) {
-    c_neighbor <- padded_c[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
-    u_neighbor <- padded_u[(1:nr) + 1 + di[k], (1:nc) + 1 + dj[k]]
-    c_center   <- attractant
-
-    dc <- c_neighbor - c_center
-    # Upwind: dc > 0 means flow outward, use u_center; dc < 0, use u_neighbor
-    u_face <- ifelse(dc > 0, mat, u_neighbor)
-    chemotaxis_flux <- chemotaxis_flux + u_face * dc
-  }
-
-  mat_new <- mat + D * laplacian - chi * chemotaxis_flux
-  mat_new <- pmax(0, mat_new)
-  mat_new <- matrix(pmin(max_cell_value, mat_new), nrow = nr, ncol = nc)
-
-  return(mat_new)
-}
-
-shift_insert <- function(current_registry, new_elements_vector) {
-  combined_registry <- c(new_elements_vector, current_registry)
-  target_length <- length(current_registry)
-  result_registry <- combined_registry[1:target_length]
-  
-  return(result_registry)
-}
-
-get_middle_percent <- function(seq_vector, percent) {
-  n_total <- length(seq_vector)
-  n_select <- ceiling(n_total * percent / 100)
-  
-  mid <- floor(n_total / 2)
-  half_window <- floor(n_select / 2)
-  
-  start_idx <- max(1, mid - half_window + 1)
-  end_idx <- min(n_total, start_idx + n_select - 1)
-  
-  return(seq_vector[start_idx:end_idx])
-}
-
-sample_rbeta <- function(alpha, beta) {
-  x <- rgamma(1, shape = alpha, rate = 1.0)
-  y <- rgamma(1, shape = beta, rate = 1.0)
-  return(x / (x + y))
-}
-
-# ============================================================================
-# WRAPPER FUNCTIONS (USE C++ IF AVAILABLE, OTHERWISE R)
-# ============================================================================
-
-# Wrapper for get_8n_avg_signal - uses C++ if available
-get_8n_avg_signal_fast_wrapper <- function(x, y, act_radius_signal, signal_matrix) {
-  if (exists("get_8n_avg_signal_cpp", mode = "function")) {
-    return(get_8n_avg_signal_cpp(x, y, act_radius_signal, signal_matrix, grid_size))
-  } else {
-    return(get_8n_avg_signal_fast(x, y, act_radius_signal, signal_matrix))
-  }
-}
-
-# Vectorized version
-get_8n_avg_signal_vectorized <- function(x_vec, y_vec, act_radius_signal, signal_matrix, grid_size) {
-  if (exists("get_8n_avg_signal_vectorized_cpp", mode = "function")) {
-    return(get_8n_avg_signal_vectorized_cpp(x_vec, y_vec, act_radius_signal, signal_matrix, grid_size))
-  } else {
-    # Fallback to R implementation
-    n_agents = length(x_vec)
-    results = numeric(n_agents)
-    
-    for (i in 1:n_agents) {
-      x = x_vec[i]
-      y = y_vec[i]
-      
-      x_coordinates = (x - act_radius_signal):(x + act_radius_signal)
-      x_coordinates = x_coordinates[x_coordinates > 0 & x_coordinates <= grid_size]
-      
-      y_coordinates = (y - act_radius_signal):(y + act_radius_signal)
-      y_coordinates = y_coordinates[y_coordinates > 0 & y_coordinates <= grid_size]
-      
-      dval = signal_matrix[y_coordinates, x_coordinates]
-      results[i] = mean(dval)
-    }
-    
-    return(results)
-  }
-}
-
-# ============================================================================
-# INFORMATION FUNCTIONS
-# ============================================================================
+# 
+# sample_rbeta <- function(alpha, beta) {
+#   x <- rgamma(1, shape = alpha, rate = 1.0)
+#   y <- rgamma(1, shape = beta, rate = 1.0)
+#   return(x / (x + y))
+# }
+# 
+# # ============================================================================
+# # WRAPPER FUNCTIONS (USE C++ IF AVAILABLE, OTHERWISE R)
+# # ============================================================================
+# 
+# # Wrapper for get_8n_avg_signal - uses C++ if available
+# get_8n_avg_signal_fast_wrapper <- function(x, y, act_radius_signal, signal_matrix) {
+#   if (exists("get_8n_avg_signal_cpp", mode = "function")) {
+#     return(get_8n_avg_signal_cpp(x, y, act_radius_signal, signal_matrix, grid_size))
+#   } else {
+#     return(get_8n_avg_signal_fast(x, y, act_radius_signal, signal_matrix))
+#   }
+# }
+# 
+# # Vectorized version
+# get_8n_avg_signal_vectorized <- function(x_vec, y_vec, act_radius_signal, signal_matrix, grid_size) {
+#   if (exists("get_8n_avg_signal_vectorized_cpp", mode = "function")) {
+#     return(get_8n_avg_signal_vectorized_cpp(x_vec, y_vec, act_radius_signal, signal_matrix, grid_size))
+#   } else {
+#     # Fallback to R implementation
+#     n_agents = length(x_vec)
+#     results = numeric(n_agents)
+#     
+#     for (i in 1:n_agents) {
+#       x = x_vec[i]
+#       y = y_vec[i]
+#       
+#       x_coordinates = (x - act_radius_signal):(x + act_radius_signal)
+#       x_coordinates = x_coordinates[x_coordinates > 0 & x_coordinates <= grid_size]
+#       
+#       y_coordinates = (y - act_radius_signal):(y + act_radius_signal)
+#       y_coordinates = y_coordinates[y_coordinates > 0 & y_coordinates <= grid_size]
+#       
+#       dval = signal_matrix[y_coordinates, x_coordinates]
+#       results[i] = mean(dval)
+#     }
+#     
+#     return(results)
+#   }
+# }
+# 
+# # ============================================================================
+# # INFORMATION FUNCTIONS
+# # ============================================================================
 
 # Check which functions are using C++
 check_cpp_status <- function() {

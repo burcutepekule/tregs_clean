@@ -27,7 +27,8 @@ for (ros_in in ros_vals) {
                             '_overwrite_',overwrite_in,
                             '_optidx_',i_opt,
                             '.rds')
-    if(file.exists(file_path_data) & file.info(file_path_data)$size>10000){
+    # if(file.exists(file_path_data) & file.info(file_path_data)$size>100){
+    if(file.exists(file_path_data)){
       results_list[[var_name]] = readRDS(file_path_data)
     }
   }
@@ -119,8 +120,9 @@ for (rep in min_reps:max_reps) {
           # if(is.na(time_ss_e) | time_ss_e>=t_max_ind){time_ss_e = t_max_ind-50}
           
           # Overwrite - just look at last 150 steps
-          time_ss_p = t_max_ind-50
-          time_ss_e = t_max_ind-50
+          time_ss_p = t_max_ind-150
+          time_ss_e = t_max_ind-150
+          
           
           # Extract pathogen scores
           scores_p_var = paste0("scores_", ros, "_", pat, "_p")

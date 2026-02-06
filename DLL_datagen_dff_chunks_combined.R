@@ -12,7 +12,8 @@ source("./MISC/DATA_READ_FUNCTIONS.R")
 # ============================================================================
 
 cat("Reading parameters...\n")
-params_df = read.csv("./lhs_parameters_diff.csv", stringsAsFactors = FALSE)
+# params_df = read.csv("./lhs_parameters_diff.csv", stringsAsFactors = FALSE)
+params_df = readRDS('./params_df_diff.rds')
 cat("Loaded", nrow(params_df), "parameter sets\n")
 
 # ============================================================================
@@ -29,15 +30,14 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 
-# loop_over = params_df$param_set_id[1:250]
-loop_over = c(0)
+loop_over = c(0, 2, 11, 28, 30, 31, 36, 39, 57, 61, 62, 77, 80, 82, 89)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
 
-# dir_name_data = '/scratch/gpfs/CMETCALF/sim_diffusion'
-dir_name_data = '/Users/burcutepekule/Desktop/sim_diffusion_local' # PAY ATTENTION HERE!
+dir_name_data = '/scratch/gpfs/CMETCALF/sim_dff'
+# dir_name_data = '/Users/burcutepekule/Desktop/sim_diffusion_local' # PAY ATTENTION HERE!
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -46,8 +46,8 @@ cat("Output directory:", dir_name_data, "\n\n")
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
-t_max    = 200
-num_reps = 1
+num_reps    = 20 #it's faster so have more reps to be sure!
+plot_grid_t = 0
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -74,11 +74,10 @@ for (param_id_in in loop_over){
     allow_tregs     = c(0), # PAY ATTENTION HERE!
     randomize_tregs = c(0),
     macspec_on      = c(0),
-    # ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    ros_level       = 5, # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+    # ros_level       = 1,
+    ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
     # pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-    # pat_level       = c(1,2,seq(2.5,5,0.5)),
-    pat_level       = 5,
+    pat_level       = c(1,2,seq(2.5,5,0.5)),
     overwrite       = c(0),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
@@ -97,12 +96,9 @@ cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
 # COMMAND LINE ARGUMENTS
 # ============================================================================
 
-# args   = commandArgs(trailingOnly = TRUE)
-# n1     = as.integer(args[1])
-# n2     = as.integer(args[2])
-
-n1 = 1
-n2 = 1
+args   = commandArgs(trailingOnly = TRUE)
+n1     = as.integer(args[1])
+n2     = as.integer(args[2])
 
 chunks       = split_equal(1:nrow(scenarios_df), n1)
 loop_over_sc = chunks[[n2]]
@@ -171,3 +167,27 @@ for (scenario_ind in loop_over_sc){
   
 }
 cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
+
+
+if(plot_grid_t==1){
+  library(av)
+  
+  # Define file list and output
+  pattern   = paste0("^grids", "_\\d+\\.png$")
+  
+  png_files = list.files(paste0(dir_name_data, "/"), full.names = TRUE, pattern = pattern)
+  
+  # Sort files numerically by the time value (last number before .png)
+  png_files = png_files[order(as.numeric(gsub(".*_(\\d+)\\.png$", "\\1", png_files)))]
+  video_out = paste0(dir_name_data, "/simulation_diff.mp4")
+  
+  # Create video
+  av_encode_video(
+    input = png_files,
+    output = video_out,
+    framerate = 10, # slower playback (e.g. 2 FPS)
+    # vfilter = "scale=1000:-2",  # Resize if needed
+    codec = "libx264"      # H.264 codec is widely supported
+  )
+}
+

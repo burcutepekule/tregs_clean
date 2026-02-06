@@ -15,10 +15,11 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS.R") # loads pat_level_vectors
 # path_data  = "/Users/burcutepekule/Desktop/sim_abm/"
+path_data  = "/Users/burcutepekule/Desktop/sim_dff/"
 path_data  = "/Users/burcutepekule/Desktop/sim_diffusion_local/"
 
-# indices_vec = 0:249
-indices_vec = c(0, 63)
+# indices_vec = c(0, 2, 11, 28, 30, 31, 36, 39, 57, 61, 62, 77, 80, 82, 89)
+indices_vec = c(77)
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -34,17 +35,16 @@ split_equal = function(x, n_chunks) {
 # n1     = as.integer(args[1])
 # n2     = as.integer(args[2])
 
-n1 = 1
-n2 = 1
+n1     = 1
+n2     = 1
 
 chunks       = split_equal(indices_vec, n1)
 loop_over_sc = chunks[[n2]]
 
 skip_opt_0  = 0
 save_images_path_data = "ts_diffusion"
-dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
-
-# path_data  = "/Users/burcutepekule/Desktop/sim_abm_local/"
+# dir.create(paste0("/Users/burcutepekule/Desktop/",save_images_path_data))
+dir.create(paste0("./",save_images_path_data))
 
 for (indices in loop_over_sc){
   # Define the ros and pat value ranges
@@ -56,12 +56,12 @@ for (indices in loop_over_sc){
   
   # source("~/Dropbox/tregs_clean/MISC/FIND_COMPLETE_PARAMIDS.R")
   # ===== reread to include local results
-  rep_ind_vec  = 0:9 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
-  alpha_plot   = 1
-  
+  rep_ind_vec  = 0:19 # this limits the max rep index read by the data in source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros.R')
+  alpha_plot   = 2/length(rep_ind_vec)
+
   # variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"),c("treg_resting", "treg_active"),c("P_M1","P_M2","P_M0"))
   
-  variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2","phagocyte_M0"))
+  variables_2_plot = list("epithelial_score","pathogen","phagocyte_M1","phagocyte_M2","treg_active")
   background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
   
   # variables_2_plot      = list("epithelial_score")
@@ -82,7 +82,8 @@ for (indices in loop_over_sc){
   for(param_id in inds2read){
     
     col_avg_keep = c()
-    pat_level_vec   = pat_level_vectors[[as.character(param_id)]]
+    # pat_level_vec   = pat_level_vectors[[as.character(param_id)]]
+    pat_level_vec   = c(1,2,seq(2.5,5,0.5))
     
     # Dynamically determine pat_vals and i_opt_vec based on param_id
     pat_vals = get_pat_vals(param_id, path_data) # from /MISC/PLOT_FUNCTIONS_ABM.R
@@ -327,7 +328,7 @@ for (indices in loop_over_sc){
               }
               
               ggsave(
-                filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,
+                filename = paste0("./",save_images_path_data,
                                   "/",prefix,
                                   "param_",param_id,
                                   "_i_opt_",i_opt,
@@ -409,7 +410,7 @@ for (indices in loop_over_sc){
       facet_wrap(~ overwrite, labeller = label_both, nrow = 1)
     
     ggsave(
-      filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,
+      filename = paste0("./",save_images_path_data,
                         "/A_param_",param_id,
                         "_i_opt_ALL",
                         "_sterile_", sterile_in,
@@ -450,7 +451,7 @@ for (indices in loop_over_sc){
         facet_wrap(~ overwrite, labeller = label_both, nrow = 1)
       
       ggsave(
-        filename = paste0("/Users/burcutepekule/Desktop/",save_images_path_data,
+        filename = paste0("./",save_images_path_data,
                           "/A_param_",param_id,
                           "_i_opt_ALL",
                           "_sterile_", sterile_in,
