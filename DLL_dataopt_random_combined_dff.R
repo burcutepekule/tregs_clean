@@ -37,7 +37,7 @@ n2     = as.integer(args[2])
 # ============================================================================
 # PAY ATTENTION HERE!
 source('./MISC/LOAD_PAT_LEVELS_DFF.R') # loads pat_level_vectors
-loop_over   = c(77, 89)
+loop_over   = c(274)
 plot_grid_t = 0
 params_df   = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
@@ -91,7 +91,7 @@ for (param_id in loop_over){
     macspec_on      = c(0),
     ros_level       = opt_ros_level_vectors[[as.character(param_id)]],
     pat_level       = opt_pat_level_vectors[[as.character(param_id)]],
-    overwrite       = c(0, 1),
+    overwrite       = c(0),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
@@ -103,9 +103,9 @@ for (param_id in loop_over){
 
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 400), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 200), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
-scenarios_df = scenarios_df[1:400,]
+scenarios_df = scenarios_df[1:200,]
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
@@ -136,7 +136,7 @@ success_threshold_e = 5
 success_threshold_p = 10
 success_duration    = 150
 success_rate        = 0.95
-max_iterations      = 1000 # Number of random samples to try
+max_iterations      = 100000 # Number of random samples to try
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================

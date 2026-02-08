@@ -6,13 +6,13 @@ library(zoo)
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
+source("./MISC/LOAD_PAT_LEVELS_DFF.R") # loads pat_level_vectors
 
 # ============================================================================
 # READ PARAMETERS FROM CSV
 # ============================================================================
 
 cat("Reading parameters...\n")
-# params_df = read.csv("./lhs_parameters_diff.csv", stringsAsFactors = FALSE)
 params_df = readRDS('./params_df_diff.rds')
 cat("Loaded", nrow(params_df), "parameter sets\n")
 
@@ -29,15 +29,22 @@ split_equal = function(x, n_chunks) {
 # ============================================================================
 # CHUNKS
 # ============================================================================
+# loop_over_all  = as.numeric(names(ros_level_vectors))
+# loop_over_done = c(147, 159, 172, 222, 263, 269, 274)
+# loop_over      = setdiff(loop_over_all, loop_over_done)
+# loop_over = 147
+# loop_over = c(172, 222, 269)
+# loop_over = c(274)
 
-loop_over = c(0, 2, 11, 28, 30, 31, 36, 39, 57, 61, 62, 77, 80, 82, 89)
+loop_over = c(147, 172, 222, 269)
+
+# loop_over = c(0:399)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
 
-dir_name_data = '/scratch/gpfs/CMETCALF/sim_dff'
-# dir_name_data = '/Users/burcutepekule/Desktop/sim_diffusion_local' # PAY ATTENTION HERE!
+dir_name_data = '/scratch/gpfs/CMETCALF/sim_dff_highres_eff'
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -46,8 +53,9 @@ cat("Output directory:", dir_name_data, "\n\n")
 # FIXED PARAMETERS (not in CSV)
 # ============================================================================
 source('./MISC/LOAD_FIXED_PARAMS.R') #num_reps = 10
-num_reps    = 20 #it's faster so have more reps to be sure!
+num_reps    = 10
 plot_grid_t = 0
+save_gif    = 0
 
 colnames_insert = c('epithelial_score',
                     'phagocyte_M0','phagocyte_M1','phagocyte_M2',
@@ -67,26 +75,52 @@ cat("  n_tregs:", n_tregs, "\n\n")
 scenarios_df = c()
 for (param_id_in in loop_over){
   
-  ### IF YOU WANNA INLCUDE OPT_IDX 0 CASE
-  scenarios_df = rbind(scenarios_df, expand.grid(
-    param_set_id    = param_id_in,
-    sterile         = c(0),
-    allow_tregs     = c(0), # PAY ATTENTION HERE!
-    randomize_tregs = c(0),
-    macspec_on      = c(0),
-    # ros_level       = 1,
-    ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
-    # pat_level       = pat_level_vectors[[as.character(param_id_in)]],
-    pat_level       = c(1,2,seq(2.5,5,0.5)),
-    overwrite       = c(0),
-    diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
-    add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
-    SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
-    treg_discrimination_efficiency = 1, # numbers so that it doesn't give NA or Inf somewhere
-    activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
-    opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
-  ))
+  # ### IF YOU WANNA INLCUDE OPT_IDX 0 CASE
+  # scenarios_df = rbind(scenarios_df, expand.grid(
+  #   param_set_id    = param_id_in,
+  #   sterile         = c(0),
+  #   allow_tregs     = c(0), # PAY ATTENTION HERE!
+  #   randomize_tregs = c(0),
+  #   macspec_on      = c(0),
+  #   ros_level       = ros_level_vectors[[as.character(param_id_in)]],
+  #   # ros_level       = seq(0,10,1), # MAX 10! 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
+  #   # pat_level       = pat_level_vectors[[as.character(param_id_in)]],
+  #   pat_level       = seq(1,5,0.5),
+  #   overwrite       = c(0),
+  #   diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
+  #   add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
+  #   SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
+  #   treg_discrimination_efficiency = 0, # numbers so that it doesn't give NA or Inf somewhere
+  #   activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
+  #   opt_index                      = 0, # numbers so that it doesn't give NA or Inf somewhere
+  #   m2_on                          = 0 # engulfment of M2 on?
+  # ))
   
+  params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+  params_opt   = params_opt[order(params_opt$mean_pct_above_threshold_min, params_opt$pat_level, decreasing = TRUE),]
+  params_opt   = na.omit(params_opt[1:1,])
+  print(params_opt)
+  for (ind_opt in 1:dim(params_opt)[1]){
+    scenarios_df = rbind(scenarios_df, expand.grid(
+      param_set_id    = param_id_in,
+      sterile         = c(0),
+      allow_tregs     = c(1), # PAY ATTENTION HERE!
+      randomize_tregs = c(0),
+      macspec_on      = c(0),
+      ros_level       = ros_level_vectors[[as.character(param_id_in)]],
+      pat_level       = seq(1,5,0.5),
+      overwrite       = c(0),
+      diffusion_speed_SAMPs          = params_opt[ind_opt,]$diffusion_speed_SAMPs,
+      add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
+      SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
+      # treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency, # always 1
+      treg_discrimination_efficiency = seq(0,1,0.1),
+      activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
+      opt_index                      = ind_opt,
+      # m2_on                          = c(0 ,1) # engulfment of M2 on?
+      m2_on                          = c(0) # engulfment of M2 on?
+    ))
+  }
 }
 
 dim(scenarios_df)
@@ -121,6 +155,8 @@ for (scenario_ind in loop_over_sc){
   pat_level       = scenarios_df[scenario_ind,]$pat_level
   overwrite_in    = scenarios_df[scenario_ind,]$overwrite
   opt_index       = scenarios_df[scenario_ind,]$opt_index
+  eff_index       = 10*scenarios_df[scenario_ind,]$treg_discrimination_efficiency
+  m2_on           = scenarios_df[scenario_ind,]$m2_on #=0 no m2, only suppression function of Tregs
   
   param_names = c("diffusion_speed_SAMPs",
                   "add_SAMPs",
@@ -132,7 +168,7 @@ for (scenario_ind in loop_over_sc){
                                  scenarios_df[scenario_ind,]$add_SAMPs,
                                  scenarios_df[scenario_ind,]$SAMPs_decay,
                                  scenarios_df[scenario_ind,]$treg_discrimination_efficiency,
-                                 scenarios_df[scenario_ind,]$activation_threshold_SAMPs) #optimized for 68752
+                                 scenarios_df[scenario_ind,]$activation_threshold_SAMPs) 
   
   source("./MISC/ASSIGN_PARAMETERS.R")
   
@@ -163,13 +199,15 @@ for (scenario_ind in loop_over_sc){
                                        '_trnd_',randomize_tregs,
                                        '_overwrite_',overwrite_in,
                                        '_optidx_',opt_index,
+                                       '_effidx_',eff_index,
+                                       '_m2on_', m2_on,
                                        '.rds'))
   
 }
 cat(sprintf(' - %.1f seconds in total ✓\n', scenario_elapsed_total))
 
 
-if(plot_grid_t==1){
+if(save_gif==1){
   library(av)
   
   # Define file list and output
@@ -179,7 +217,7 @@ if(plot_grid_t==1){
   
   # Sort files numerically by the time value (last number before .png)
   png_files = png_files[order(as.numeric(gsub(".*_(\\d+)\\.png$", "\\1", png_files)))]
-  video_out = paste0(dir_name_data, "/simulation_diff.mp4")
+  video_out = paste0(dir_name_data, "/simulation_diff_tregs_",unique(scenarios_df$allow_tregs),".mp4")
   
   # Create video
   av_encode_video(
@@ -190,4 +228,3 @@ if(plot_grid_t==1){
     codec = "libx264"      # H.264 codec is widely supported
   )
 }
-

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=treg_array
 #SBATCH --cpus-per-task=1
-#SBATCH --time=24:00:00
+#SBATCH --time=03:30:00
 #SBATCH --array=0-399
 #SBATCH --mem-per-cpu=4G
 #SBATCH --output=logs_dff/treg_%x_%A_%a.out

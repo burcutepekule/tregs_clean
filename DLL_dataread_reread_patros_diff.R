@@ -11,31 +11,29 @@ rm(list = ls(pattern = "^(scores_|time_ss_|full_data_comparison_scores_|osc_)"))
 
 message(paste0("Re-processing param_set_", param_id,", optimization index ",i_opt,", for overwrite_in=", overwrite_in))
 
-# Dynamically read all RDS files for this parameter set
-results_list = list()
-for (ros_in in ros_vals) {
-  for (pat_in in pat_vals) {
-    # print(paste0('Reading ros ',ros_in,' pat ',pat_in))
-    var_name = paste0("results_", ros_in, "_", pat_in)
+results_list = lapply(ros_vals, function(ros_in) {
+  lapply(pat_vals, function(pat_in) {
     file_path_data = paste0(path_data, 'longitudinal_df_param_set_id_', param_id, 
-                            '_sterile_',sterile_in,
-                            '_macspec_',macspec_in,
-                            '_tregs_',tregs_on_in,
-                            '_ros_level_',ros_in,
-                            '_pat_level_',pat_in,
-                            '_trnd_',trnd_in,
-                            '_overwrite_',overwrite_in,
-                            '_optidx_',i_opt,
+                            '_sterile_', sterile_in,
+                            '_macspec_', macspec_in,
+                            '_tregs_', tregs_on_in,
+                            '_ros_level_', ros_in,
+                            '_pat_level_', pat_in,
+                            '_trnd_', trnd_in,
+                            '_overwrite_', overwrite_in,
+                            '_optidx_', i_opt,
                             '.rds')
-    # if(file.exists(file_path_data) & file.info(file_path_data)$size>100){
-    if(file.exists(file_path_data)){
-      results_list[[var_name]] = readRDS(file_path_data)
+    
+    if(file.exists(file_path_data)) {
+      return(readRDS(file_path_data))
     }
-  }
-}
+    return(NULL)
+  })
+})
 
-# Combine all results
-results = do.call(rbind, results_list)
+# Flatten and combine in one step
+results = rbindlist(unlist(results_list, recursive = FALSE), use.names = TRUE, fill = TRUE)
+results = as.data.frame(results)
 
 if (is.null(results) || nrow(results) == 0) {
   message("No results found. Skipping.")
@@ -73,7 +71,7 @@ for (rep in min_reps:max_reps) {
   time_ss_vec = c()
   for (ros in ros_vals) {
     for (pat in pat_vals) {
-
+      
       # Filter data
       var_name = paste0("full_data_comparison_scores_", ros, "_", pat)
       assign(var_name, full_data_comparison %>%
@@ -95,7 +93,7 @@ for (rep in min_reps:max_reps) {
       
       assign(time_ss_p_var, time_ss_p_val)
       time_ss_vec = c(time_ss_vec, time_ss_p_val)
-
+      
     }
   }
   
@@ -105,7 +103,7 @@ for (rep in min_reps:max_reps) {
     # Dynamically extract scores and accumulate them
     for (ros in ros_vals) {
       for (pat in pat_vals) {
-      
+        
         # Get the filtered data and steady state times
         scores_df = get(paste0("full_data_comparison_scores_", ros, "_", pat))
         if(dim(scores_df)[1]>0){
@@ -196,7 +194,7 @@ for (rep in min_reps:max_reps) {
       for (pat in pat_vals) {
         var_time <- paste0("time_ss_", ros, "_", pat, "_p")
         var_scores <- paste0("scores_", ros, "_", pat, "_p")
-
+        
         if (exists(var_time) && exists(var_scores)) {
           ss_start_vec = c(ss_start_vec, get(var_time))
           mean_score_vec = c(mean_score_vec, mean(get(var_scores)))
@@ -319,7 +317,7 @@ df_combined = df_epithelium %>%
 # Calculate per-replicate control status using the per-replicate mean scores
 df_combined = df_combined %>%
   dplyr::mutate(is_controlled = is_under_control(mean_epithelium, mean_pathogen,
-                                                  epithelial_limit, pathogen_limit))
+                                                 epithelial_limit, pathogen_limit))
 
 # Build the control matrix (now as percentage of controlled replicates)
 control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))
@@ -331,7 +329,7 @@ for (i in seq_along(pat_vals)) {
   for (j in seq_along(ros_vals)) {
     pat = pat_vals[i]
     ros = ros_vals[j]
-    
+
     df_combined %>%
       dplyr::filter(param_set_id == param_id,
                     ros_level == ros,
@@ -353,5 +351,3 @@ for (i in seq_along(pat_vals)) {
     }
   }
 }
-
-

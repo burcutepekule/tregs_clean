@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=treg_array
 #SBATCH --cpus-per-task=1
-#SBATCH --time=12:00:00
-#SBATCH --array=0-399
+#SBATCH --time=01:05:00
+#SBATCH --array=0-299
 #SBATCH --mem-per-cpu=4G
 #SBATCH --output=logs_opt/treg_%A_%a.out
 #SBATCH --error=logs_opt/treg_%A_%a.err
@@ -10,7 +10,7 @@
 module load anaconda3/2023.3
 conda activate env_Treg
 
-N_CHUNKS=400
+N_CHUNKS=300
 
 # SLURM_ARRAY_TASK_ID gives 0..99
 CHUNK_ID=$(( SLURM_ARRAY_TASK_ID + 1 ))

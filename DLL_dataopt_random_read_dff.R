@@ -9,7 +9,9 @@ param_names = c("diffusion_speed_SAMPs",
 # c(250, 47500, 66250, 67250, 73750, 78750, 80750, 90250, 97250,
 #   30000, 45500, 92000, 81250, 88750, 50250, 62500, 68752)
 # loop_over_all = c(17, 23, 24, 29, 34, 40, 54, 55, 58, 60, 65, 69, 83, 88, 89, 90)
-loop_over_all =  c(77,89)
+loop_over_all = c(147)
+loop_over_all = c(172, 222, 269)
+loop_over_all = c(274)
 
 for (loop_over in loop_over_all){
   # loop_over = 90 # c(92000, 30000, 81250, 45500, 62500)

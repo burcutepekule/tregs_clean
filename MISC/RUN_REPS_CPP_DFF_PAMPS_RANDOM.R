@@ -154,20 +154,20 @@ for (iter in 1:max_iterations) {
                pct_above_threshold_e," ",
                pct_below_threshold_p,"\n"),file = success_log_file, append = TRUE)
     
-    saveRDS(current_theta, paste0(dir_name_data,
-                                  '/theta_param_set_id_',param_set_id_use,
-                                  '_overwrite_',overwrite_in,
-                                  '_sterile_',sterile,
-                                  '_macspec_',macspec_on,
-                                  '_tregs_',allow_tregs,
-                                  '_ros_level_',ros_level,
-                                  '_pat_level_',pat_level,
-                                  '_trnd_',randomize_tregs,
-                                  '_n1_',n1,
-                                  '_n2_',n2,
-                                  '_iter_',iter,
-                                  '_rep_',reps,
-                                  '.rds'))
+    # saveRDS(current_theta, paste0(dir_name_data,
+    #                               '/theta_param_set_id_',param_set_id_use,
+    #                               '_overwrite_',overwrite_in,
+    #                               '_sterile_',sterile,
+    #                               '_macspec_',macspec_on,
+    #                               '_tregs_',allow_tregs,
+    #                               '_ros_level_',ros_level,
+    #                               '_pat_level_',pat_level,
+    #                               '_trnd_',randomize_tregs,
+    #                               '_n1_',n1,
+    #                               '_n2_',n2,
+    #                               '_iter_',iter,
+    #                               '_rep_',reps,
+    #                               '.rds'))
     
     # ## SAVE TO COME BACK TO IT LATER?
     # saveRDS(longitudinal_df, paste0(dir_name_data,

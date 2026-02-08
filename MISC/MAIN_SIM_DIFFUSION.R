@@ -65,23 +65,55 @@ ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect
 
 # Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
 danger_signal_grid = DAMPs + PAMPs
-# density_M0   = diffuse_matrix_biased_cpp(density_M0, danger_signal_grid,
+
+# Smooth the chemotactic field so the gradient extends further into tissue.
+# The raw DAMPs+PAMPs field decays too steeply from the epithelium
+# (exp(-x*sqrt(decay/D)) ≈ near-zero by row 3-4), concentrating the
+# chemotactic gradient in 1-2 rows and creating banding artifacts.
+# Extra diffusion passes spread the gradient without changing actual signals.
+chemotaxis_field_macro = danger_signal_grid
+if(n_chemotaxis_smooth>0){
+  for (s in seq_len(n_chemotaxis_smooth)) {
+    chemotaxis_field_macro = diffuse_matrix_cpp(chemotaxis_field_macro, 0.12,
+                                                max(chemotaxis_field_macro) + 1e-10,
+                                                reflect_top = TRUE)
+  }
+}
+
+
+## NO NEED TO DIFFUSE density_M0, ALWAYS 1 EVERYWHERE
+# density_M0   = diffuse_matrix_biased_cpp(density_M0, chemotaxis_field_macro,
 #                                          diffusion_speed_macro, chi_macro,
 #                                          max_density_macro, reflect_top = TRUE)
-density_M1   = diffuse_matrix_biased_cpp(density_M1, danger_signal_grid,
+density_M1   = diffuse_matrix_biased_cpp(density_M1, chemotaxis_field_macro,
                                          diffusion_speed_macro, chi_macro,
                                          max_density_macro, reflect_top = TRUE)
-density_M2   = diffuse_matrix_biased_cpp(density_M2, danger_signal_grid,
+density_M2   = diffuse_matrix_biased_cpp(density_M2, chemotaxis_field_macro,
                                          diffusion_speed_macro, chi_macro,
                                          max_density_macro, reflect_top = TRUE)
 
-# Treg pools: chemotax toward DAMPs
-# density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
-#                                          diffusion_speed_treg, chi_treg,
-#                                          max_density_treg, reflect_top = TRUE)
-density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
-                                                diffusion_speed_treg, chi_treg,
-                                                max_density_treg, reflect_top = TRUE)
+if(randomize_tregs==1){
+  
+  density_treg_active = diffuse_matrix_cpp(density_treg_active, diffusion_speed_treg, max_density_treg, reflect_top = TRUE)
+  
+}else{
+  # Treg pools: chemotax toward DAMPs (also smoothed)
+  chemotaxis_field_treg = DAMPs
+  if(n_chemotaxis_smooth>0){
+    for (s in seq_len(n_chemotaxis_smooth)) {
+      chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12,
+                                                 max(chemotaxis_field_treg) + 1e-10,
+                                                 reflect_top = TRUE)}
+  }
+  
+  # density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
+  #                                          diffusion_speed_treg, chi_treg,
+  #                                          max_density_treg, reflect_top = TRUE)
+  density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
+                                                  diffusion_speed_treg, chi_treg,
+                                                  max_density_treg, reflect_top = TRUE)
+}
+
 
 # ============================================================================
 # 3. DECAY ALL GRIDS
@@ -247,8 +279,10 @@ pathogen_density_M2  = safe_divide(pathogens_engf_M2,(pathogens_engf_M2+commensa
 commensal_density_M2 = safe_divide(commensals_engf_M2,(pathogens_engf_M2+commensals_engf_M2))
 ag_presentation_commensal_M2 = safe_divide(commensal_density_M2,(pathogen_density_M2+commensal_density_M2))
 
-treg_activation_by_M1_prob = ag_presentation_commensal_M1*treg_discrimination_efficiency +
-  (1-ag_presentation_commensal_M1)*(1-treg_discrimination_efficiency)
+treg_activation_by_M1_prob = sample_with_efficiency_beta(ag_presentation_commensal_M1, treg_discrimination_efficiency)
+
+# treg_activation_by_M1_prob = ag_presentation_commensal_M1*treg_discrimination_efficiency +
+#   (1-ag_presentation_commensal_M1)*(1-treg_discrimination_efficiency)
 
 # treg_activation_by_M2_prob = ag_presentation_commensal_M2*treg_discrimination_efficiency +
 #   (1-ag_presentation_commensal_M2)*(1-treg_discrimination_efficiency)
@@ -353,7 +387,7 @@ if(plot_grid_t==1){
   barplot(epithelium$level_injury, main = "Epithelial injury", 
           col = "darkblue", border = NA, ylim = c(0, max_level_injury))
   
-
+  
   # Add overall title
   mtext(sprintf("Time: %d", t), outer = TRUE, line = -1.5, cex = 1.5, font = 2)
   

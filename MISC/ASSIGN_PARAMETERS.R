@@ -38,7 +38,7 @@ activation_threshold_SAMPs  = 2*activation_threshold_SAMPs
 # Engulfment activities
 activity_engulf_M0_baseline = param_set_use$activity_engulf_M0_baseline
 activity_engulf_M1_baseline = param_set_use$activity_engulf_M1_baseline
-activity_engulf_M2_baseline = param_set_use$activity_engulf_M2_baseline
+activity_engulf_M2_baseline = m2_on*param_set_use$activity_engulf_M2_baseline
 
 # ROS production activities
 activity_ROS_M0_baseline = 0
@@ -115,9 +115,11 @@ active_age_limit = 1 # OVERWRITE FOR DIFFUSION MODEL!
 density_M0_0 = 1
 density_treg_0 = 1
 
-extinction_limit = 1e-3
+extinction_limit = 1e-6 # 1e-3 is too big I think
 
 rate_of_activation   = 0.05
 rate_of_deactivation = 0.05
 
+
+n_chemotaxis_smooth = 2 # 0 is no smoothing for the chemotaxis fields!
 

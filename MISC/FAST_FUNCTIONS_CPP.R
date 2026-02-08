@@ -11,6 +11,53 @@ get_middle_percent <- function(seq_vector, percent) {
   return(seq_vector[start_idx:end_idx])
 }
 
+### FOR SCALARS
+# sample_with_efficiency_beta <- function(tau, efficiency, max_concentration = 1000) {
+#   if (efficiency == 1) return(tau)  # Exact value when perfect efficiency
+#   if (efficiency == 0) return(runif(1))  # Pure uniform when no efficiency
+#   
+#   # Concentration increases exponentially with efficiency
+#   # This ensures very tight distribution near efficiency = 1
+#   concentration <- max_concentration * efficiency^3  # Cubic makes it tighter faster
+#   
+#   alpha <- 1 + concentration * tau
+#   beta <- 1 + concentration * (1 - tau)
+#   
+#   rbeta(1, shape1 = alpha, shape2 = beta)
+# }
+
+sample_with_efficiency_beta <- function(tau_matrix, efficiency, max_concentration = 1000) {
+  # Get dimensions
+  nr <- nrow(tau_matrix)
+  nc <- ncol(tau_matrix)
+  n_elements <- nr * nc
+  
+  # Handle edge cases
+  if (efficiency == 1) {
+    return(tau_matrix)  # Return exact values
+  }
+  
+  if (efficiency == 0) {
+    return(matrix(runif(n_elements), nrow = nr, ncol = nc))  # Pure uniform
+  }
+  
+  # For intermediate efficiency, sample for each element
+  # Vectorize by flattening, sampling, then reshaping
+  tau_vec <- as.vector(tau_matrix)
+  
+  # Calculate concentration
+  concentration <- max_concentration * efficiency^3
+  
+  # Vectorized beta sampling
+  alpha <- 1 + concentration * tau_vec
+  beta <- 1 + concentration * (1 - tau_vec)
+  
+  result_vec <- rbeta(n_elements, shape1 = alpha, shape2 = beta)
+  
+  # Reshape back to matrix
+  matrix(result_vec, nrow = nr, ncol = nc)
+}
+
 safe_divide <- function(x, y) {
   result <- x / y
   replace(result, is.nan(result), 0)
