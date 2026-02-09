@@ -60,7 +60,8 @@ sample_with_efficiency_beta <- function(tau_matrix, efficiency, max_concentratio
 
 safe_divide <- function(x, y) {
   result <- x / y
-  replace(result, is.nan(result), 0)
+  result[is.nan(result) | is.infinite(result)] <- 0
+  result
 }
 
 # ============================================================================

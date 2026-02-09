@@ -255,8 +255,8 @@ d_frac_M1 = density_M0*rate_of_activation*frac_M1_add - density_M1*rate_of_deact
 d_frac_M2 = density_M1*rate_of_activation*frac_M2_add - density_M2*rate_of_deactivation*frac_M2_remove
 
 # Apply fractions to macrophage pool
-density_M1 = density_M1+d_frac_M1
-density_M2 = density_M2+d_frac_M2
+density_M1 = pmax(0, density_M1+d_frac_M1)
+density_M2 = pmax(0, density_M2+d_frac_M2)
 
 # Cap densities
 density_M1 = pmin(density_M1, max_density_macro)
