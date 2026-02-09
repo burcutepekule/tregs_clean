@@ -37,7 +37,7 @@ n2     = as.integer(args[2])
 # ============================================================================
 # PAY ATTENTION HERE!
 source('./MISC/LOAD_PAT_LEVELS_DFF.R') # loads pat_level_vectors
-loop_over   = c(274)
+loop_over   = c(147, 172, 222, 269)
 plot_grid_t = 0
 params_df   = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
@@ -97,7 +97,8 @@ for (param_id in loop_over){
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
     treg_discrimination_efficiency = 1, # numbers so that it doesn't give NA or Inf somewhere
     activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
-    opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
+    opt_index                      = 0, # numbers so that it doesn't give NA or Inf somewhere
+    m2_on                          = 0 # engulfment of M2 on?
   ))
 }
 
@@ -154,6 +155,7 @@ for (scenario_ind in loop_over_sc){
   ros_level       = scenarios_df[scenario_ind,]$ros_level
   pat_level       = scenarios_df[scenario_ind,]$pat_level
   overwrite_in    = scenarios_df[scenario_ind,]$overwrite
+  m2_on           = scenarios_df[scenario_ind,]$m2_on #=0 no m2, only suppression function of Tregs
   
   source("./MISC/ASSIGN_PARAMETERS.R")
   

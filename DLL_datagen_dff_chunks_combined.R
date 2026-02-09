@@ -30,21 +30,15 @@ split_equal = function(x, n_chunks) {
 # CHUNKS
 # ============================================================================
 # loop_over_all  = as.numeric(names(ros_level_vectors))
-# loop_over_done = c(147, 159, 172, 222, 263, 269, 274)
-# loop_over      = setdiff(loop_over_all, loop_over_done)
-# loop_over = 147
-# loop_over = c(172, 222, 269)
-# loop_over = c(274)
+# loop_over = c(147, 172, 222, 269)
 
-loop_over = c(147, 172, 222, 269)
-
-# loop_over = c(0:399)
+loop_over = c(269)
 params_df = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
 # SETUP OUTPUT DIRECTORY
 # ============================================================================
 
-dir_name_data = '/scratch/gpfs/CMETCALF/sim_dff_highres_eff'
+dir_name_data = '/scratch/gpfs/CMETCALF/sim_dff_highres'
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -96,9 +90,9 @@ for (param_id_in in loop_over){
   #   m2_on                          = 0 # engulfment of M2 on?
   # ))
   
-  params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use.rds'))
+  params_opt   = readRDS(paste0('./summary_df_10rep_',param_id_in,'_use_m2on_1.rds'))
   params_opt   = params_opt[order(params_opt$mean_pct_above_threshold_min, params_opt$pat_level, decreasing = TRUE),]
-  params_opt   = na.omit(params_opt[1:1,])
+  params_opt   = na.omit(params_opt[1:5,])
   print(params_opt)
   for (ind_opt in 1:dim(params_opt)[1]){
     scenarios_df = rbind(scenarios_df, expand.grid(
@@ -114,7 +108,8 @@ for (param_id_in in loop_over){
       add_SAMPs                      = params_opt[ind_opt,]$add_SAMPs,
       SAMPs_decay                    = params_opt[ind_opt,]$SAMPs_decay,
       # treg_discrimination_efficiency = params_opt[ind_opt,]$treg_discrimination_efficiency, # always 1
-      treg_discrimination_efficiency = seq(0,1,0.1),
+      # treg_discrimination_efficiency = seq(0,1,0.1),
+      treg_discrimination_efficiency = 1,
       activation_threshold_SAMPs     = params_opt[ind_opt,]$activation_threshold_SAMPs,
       opt_index                      = ind_opt,
       # m2_on                          = c(0 ,1) # engulfment of M2 on?
@@ -122,6 +117,8 @@ for (param_id_in in loop_over){
     ))
   }
 }
+
+scenarios_df = scenarios_df %>% dplyr::filter(opt_index==3)  # optidx 3 is great for param id 269!
 
 dim(scenarios_df)
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")

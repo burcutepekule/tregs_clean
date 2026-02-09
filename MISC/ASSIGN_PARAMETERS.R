@@ -38,7 +38,8 @@ activation_threshold_SAMPs  = 2*activation_threshold_SAMPs
 # Engulfment activities
 activity_engulf_M0_baseline = param_set_use$activity_engulf_M0_baseline
 activity_engulf_M1_baseline = param_set_use$activity_engulf_M1_baseline
-activity_engulf_M2_baseline = m2_on*param_set_use$activity_engulf_M2_baseline
+# activity_engulf_M2_baseline = m2_on*param_set_use$activity_engulf_M2_baseline #WRONG
+activity_engulf_M2_baseline = param_set_use$activity_engulf_M2_baseline
 
 # ROS production activities
 activity_ROS_M0_baseline = 0

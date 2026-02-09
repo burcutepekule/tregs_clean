@@ -15,7 +15,7 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS_DFF.R") # loads pat_level_vectors
-path_data  = "/Users/burcutepekule/Desktop/ts_diffusion_highres_eff_data"
+path_data  = "/Users/burcutepekule/Desktop/data_diffusion"
 
 variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),"treg_active")
 background_on    = c(1,1,rep(0,length(variables_2_plot)-2))

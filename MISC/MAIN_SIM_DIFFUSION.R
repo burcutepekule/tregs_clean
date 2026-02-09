@@ -231,13 +231,13 @@ SAMPS_diff=matrix(pmax(0, SAMPs - activation_threshold_SAMPs*1e-3) / activation_
                   ncol = ncol(SAMPs))
 
 # Total activation signal
-total_diff = DANGER_diff+SAMPS_diff
+total_diff = DANGER_diff+m2_on*SAMPS_diff
 
 # Soft split: fraction that becomes M1 vs M2
 # Where total_diff > 0, compute proportional split
 # Where total_diff == 0, no activation (M0)
-frac_M1_add = safe_divide(DANGER_diff, total_diff)
-frac_M2_add = safe_divide(SAMPS_diff, total_diff)
+frac_M1_add = safe_divide(DANGER_diff, total_diff) # will be 1 in case of m2_on=0
+frac_M2_add = m2_on*safe_divide(SAMPS_diff, total_diff) # will be 0 in case of m2_on=0
 
 # # when both signals are off
 # frac_M_remove = floor(1-frac_M1_add) + floor(1-frac_M2_add)

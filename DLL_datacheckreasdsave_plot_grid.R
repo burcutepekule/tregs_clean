@@ -15,9 +15,10 @@ setwd('~/Dropbox/tregs_clean/')
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS_DFF.R") # loads pat_level_vectors
-path_data  = "/Users/burcutepekule/Desktop/ts_diffusion_highres_eff_data/"
+path_data  = "/Users/burcutepekule/Desktop/data_diffusion/"
 
-indices_vec = c(147, 172, 222, 269)
+# indices_vec = c(147, 172, 222, 269)
+indices_vec = c(269)
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -42,22 +43,31 @@ pat_vals     = seq(1,5,0.5)
 
 scenarios_df = c()
 ### Tregs OFF case
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_id    = indices_vec,
-  tregs_on_in = 0,
-  i_opt       = 0,
-  treg_eff_in = 0,
-  m2on_in     = 0
-))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_id    = indices_vec,
+#   tregs_on_in = 0,
+#   i_opt       = 0,
+#   treg_eff_in = 0,
+#   m2on_in     = 0
+# ))
 ### Tregs ON case
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_id    = indices_vec,
+#   tregs_on_in = 1,
+#   i_opt       = 1:5,
+#   # treg_eff_in = 0:10,
+#   # m2on_in     = c(0,1)
+#   treg_eff_in = 10,
+#   m2on_in     = 1
+# ))
 scenarios_df = rbind(scenarios_df, expand.grid(
   param_id    = indices_vec,
   tregs_on_in = 1,
-  i_opt       = 1:5,
-  # treg_eff_in = 0:10,
-  # m2on_in     = c(0,1)
+  i_opt       = 3,
   treg_eff_in = 10,
-  m2on_in     = 1
+  # m2on_in     = c(0,1)
+  # treg_eff_in = 10,
+  m2on_in     = 0
 ))
 dim(scenarios_df)[1]
 

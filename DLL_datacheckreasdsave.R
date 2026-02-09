@@ -16,7 +16,8 @@ source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
 source("./MISC/LOAD_PAT_LEVELS_DFF.R") # loads pat_level_vectors
 
-indices_vec = c(147, 172, 222, 269)
+# indices_vec = c(147, 172, 222, 269)
+indices_vec = c(269)
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -32,7 +33,7 @@ args   = commandArgs(trailingOnly = TRUE)
 n1     = as.integer(args[1])
 n2     = as.integer(args[2])
 
-save_data_path_data = "/Users/burcutepekule/Desktop/ts_diffusion_highres_eff_data"
+save_data_path_data = "/Users/burcutepekule/Desktop/data_diffusion"
 
 dir.create(paste0(save_data_path_data)) # for desktop
 
@@ -49,22 +50,23 @@ pat_vals     = seq(1,5,0.5)
 
 scenarios_df = c()
 ### Tregs OFF case
-scenarios_df = rbind(scenarios_df, expand.grid(
-  param_id    = indices_vec,
-  tregs_on_in = 0,
-  i_opt       = 0,
-  treg_eff_in = 0,
-  m2on_in     = 0
-))
+# scenarios_df = rbind(scenarios_df, expand.grid(
+#   param_id    = indices_vec,
+#   tregs_on_in = 0,
+#   i_opt       = 0,
+#   treg_eff_in = 0,
+#   m2on_in     = 0
+# ))
 ### Tregs ON case
 scenarios_df = rbind(scenarios_df, expand.grid(
   param_id    = indices_vec,
   tregs_on_in = 1,
-  i_opt       = 1:5,
-  # treg_eff_in = 0:10,
-  # m2on_in     = c(0,1)
+  # i_opt       = 1:5,
+  i_opt       = 3,
   treg_eff_in = 10,
-  m2on_in     = 1
+  # m2on_in     = c(0,1)
+  # treg_eff_in = 10,
+  m2on_in     = 0
 ))
 dim(scenarios_df)[1]
 
@@ -79,7 +81,8 @@ for (scenario_ind in loop_over_sc){
   treg_eff_in = scenarios_df[scenario_ind,]$treg_eff_in
   m2on_in     = scenarios_df[scenario_ind,]$m2on_in
   
-  path_data  = paste0("/Users/burcutepekule/Desktop/sim_dff_highres_",param_id,"/")
+  # path_data  = paste0("/Users/burcutepekule/Desktop/sim_dff_highres_",param_id,"/")
+  path_data  = paste0("/Users/burcutepekule/Desktop/sim_dff_highres/")
   
   col_avg_keep = c()
   ros_vals     = ros_level_vectors[[as.character(param_id)]] # 0 is control - max(ros_level) x max(add_ROS) = 2 x 0.5 = 1 (anyway capped at 1 so makes sense)
@@ -90,7 +93,7 @@ for (scenario_ind in loop_over_sc){
                  " treg_eff_in: ", treg_eff_in, 
                  " m2on_in: ", m2on_in))
   
-  source('~/Dropbox/tregs_clean/DLL_dataread_reread_patros_diff_eff.R')
+  source('./MISC/DATA_REREAD.R')
   
   control_matrix_long = as.data.frame(control_matrix_long)
   colnames(control_matrix_long) = c('param_id','pat','ros','pct')
