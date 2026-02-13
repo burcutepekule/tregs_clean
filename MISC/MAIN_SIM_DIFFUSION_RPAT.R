@@ -21,7 +21,7 @@ density_pathogen  = diffuse_matrix_cpp(density_pathogen, diffusion_speed_microbe
 density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe, max_density_microbe, reflect_top = TRUE, reflect_sides = TRUE)
 
 # pathogens multiply
-density_pathogen  = density_pathogen+rpat_lp_on*density_pathogen*r_pat*(1-density_pathogen/pat_lp_max) # 
+# density_pathogen  = density_pathogen+rpat_lp_on*density_pathogen*r_pat*(1-density_pathogen/pat_lp_max) # 
 
 # Chemokines / Cytokines / Signals (same as before)
 DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top = TRUE, reflect_sides = TRUE)
@@ -63,8 +63,8 @@ if(randomize_tregs==1){
 # DECAY ALL GRIDS
 # ============================================================================
 # # Microbe decay (natural death)
-density_pathogen  = density_pathogen*(1-decay_rate_mult*decay_rate_microbe)
-density_commensal = density_commensal*(1-decay_rate_mult*decay_rate_microbe)
+# density_pathogen  = density_pathogen*(1-decay_rate_mult*decay_rate_microbe)
+# density_commensal = density_commensal*(1-decay_rate_mult*decay_rate_microbe)
 
 # # Macrophage and Treg pools (no decay if conserved)
 # density_macro = density_macro*(1-decay_rate_macro)
@@ -127,8 +127,8 @@ commensals_engf_M2 = density_commensal*eng_kill_factor_M2
 print(c(t, sum(density_pathogen), sum(density_pathogen*total_kill_factor)))
 
 # Apply killing
-density_pathogen  = density_pathogen*(1-total_kill_factor)
-density_commensal = density_commensal*(1-total_kill_factor)
+# density_pathogen  = density_pathogen*(1-total_kill_factor)
+# density_commensal = density_commensal*(1-total_kill_factor)
 
 # ============================================================================
 # UPDATE EPITHELIAL INJURY

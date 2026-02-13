@@ -6,6 +6,7 @@ pat_lumen = pat_lumen-pat_lumen*amp_killing
 
 # Pathogens leak through injured epithelium
 pathogen_source       = pat_lumen*epithelium$level_injury*p_leak_constant # this is because I don't wanna change the rate_leak_pathogen_injury in ASSIGN_PARAMETERS.R
+pathogen_source       = pmax(0,pathogen_source)
 density_pathogen[1, ] = density_pathogen[1, ]+pathogen_source
 pat_lumen             = pat_lumen - sum(pathogen_source)
 
