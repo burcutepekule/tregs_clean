@@ -280,12 +280,13 @@ NumericMatrix diffuse_matrix_cpp(
     NumericMatrix mat,
     double D,
     double max_cell_value,
-    bool reflect_top = false)
+    bool reflect_top = false,
+    bool reflect_sides = false)
 {
   int nr = mat.nrow();
   int nc = mat.ncol();
 
-  // Create padded matrix
+  // Create padded matrix (ghost cells default to 0 = absorbing boundary)
   NumericMatrix padded(nr + 2, nc + 2);
   for (int i = 0; i < nr; i++)
   {
@@ -300,8 +301,33 @@ NumericMatrix diffuse_matrix_cpp(
   {
     for (int j = 0; j < nc; j++)
     {
-      padded(0, j + 1) = mat(0, j); // Reflect epithelium
+      padded(0, j + 1) = mat(0, j);
     }
+  }
+
+  // REFLECTIVE boundaries at BOTTOM, LEFT, RIGHT
+  if (reflect_sides)
+  {
+    // Bottom
+    for (int j = 0; j < nc; j++)
+    {
+      padded(nr + 1, j + 1) = mat(nr - 1, j);
+    }
+    // Left
+    for (int i = 0; i < nr; i++)
+    {
+      padded(i + 1, 0) = mat(i, 0);
+    }
+    // Right
+    for (int i = 0; i < nr; i++)
+    {
+      padded(i + 1, nc + 1) = mat(i, nc - 1);
+    }
+    // Corners
+    padded(0, 0) = reflect_top ? mat(0, 0) : 0.0;
+    padded(0, nc + 1) = reflect_top ? mat(0, nc - 1) : 0.0;
+    padded(nr + 1, 0) = mat(nr - 1, 0);
+    padded(nr + 1, nc + 1) = mat(nr - 1, nc - 1);
   }
 
   // Calculate 8-neighbor Laplacian
@@ -344,10 +370,9 @@ NumericMatrix diffuse_matrix_cpp(
 // - Diffusion: 8-neighbor Laplacian (as in your original)
 // - Chemotaxis: conservative 4-neighbor flux divergence with upwind u at faces
 // Boundaries:
-// - attractant c: reflective (Neumann) on ALL sides
-// - density u: reflective on left/right/bottom (no-flux), and
-//              top is reflective only if reflect_top==true,
-//              otherwise top ghost row stays 0 (absorbing)
+// - attractant c: reflective (Neumann) on ALL sides (always)
+// - density u: top is reflective if reflect_top==true, else absorbing (0)
+//              left/right/bottom reflective if reflect_sides==true, else absorbing (0)
 // ============================================================================
 
 // [[Rcpp::export]]
@@ -357,7 +382,8 @@ NumericMatrix diffuse_matrix_biased_cpp(
     double D,
     double chi,
     double max_cell_value,
-    bool reflect_top = false)
+    bool reflect_top = false,
+    bool reflect_sides = false)
 {
   const int nr = mat.nrow();
   const int nc = mat.ncol();
@@ -377,7 +403,7 @@ NumericMatrix diffuse_matrix_biased_cpp(
   }
 
   // -------------------------
-  // Reflective boundary for c (ALL sides)
+  // Reflective boundary for c (ALL sides, always)
   // -------------------------
   // Top / bottom
   for (int j = 0; j < nc; j++)
@@ -399,21 +425,24 @@ NumericMatrix diffuse_matrix_biased_cpp(
 
   // -------------------------
   // Boundary for u (density)
-  // - left/right/bottom: reflective (no-flux)
+  // - left/right/bottom: reflective if reflect_sides==true, else absorbing (0)
   // - top: reflective only if reflect_top==true, else absorbing (0)
   // -------------------------
 
-  // Left/right reflective
-  for (int i = 0; i < nr; i++)
+  if (reflect_sides)
   {
-    u(i + 1, 0) = mat(i, 0);
-    u(i + 1, nc + 1) = mat(i, nc - 1);
-  }
+    // Left/right reflective
+    for (int i = 0; i < nr; i++)
+    {
+      u(i + 1, 0) = mat(i, 0);
+      u(i + 1, nc + 1) = mat(i, nc - 1);
+    }
 
-  // Bottom reflective
-  for (int j = 0; j < nc; j++)
-  {
-    u(nr + 1, j + 1) = mat(nr - 1, j);
+    // Bottom reflective
+    for (int j = 0; j < nc; j++)
+    {
+      u(nr + 1, j + 1) = mat(nr - 1, j);
+    }
   }
 
   // Top: either reflective or absorbing
@@ -424,16 +453,12 @@ NumericMatrix diffuse_matrix_biased_cpp(
       u(0, j + 1) = mat(0, j);
     }
   }
-  else
-  {
-    // leave u(0, j+1) as 0.0 (absorbing), matching your prior behavior
-  }
 
   // Corners for u (consistent)
   u(0, 0) = reflect_top ? mat(0, 0) : 0.0;
   u(0, nc + 1) = reflect_top ? mat(0, nc - 1) : 0.0;
-  u(nr + 1, 0) = mat(nr - 1, 0);
-  u(nr + 1, nc + 1) = mat(nr - 1, nc - 1);
+  u(nr + 1, 0) = reflect_sides ? mat(nr - 1, 0) : 0.0;
+  u(nr + 1, nc + 1) = reflect_sides ? mat(nr - 1, nc - 1) : 0.0;
 
   NumericMatrix result(nr, nc);
 
