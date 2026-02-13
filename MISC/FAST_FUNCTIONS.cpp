@@ -323,9 +323,17 @@ NumericMatrix diffuse_matrix_cpp(
     {
       padded(i + 1, nc + 1) = mat(i, nc - 1);
     }
-    // Corners
-    padded(0, 0) = reflect_top ? mat(0, 0) : 0.0;
-    padded(0, nc + 1) = reflect_top ? mat(0, nc - 1) : 0.0;
+  }
+
+  // Corners: set when EITHER adjacent boundary is reflected,
+  // otherwise the corner ghost cell stays 0 and leaks signal
+  if (reflect_top || reflect_sides)
+  {
+    padded(0, 0) = mat(0, 0);
+    padded(0, nc + 1) = mat(0, nc - 1);
+  }
+  if (reflect_sides)
+  {
     padded(nr + 1, 0) = mat(nr - 1, 0);
     padded(nr + 1, nc + 1) = mat(nr - 1, nc - 1);
   }
@@ -454,11 +462,17 @@ NumericMatrix diffuse_matrix_biased_cpp(
     }
   }
 
-  // Corners for u (consistent)
-  u(0, 0) = reflect_top ? mat(0, 0) : 0.0;
-  u(0, nc + 1) = reflect_top ? mat(0, nc - 1) : 0.0;
-  u(nr + 1, 0) = reflect_sides ? mat(nr - 1, 0) : 0.0;
-  u(nr + 1, nc + 1) = reflect_sides ? mat(nr - 1, nc - 1) : 0.0;
+  // Corners for u: set when EITHER adjacent boundary is reflected
+  if (reflect_top || reflect_sides)
+  {
+    u(0, 0) = mat(0, 0);
+    u(0, nc + 1) = mat(0, nc - 1);
+  }
+  if (reflect_sides)
+  {
+    u(nr + 1, 0) = mat(nr - 1, 0);
+    u(nr + 1, nc + 1) = mat(nr - 1, nc - 1);
+  }
 
   NumericMatrix result(nr, nc);
 
