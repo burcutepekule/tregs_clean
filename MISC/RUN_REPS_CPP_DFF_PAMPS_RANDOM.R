@@ -55,6 +55,7 @@ macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3)
 microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
 tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
 microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
+pathogens_lumen_longitudinal   = matrix(0, nrow = t_max, ncol = 1)
 
 # ============================================================================
 # RANDOM SEARCH CONFIGURATION
@@ -100,6 +101,9 @@ for (iter in 1:max_iterations) {
               current_theta[1], current_theta[2], current_theta[3],
               current_theta[4], current_theta[5]))
   
+  pct_below_threshold_e_sum = 0
+  pct_below_threshold_p_sum = 0
+  
   for (reps in 1:num_reps){
     # Reset simulation
     reset_simulation_state()
@@ -111,10 +115,11 @@ for (iter in 1:max_iterations) {
       macrophages_longitudinal,
       microbes_longitudinal,
       tregs_longitudinal,
-      microbes_cumdeath_longitudinal
+      microbes_cumdeath_longitudinal,
+      pathogens_lumen_longitudinal
     )
     
-    colnames(longitudinal_df) = colnames_insert
+    colnames(longitudinal_df) = c(colnames_insert,'pathogens_lumen')
     
     longitudinal_df$t = 1:t_max
     longitudinal_df$sterile = sterile
@@ -128,6 +133,9 @@ for (iter in 1:max_iterations) {
     
     current_epithelial_score = longitudinal_df$epithelial_score
     current_pathogens        = longitudinal_df$pathogen
+    
+    sum_e = sum(round(current_epithelial_score, 3))
+    sum_p = sum(round(current_pathogens, 3))
     
     recent_scores_success_e = tail(current_epithelial_score, success_duration)
     recent_scores_success_p = tail(current_pathogens, success_duration)
@@ -152,7 +160,19 @@ for (iter in 1:max_iterations) {
                round(mean(recent_scores_success_e),3)," ", 
                round(mean(recent_scores_success_p),3)," ",
                pct_above_threshold_e," ",
-               pct_below_threshold_p,"\n"),file = success_log_file, append = TRUE)
+               pct_below_threshold_p," ",
+               sum_e," ",
+               sum_p," ",
+               "\n"),file = success_log_file, append = TRUE)
+    
+    pct_below_threshold_e_sum = pct_below_threshold_e_sum + pct_above_threshold_e
+    pct_below_threshold_p_sum = pct_below_threshold_p_sum + pct_below_threshold_p
+    
+    # if(reps==2 & pct_below_threshold_e_sum==0){
+    #   print('this one not gonna happen')
+    #   break; #stop trying
+    # }
+
     
     # saveRDS(current_theta, paste0(dir_name_data,
     #                               '/theta_param_set_id_',param_set_id_use,

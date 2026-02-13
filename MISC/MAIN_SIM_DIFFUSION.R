@@ -1,76 +1,34 @@
 # ============================================================================
-# MAIN SIMULATION LOOP-DIFFUSION-BASED MODEL
+# CHECK EXTINCTION
 # ============================================================================
-# This replaces the agent-based model with a density-field approach where
-# microbes and lymphocytes are represented as continuous density grids
-# that evolve via diffusion, decay, and reaction terms.
-#
-# Key simplifications:
-#-No individual agent tracking (no bacteria registry, no agent IDs)
-#-All entities represented as density fields on the same 25x25 grid
-#-Phenotype updates happen every active_age_limit steps
-#-Much faster execution while preserving spatial dynamics
-# ============================================================================
-
-density_M0   = matrix(1, nrow = dim(density_M0)[1], ncol = dim(density_M0)[1])
-density_treg = matrix(1, nrow = dim(density_treg)[1], ncol = dim(density_treg)[1])
-# ============================================================================
-# 0. EXTINCTION
-# ============================================================================
-epithelium[epithelium<extinction_limit]=0
-density_pathogen[density_pathogen<extinction_limit] =0
-density_commensal[density_commensal<extinction_limit]=0
-DAMPs[DAMPs<extinction_limit] =0
-SAMPs[SAMPs<extinction_limit]=0
-PAMPs[PAMPs<extinction_limit]=0
-ROS[ROS<extinction_limit]=0
-
-density_M0[density_M0<extinction_limit]=0
-density_M1[density_M1<extinction_limit]=0
-density_M2[density_M2<extinction_limit]=0
-density_treg[density_treg<extinction_limit]=0
-density_treg_active[density_treg_active<extinction_limit]=0
+source('./MISC/APPLY_EXTINCTION_THRESHOLD.R')
 
 # ============================================================================
-# 1. MICROBE SOURCE TERMS (at epithelium, y=1)
+# MICROBE BREACH (at epithelium, y=1)
 # ============================================================================
-
-
-# Pathogens leak through injured epithelium
-pathogen_source       = epithelium$level_injury*rate_leak_pathogen_injury*0.01 # this is because I don't wanna change the rate_leak_pathogen_injury in ASSIGN_PARAMETERS.R
-density_pathogen[1, ] = density_pathogen[1, ]+pathogen_source
-density_pathogen[1, ] = pmin(density_pathogen[1, ], max_density_microbe)
-
-# Commensals: baseline leak+injury-enhanced leak
-commensal_source_baseline = rep(rate_leak_commensal_baseline*0.01)
-commensal_source_injury   = epithelium$level_injury*rate_leak_commensal_injury*0.01
-density_commensal[1, ] = density_commensal[1, ]+commensal_source_baseline+commensal_source_injury
-density_commensal[1, ] = pmin(density_commensal[1, ], max_density_microbe)
+source('./MISC/REP_DYNAMICS_RPAT.R')
+pathogens_lumen_longitudinal[t, 1] = pat_lumen
 
 # ============================================================================
-# 2. DIFFUSE ALL DENSITY GRIDS
+# DIFFUSE ALL DENSITY GRIDS
 # ============================================================================
 # Microbes
-density_pathogen = diffuse_matrix_cpp(density_pathogen, diffusion_speed_microbe,
-                                      max_density_microbe, reflect_top = FALSE)
-density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe,
-                                       max_density_microbe, reflect_top = FALSE)
+density_pathogen  = diffuse_matrix_cpp(density_pathogen, diffusion_speed_microbe,max_density_microbe, reflect_top = FALSE)
+density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe,max_density_microbe, reflect_top = FALSE)
 
-# Signals (same as before)
+# pathogens multiply
+density_pathogen  = density_pathogen+rpat_lp_on*density_pathogen*r_pat*(1-density_pathogen/pat_lp_max) # 
+
+# Chemokines / Cytokines / Signals (same as before)
 DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top = FALSE)
 SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs, reflect_top = FALSE)
 PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, reflect_top = FALSE)
 ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top = FALSE)
 
-
 # Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
 danger_signal_grid = DAMPs + PAMPs
 
 # Smooth the chemotactic field so the gradient extends further into tissue.
-# The raw DAMPs+PAMPs field decays too steeply from the epithelium
-# (exp(-x*sqrt(decay/D)) ≈ near-zero by row 3-4), concentrating the
-# chemotactic gradient in 1-2 rows and creating banding artifacts.
-# Extra diffusion passes spread the gradient without changing actual signals.
 chemotaxis_field_macro = danger_signal_grid
 if(n_chemotaxis_smooth>0){
   for (s in seq_len(n_chemotaxis_smooth)) {
@@ -80,38 +38,21 @@ if(n_chemotaxis_smooth>0){
   }
 }
 
-
 ## NO NEED TO DIFFUSE density_M0, ALWAYS 1 EVERYWHERE
-# density_M0   = diffuse_matrix_biased_cpp(density_M0, chemotaxis_field_macro,
-#                                          diffusion_speed_macro, chi_macro,
-#                                          max_density_macro, reflect_top = TRUE)
-density_M1   = diffuse_matrix_biased_cpp(density_M1, chemotaxis_field_macro,
-                                         diffusion_speed_macro, chi_macro,
-                                         max_density_macro, reflect_top = TRUE)
-density_M2   = diffuse_matrix_biased_cpp(density_M2, chemotaxis_field_macro,
-                                         diffusion_speed_macro, chi_macro,
-                                         max_density_macro, reflect_top = TRUE)
+# density_M0   = diffuse_matrix_biased_cpp(density_M0, chemotaxis_field_macro, diffusion_speed_macro, chi_macro, max_density_macro, reflect_top = TRUE)
+density_M1   = diffuse_matrix_biased_cpp(density_M1, chemotaxis_field_macro, diffusion_speed_macro, chi_macro, max_density_macro, reflect_top = TRUE)
+density_M2   = diffuse_matrix_biased_cpp(density_M2, chemotaxis_field_macro, diffusion_speed_macro, chi_macro, max_density_macro, reflect_top = TRUE)
 
 if(randomize_tregs==1){
-  
   density_treg_active = diffuse_matrix_cpp(density_treg_active, diffusion_speed_treg, max_density_treg, reflect_top = TRUE)
-  
 }else{
   # Treg pools: chemotax toward DAMPs (also smoothed)
   chemotaxis_field_treg = DAMPs
   if(n_chemotaxis_smooth>0){
     for (s in seq_len(n_chemotaxis_smooth)) {
-      chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12,
-                                                 max(chemotaxis_field_treg) + 1e-10,
-                                                 reflect_top = TRUE)}
+      chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12, max(chemotaxis_field_treg) + 1e-10, reflect_top = TRUE)}
   }
-  
-  # density_treg = diffuse_matrix_biased_cpp(density_treg, DAMPs,
-  #                                          diffusion_speed_treg, chi_treg,
-  #                                          max_density_treg, reflect_top = TRUE)
-  density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs,
-                                                  diffusion_speed_treg, chi_treg,
-                                                  max_density_treg, reflect_top = TRUE)
+  density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs, diffusion_speed_treg, chi_treg, max_density_treg, reflect_top = TRUE)
 }
 
 
@@ -119,8 +60,8 @@ if(randomize_tregs==1){
 # 3. DECAY ALL GRIDS
 # ============================================================================
 # Microbe decay (natural death)
-density_pathogen  = density_pathogen*(1-decay_rate_microbe)
-density_commensal = density_commensal*(1-decay_rate_microbe)
+density_pathogen  = density_pathogen*(1-decay_rate_mult*decay_rate_microbe)
+density_commensal = density_commensal*(1-decay_rate_mult*decay_rate_microbe)
 
 # # Macrophage and Treg pools (no decay if conserved)
 # density_macro = density_macro*(1-decay_rate_macro)
@@ -141,19 +82,19 @@ DAMPs[1, ] = DAMPs[1, ]+epithelium$level_injury*add_DAMPs
 # DAMPs from microbes at epithelium (both pathogens and commensals cause tissue stress)
 microbe_density_at_epith = density_pathogen[1, ]+density_commensal[1, ]
 DAMPs[1, ]               = DAMPs[1, ]+microbe_density_at_epith*add_DAMPs
-DAMPs                    = pmin(DAMPs, max_cell_value_DAMPs)
+# DAMPs                    = pmin(DAMPs, max_cell_value_DAMPs)
 
 # PAMPs from pathogen density (throughout the grid)
 PAMPs = PAMPs+density_pathogen*add_PAMPs
-PAMPs = pmin(PAMPs, max_cell_value_PAMPs)
+# PAMPs = pmin(PAMPs, max_cell_value_PAMPs)
 
 # ROS from M1 macrophage density
 ROS = ROS+density_M1*activity_ROS_M1_baseline*add_ROS
-ROS = pmin(ROS, max_cell_value_ROS)
+# ROS = pmin(ROS, max_cell_value_ROS)
 
 # SAMPs from active Treg density
 SAMPs = SAMPs+density_treg_active*add_SAMPs*allow_tregs
-SAMPs = pmin(SAMPs, max_cell_value_SAMPs)
+# SAMPs = pmin(SAMPs, max_cell_value_SAMPs)
 
 # ============================================================================
 # 5a. KILL MICROBES WITH ROS
@@ -168,14 +109,9 @@ ros_kill_factor = pmax(0, (ROS-th_ROS_microbe) / (1-th_ROS_microbe))
 
 eng_kill_factor_M1 = density_M1*activity_engulf_M1_baseline 
 eng_kill_factor_M2 = density_M2*activity_engulf_M2_baseline
-eng_kill_factor = eng_kill_factor_M1 + eng_kill_factor_M2
+eng_kill_factor    = eng_kill_factor_M1 + eng_kill_factor_M2
 
 total_kill_factor = pmin(ros_kill_factor+eng_kill_factor, 1)  # Cap at 1
-
-# (when calculated like below sum might be more than 1 but ratios will be used so should be fine)
-# Track killed microbes for longitudinal data
-pathogens_killed_by_ROS_this_step = sum(density_pathogen*ros_kill_factor)
-commensals_killed_by_ROS_this_step = sum(density_commensal*ros_kill_factor)
 
 # Track engulfed microbes for ANTIGEN PRESENTATION
 pathogens_engf_M1  = density_pathogen*eng_kill_factor_M1
@@ -187,16 +123,14 @@ commensals_engf_M2 = density_commensal*eng_kill_factor_M2
 density_pathogen  = density_pathogen*(1-total_kill_factor)
 density_commensal = density_commensal*(1-total_kill_factor)
 
-# Update cumulative counters
-pathogens_killed_by_ROS = pathogens_killed_by_ROS+pathogens_killed_by_ROS_this_step
-commensals_killed_by_ROS = commensals_killed_by_ROS+commensals_killed_by_ROS_this_step
-
 # ============================================================================
 # 6. UPDATE EPITHELIAL INJURY
 # ============================================================================
 # Injury from pathogens at epithelium
-pathogen_injury = density_pathogen[1, ]*c_in_log  # Scale factor for injury
-epithelium$level_injury = epithelium$level_injury+pathogen_injury
+pathogen_injury_basolateral = density_pathogen[1, ]*rate_injury_basolateral  # Scale factor for injury
+pathogen_injury_apical      = pat_lumen*rate_injury_apical # Scale factor for injury
+
+epithelium$level_injury     = epithelium$level_injury+pathogen_injury_basolateral+pathogen_injury_apical
 
 # Injury from ROS (ROS above threshold damages epithelium)
 ros_at_epith = ROS[1, ]
@@ -222,16 +156,16 @@ injury_site_updated = which(epithelium$level_injury > 0)
 # Compute danger signal grid
 danger_signal_grid = DAMPs+PAMPs
 
-DANGER_diff=matrix(pmax(0, danger_signal_grid - activation_threshold_danger*1e-3)/ activation_threshold_danger*1e-3, 
+DANGER_diff=matrix(pmax(0, danger_signal_grid - activation_threshold_danger*1e-2)/ activation_threshold_danger*1e-2, 
                    nrow = nrow(danger_signal_grid), 
                    ncol = ncol(danger_signal_grid))
 
-SAMPS_diff=matrix(pmax(0, SAMPs - activation_threshold_SAMPs*1e-3) / activation_threshold_SAMPs*1e-3, 
+SAMPS_diff=matrix(pmax(0, SAMPs - activation_threshold_SAMPs*1e-2) / activation_threshold_SAMPs*1e-2, 
                   nrow = nrow(SAMPs), 
                   ncol = ncol(SAMPs))
 
 # Total activation signal
-total_diff = DANGER_diff+m2_on*SAMPS_diff
+total_diff = DANGER_diff+SAMPS_diff
 
 # Soft split: fraction that becomes M1 vs M2
 # Where total_diff > 0, compute proportional split
@@ -239,16 +173,14 @@ total_diff = DANGER_diff+m2_on*SAMPS_diff
 frac_M1_add = safe_divide(DANGER_diff, total_diff) # will be 1 in case of m2_on=0
 frac_M2_add = m2_on*safe_divide(SAMPS_diff, total_diff) # will be 0 in case of m2_on=0
 
-# # when both signals are off
-# frac_M_remove = floor(1-frac_M1_add) + floor(1-frac_M2_add)
-# frac_M_remove = matrix(ifelse(frac_M_remove==2,1,0), 
-#                        nrow = nrow(frac_M_remove), 
-#                        ncol = ncol(frac_M_remove))
-# frac_M_remove+frac_M1_add+frac_M2_add should be 1!
+# when both signals are off - FLOOR IS NEEDED HERE SO THAT DEACTIVATION IS 1 WHEN SIGNAL IS COMPLETELY ZERO!
+# > floor(1-0.2)
+# [1] 0
+# > floor(1-0)
+# [1] 1
 
-# when both signals are off
 frac_M1_remove = floor(1-frac_M1_add)
-frac_M2_remove = floor(1-frac_M2_add)
+frac_M2_remove = m2_on*floor(1-frac_M2_add)
 
 # avoid depleting all at the same time when frac=1
 d_frac_M1 = density_M0*rate_of_activation*frac_M1_add - density_M1*rate_of_deactivation*frac_M1_remove - density_M1*rate_of_activation*frac_M2_add
@@ -258,9 +190,12 @@ d_frac_M2 = density_M1*rate_of_activation*frac_M2_add - density_M2*rate_of_deact
 density_M1 = density_M1+d_frac_M1
 density_M2 = density_M2+d_frac_M2
 
-# Cap densities
-density_M1 = pmin(density_M1, max_density_macro)
-density_M2 = pmin(density_M2, max_density_macro)
+# # Cap densities
+# density_M1 = pmin(density_M1, max_density_macro)
+# density_M2 = pmin(density_M2, max_density_macro)
+# 
+# density_M1 = pmax(density_M1, 0)
+# density_M2 = pmax(density_M2, 0)
 
 # recalculate remaining M0
 # density_M0 = density_M0 - (density_M1 + density_M2) # here all of them are turning so 
@@ -298,29 +233,22 @@ d_tregs_active =  rate_of_activation*density_treg*treg_activation_prob - density
 # Update active Treg density
 density_treg_active = d_tregs_active*allow_tregs # avoid depleting all when treg_activation_prob=1
 
-density_treg_active = pmin(density_treg_active, max_density_treg)
+# density_treg_active = pmin(density_treg_active, max_density_treg)
 # }
 
 # ============================================================================
 # 0. EXTINCTION
 # ============================================================================
-epithelium[epithelium<extinction_limit]=0
-density_pathogen[density_pathogen<extinction_limit] =0
-density_commensal[density_commensal<extinction_limit]=0
-DAMPs[DAMPs<extinction_limit] =0
-SAMPs[SAMPs<extinction_limit]=0
-PAMPs[PAMPs<extinction_limit]=0
-ROS[ROS<extinction_limit]=0
-
-density_M0[density_M0<extinction_limit]=0
-density_M1[density_M1<extinction_limit]=0
-density_M2[density_M2<extinction_limit]=0
-density_treg[density_treg<extinction_limit]=0
-density_treg_active[density_treg_active<extinction_limit]=0
+source('./MISC/APPLY_EXTINCTION_THRESHOLD.R')
 
 # ============================================================================
 # 8. SAVE LONGITUDINAL DATA
 # ============================================================================
+DAMPs_longitudinal[t, 1] = sum(DAMPs)
+PAMPs_longitudinal[t, 1] = sum(PAMPs)
+SAMPs_longitudinal[t, 1] = sum(SAMPs)
+ROS_longitudinal[t, 1]   = sum(ROS)
+
 # Epithelial score (higher = more injured)
 epithelial_score = sum(epithelium$level_injury)
 epithelium_longitudinal[t, 1] = epithelial_score
@@ -342,15 +270,7 @@ microbes_longitudinal[t, ] = c(total_commensal, total_pathogen)
 total_treg = sum(density_treg)
 total_treg_active = sum(density_treg_active)
 total_treg_resting = max(0, total_treg-total_treg_active)
-# tregs_longitudinal[t, ] = c(total_treg_resting, total_treg_active)*grid_size^2 / max_density_treg
 tregs_longitudinal[t, ] = c(total_treg_resting, total_treg_active)
-
-# Cumulative death tracking (scaled for comparability)
-# Note: In diffusion model, "killed by Mac" doesn't apply-only ROS killing
-microbes_cumdeath_longitudinal[t, ] = c(
-  commensals_killed_by_ROS, 0, 0, 0,  # C_ROS, C_M0, C_M1, C_M2
-  pathogens_killed_by_ROS, 0, 0, 0    # P_ROS, P_M0, P_M1, P_M2
-)
 
 # Add this at the end of your simulation loop (replacing the image() call)
 

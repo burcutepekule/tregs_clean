@@ -6,7 +6,6 @@ library(zoo)
 source("./MISC/FAST_FUNCTIONS_CPP.R")
 source("./MISC/PLOT_FUNCTIONS_ABM.R")
 source("./MISC/DATA_READ_FUNCTIONS.R")
-source("./MISC/LOAD_PAT_LEVELS_DFF.R") # loads pat_level_vectors
 
 # ============================================================================
 # READ PARAMETERS FROM CSV
@@ -38,7 +37,7 @@ n2     = as.integer(args[2])
 # ============================================================================
 # PAY ATTENTION HERE!
 source('./MISC/LOAD_PAT_LEVELS_DFF.R') # loads pat_level_vectors
-loop_over   = c(9)
+loop_over   = c(172)
 plot_grid_t = 0
 params_df   = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
@@ -90,15 +89,16 @@ for (param_id in loop_over){
     allow_tregs     = c(1), # PAY ATTENTION HERE! ALWAYS NEEDS TO BE 1 FOR OPTIMIZATION!
     randomize_tregs = c(0),
     macspec_on      = c(0),
-    ros_level       = opt_ros_level_vectors[[as.character(param_id)]],
-    pat_level       = opt_pat_level_vectors[[as.character(param_id)]],
+    ros_level       = opt_ros_level_vectors_local[[as.character(param_id)]],
+    pat_level       = opt_pat_level_vectors_local[[as.character(param_id)]],
     overwrite       = c(0),
     diffusion_speed_SAMPs          = 0.1, # numbers so that it doesn't give NA or Inf somewhere
     add_SAMPs                      = 0.5, # numbers so that it doesn't give NA or Inf somewhere
     SAMPs_decay                    = 0.2, # numbers so that it doesn't give NA or Inf somewhere
     treg_discrimination_efficiency = 1, # numbers so that it doesn't give NA or Inf somewhere
     activation_threshold_SAMPs     = 0.25, # numbers so that it doesn't give NA or Inf somewhere
-    opt_index                      = 0 # numbers so that it doesn't give NA or Inf somewhere
+    opt_index                      = 0, # numbers so that it doesn't give NA or Inf somewhere
+    m2_on                          = 0 # engulfment of M2 on?
   ))
 }
 
@@ -125,7 +125,7 @@ loop_over_sc = chunks[[n2]]
 # ============================================================================
 
 # dir_name_data = '/scratch/gpfs/CMETCALF/sim_opt_random'
-dir_name_data = '/Users/burcutepekule/Desktop/sim_opt_random_dff_local'
+dir_name_data = '/Users/burcutepekule/Desktop/sim_opt_random'
 dir.create(dir_name_data, showWarnings = TRUE)
 
 cat("Output directory:", dir_name_data, "\n\n")
@@ -133,18 +133,16 @@ cat("Output directory:", dir_name_data, "\n\n")
 # ============================================================================
 # DETECTION SETTINGS
 # ============================================================================
-success_threshold_e = 5
-success_threshold_p = 0.1
-success_duration    = 150
-success_rate        = 0.95
-max_iterations      = 1000 # Number of random samples to try
+source('./MISC/PERFORMANCE_METRICS.R')
+max_iterations = 100000 # Number of random samples to try
+
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================
 
 for (scenario_ind in loop_over_sc){
   results = c()
-
+  
   param_set_id_use = scenarios_df[scenario_ind,]$param_set_id
   param_set_use = params_df %>% dplyr::filter(param_set_id==param_set_id_use)
   
@@ -155,6 +153,7 @@ for (scenario_ind in loop_over_sc){
   ros_level       = scenarios_df[scenario_ind,]$ros_level
   pat_level       = scenarios_df[scenario_ind,]$pat_level
   overwrite_in    = scenarios_df[scenario_ind,]$overwrite
+  m2_on           = scenarios_df[scenario_ind,]$m2_on #=0 no m2, only suppression function of Tregs
   
   source("./MISC/ASSIGN_PARAMETERS.R")
   

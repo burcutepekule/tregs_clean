@@ -108,7 +108,7 @@ if(background_on[p_ind]==1){
         legend.text = element_text(size = 14),   # legend item labels
         legend.title = element_text(size = 16)   # legend title
       )
-  }else if(variables=='pathogen'){
+  }else if(variables=='pathogen' | variables=='pathogens_lumen' | variables=='pathogens_breached'){
     p = ggplot(data_long, aes(x = t, y = value)) +
       # Background with gradient coloring
       geom_rect(data = TF_df_filtered,

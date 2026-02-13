@@ -106,6 +106,8 @@ matrix_to_commensal_df = function() {
 }
 
 agent_colors = c(
+  pathogens_breached = 'black',
+  pathogens_lumen    = 'black',
   epithelial_score   = "#000080",
   epithelial_healthy = "#B0E2FF",
   epithelial_inj_1   = "#8CB4E5",
@@ -143,7 +145,11 @@ agent_colors = c(
   P_ROS = "black",
   P_M0  = "grey70",
   P_M1  = "#D12CA0",
-  P_M2  = "#3BA578"
+  P_M2  = "#3BA578",
+  DAMPs_level = "#D12CA0",
+  PAMPs_level = "firebrick3",
+  SAMPs_level = "#3BA578",
+  ROS_level   = "firebrick1"
 )
 
 

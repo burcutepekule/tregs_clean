@@ -37,6 +37,36 @@ results_list = lapply(ros_vals, function(ros_in) {
 results = rbindlist(unlist(results_list, recursive = FALSE), use.names = TRUE, fill = TRUE)
 results = as.data.frame(results)
 
+#====== DOESN'T WORK THOUGH
+###### THERE IS A BUG - FOR NOW, PUT THIS
+
+results_m =
+  results %>%
+  dplyr::group_by(param_set_id, sterile, macspec_on, tregs_on,
+                  randomize_tregs, ros_level, pat_level, rep_id) %>%
+  dplyr::summarise(me = mean(epithelial_score, na.rm = TRUE), mp = mean(pathogen, na.rm = TRUE), .groups = "drop")
+
+results_m_0 = results_m %>% dplyr::filter(me==0)
+
+results_filtered =
+  results %>%
+  dplyr::anti_join(
+    results_m_0,
+    by = c("param_set_id",
+           "sterile",
+           "macspec_on",
+           "tregs_on",
+           "randomize_tregs",
+           "ros_level",
+           "pat_level",
+           "rep_id")
+  )
+
+results = results_filtered # doesn'twork
+
+results = results %>% dplyr::filter(!(rep_id %in% unique(results_m_0$rep_id))) ##aggressive
+#====== 
+
 if (is.null(results) || nrow(results) == 0) {
   message("No results found. Skipping.")
   next
@@ -48,6 +78,7 @@ full_data_comparison = results %>% dplyr::select(param_set_id, sterile, macspec_
 min_reps  = min(full_data_comparison$rep_id)
 max_reps  = min(max(rep_ind_vec),max(full_data_comparison$rep_id))
 t_max_ind = max(full_data_comparison$t)
+rep_vec   = sort(unique(full_data_comparison$rep_id))
 
 # Dynamically initialize score keeping variables for all combinations
 # pathogen
@@ -67,7 +98,8 @@ for (ros in ros_vals) {
 all_comparison_results_reps = data.frame()
 all_comparison_results      = data.frame()
 
-for (rep in min_reps:max_reps) {
+# for (rep in min_reps:max_reps) {
+for (rep in rep_vec) {
   print(paste0('Processing rep ',rep))
   # Dynamically filter data and compute steady states for all combinations
   time_ss_vec = c()
@@ -178,13 +210,13 @@ for (rep in min_reps:max_reps) {
     # Epithelium first
     for (ros in ros_vals) {
       for (pat in pat_vals) {
-        var_time <- paste0("time_ss_", ros, "_", pat, "_e")
-        var_scores <- paste0("scores_", ros, "_", pat, "_e")
+        var_time = paste0("time_ss_", ros, "_", pat, "_e")
+        var_scores = paste0("scores_", ros, "_", pat, "_e")
         
         if (exists(var_time) && exists(var_scores)) {
-          ss_start_vec <- c(ss_start_vec, get(var_time))
-          mean_score_vec <- c(mean_score_vec, mean(get(var_scores)))
-          sd_score_vec <- c(sd_score_vec, sd(get(var_scores)))
+          ss_start_vec = c(ss_start_vec, get(var_time))
+          mean_score_vec = c(mean_score_vec, mean(get(var_scores)))
+          sd_score_vec = c(sd_score_vec, sd(get(var_scores)))
           ros_vec_all = c(ros_vec_all, ros)
           pat_vec_all = c(pat_vec_all, pat)
         }
@@ -194,8 +226,8 @@ for (rep in min_reps:max_reps) {
     # pathogen second
     for (ros in ros_vals) {
       for (pat in pat_vals) {
-        var_time <- paste0("time_ss_", ros, "_", pat, "_p")
-        var_scores <- paste0("scores_", ros, "_", pat, "_p")
+        var_time = paste0("time_ss_", ros, "_", pat, "_p")
+        var_scores = paste0("scores_", ros, "_", pat, "_p")
         
         if (exists(var_time) && exists(var_scores)) {
           ss_start_vec = c(ss_start_vec, get(var_time))
@@ -320,6 +352,14 @@ df_combined = df_epithelium %>%
 df_combined = df_combined %>%
   dplyr::mutate(is_controlled = is_under_control(mean_epithelium, mean_pathogen,
                                                  epithelial_limit, pathogen_limit))
+
+
+##### HERE - THERE IS A BUG HERE - SOME EPITHELIAL SCORES ARE ALL ZERO!
+# df_combined_p = df_combined %>% dplyr::filter(ros_level==7.050 & pat_level==7)
+# results_p = results %>% dplyr::filter(rep_id==2 & ros_level==7.050 & pat_level==7)
+# plot(results_p$t, results_p$epithelial_score)
+
+
 
 # Build the control matrix (now as percentage of controlled replicates)
 control_matrix = matrix(NA, nrow = length(pat_vals), ncol = length(ros_vals))

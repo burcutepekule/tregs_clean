@@ -29,21 +29,8 @@ for (reps_in in 0:(num_reps-1)){
   # ========================================================================
   # INITIALIZE MICROBE DENSITY GRIDS
   # ========================================================================
-  # Pathogen density: initial concentration at injury sites at epithelium (row 1)
   density_pathogen = matrix(0, grid_size, grid_size)
-  # if (n_pathogens_lp > 0) {
-  #   initial_pathogen_density = n_pathogens_lp / length(injury_site)
-  #   initial_pathogen_density = min(initial_pathogen_density, max_density_microbe)
-  #   density_pathogen[1, injury_site] = initial_pathogen_density
-  # }
-
-  # Commensal density: initial concentration spread across grid
   density_commensal = matrix(0, grid_size, grid_size)
-  # if (n_commensals_lp > 0) {
-  #   initial_commensal_density = n_commensals_lp / (grid_size * grid_size)
-  #   initial_commensal_density = min(initial_commensal_density, max_density_microbe)
-  #   density_commensal = matrix(initial_commensal_density, grid_size, grid_size)
-  # }
 
   # ========================================================================
   # INITIALIZE MACROPHAGE DENSITY GRID
@@ -58,13 +45,7 @@ for (reps_in in 0:(num_reps-1)){
   # ========================================================================
   density_treg = matrix(density_treg_0, grid_size, grid_size)
   density_treg_active = matrix(0, grid_size, grid_size)
-
-  # ========================================================================
-  # INITIALIZE DEATH COUNTERS
-  # ========================================================================
-  pathogens_killed_by_ROS  = 0
-  commensals_killed_by_ROS = 0
-
+  
   # ========================================================================
   # INITIALIZE LONGITUDINAL TRACKING MATRICES
   # ========================================================================
@@ -72,15 +53,19 @@ for (reps_in in 0:(num_reps-1)){
   macrophages_longitudinal = matrix(0, nrow = t_max, ncol = 3)
   microbes_longitudinal    = matrix(0, nrow = t_max, ncol = 2)
   tregs_longitudinal       = matrix(0, nrow = t_max, ncol = 2)
-  microbes_cumdeath_longitudinal = matrix(0, nrow = t_max, ncol = 2*4)
-  injury_pathogen_longitudinal = matrix(0, nrow = t_max, ncol = grid_size)
-  injury_ros_longitudinal = matrix(0, nrow = t_max, ncol = grid_size)
+  injury_pathogen_longitudinal     = matrix(0, nrow = t_max, ncol = grid_size)
+  injury_ros_longitudinal          = matrix(0, nrow = t_max, ncol = grid_size)
   pathogen_epithelium_longitudinal = matrix(0, nrow = t_max, ncol = grid_size)
-  ros_epithelium_longitudinal = matrix(0, nrow = t_max, ncol = grid_size)
-
+  ros_epithelium_longitudinal      = matrix(0, nrow = t_max, ncol = grid_size)
+  pathogens_lumen_longitudinal     = matrix(0, nrow = t_max, ncol = 1)
+  DAMPs_longitudinal     = matrix(0, nrow = t_max, ncol = 1)
+  PAMPs_longitudinal     = matrix(0, nrow = t_max, ncol = 1)
+  SAMPs_longitudinal     = matrix(0, nrow = t_max, ncol = 1)
+  ROS_longitudinal       = matrix(0, nrow = t_max, ncol = 1)
+  
   # Initialize injury site tracker
   injury_site_updated = injury_site
-
+  pat_lumen           = pat_lumen_max
   # ========================================================================
   # MAIN SIMULATION LOOP
   # ========================================================================
@@ -94,7 +79,11 @@ for (reps_in in 0:(num_reps-1)){
     macrophages_longitudinal,
     microbes_longitudinal,
     tregs_longitudinal,
-    microbes_cumdeath_longitudinal
+    pathogens_lumen_longitudinal,
+    DAMPs_longitudinal,
+    PAMPs_longitudinal,
+    SAMPs_longitudinal,
+    ROS_longitudinal
   )
 
   colnames(longitudinal_df) = colnames_insert

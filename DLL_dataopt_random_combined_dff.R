@@ -37,7 +37,8 @@ n2     = as.integer(args[2])
 # ============================================================================
 # PAY ATTENTION HERE!
 source('./MISC/LOAD_PAT_LEVELS_DFF.R') # loads pat_level_vectors
-loop_over   = c(147, 172, 222, 269)
+# loop_over   = c(147, 172, 222, 269)
+loop_over   = c(172)
 plot_grid_t = 0
 params_df   = params_df %>% dplyr::filter(param_set_id %in% loop_over)
 # ============================================================================
@@ -81,7 +82,6 @@ cat("  n_tregs:", n_tregs, "\n\n")
 # ============================================================================
 
 scenarios_df = c()
-
 for (param_id in loop_over){
   scenarios_df = rbind(scenarios_df, expand.grid(
     param_set_id    = param_id,
@@ -104,9 +104,9 @@ for (param_id in loop_over){
 
 dim(scenarios_df) 
 rownames(scenarios_df)=1:dim(scenarios_df)[1]
-scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 200), ]
+scenarios_df = scenarios_df[rep(seq_len(nrow(scenarios_df)), each = 400), ]
 scenarios_df = scenarios_df[sample(nrow(scenarios_df)), ] # randomly scramble
-scenarios_df = scenarios_df[1:200,]
+scenarios_df = scenarios_df[1:400,]
 dim(scenarios_df)[1]
 
 cat("Running", nrow(scenarios_df), "scenarios per parameter set\n")
@@ -133,11 +133,9 @@ cat("Output directory:", dir_name_data, "\n\n")
 # ============================================================================
 # DETECTION SETTINGS
 # ============================================================================
-success_threshold_e = 5
-success_threshold_p = 10
-success_duration    = 150
-success_rate        = 0.95
-max_iterations      = 100000 # Number of random samples to try
+source('./MISC/PERFORMANCE_METRICS.R')
+max_iterations = 100000 # Number of random samples to try
+
 # ============================================================================
 # MAIN SIMULATION LOOP
 # ============================================================================

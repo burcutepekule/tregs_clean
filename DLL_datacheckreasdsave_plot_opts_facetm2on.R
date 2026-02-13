@@ -19,12 +19,11 @@ path_data  = "/Users/burcutepekule/Desktop/data_diffusion"
 
 variables_2_plot = list("epithelial_score","pathogen",c("phagocyte_M1","phagocyte_M2"),"treg_active")
 background_on    = c(1,1,rep(0,length(variables_2_plot)-2))
-epithelial_limit = 5
-pathogen_limit   = 0.1 # max is 1
-max_level_injury = 10*25 # 2*x0_in*grid_size - THIS STILL HOLDS FOR DIFFUSION!
-alpha_plot       = 0.2
+source('./MISC/PERFORMANCE_METRICS.R')
+alpha_plot = 1
 
-for (param_id in c(147, 172, 222, 269)){
+# for (param_id in c(147, 172, 222, 269)){
+for (param_id in c(269)){
   
   print(param_id)
   path_img = paste0("/Users/burcutepekule/Desktop/ts_diffusion_highres_",param_id)
@@ -40,8 +39,8 @@ for (param_id in c(147, 172, 222, 269)){
   
   # then opts
   effidx    = 10
-  i_opt_vec = 1
-  m2on_vec  = c(0,1)
+  i_opt_vec = 1:5
+  m2on_vec  = c(0, 1)
   for (m2on in m2on_vec){
     for(i_opt in i_opt_vec){
       print(i_opt)

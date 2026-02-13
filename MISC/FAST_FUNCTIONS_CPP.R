@@ -11,6 +11,10 @@ get_middle_percent <- function(seq_vector, percent) {
   return(seq_vector[start_idx:end_idx])
 }
 
+inf_load = function(t, alpha_inf, rate_inf) {
+  alpha_inf+(1-alpha_inf)*exp(-rate_inf*t)
+}
+
 ### FOR SCALARS
 # sample_with_efficiency_beta <- function(tau, efficiency, max_concentration = 1000) {
 #   if (efficiency == 1) return(tau)  # Exact value when perfect efficiency

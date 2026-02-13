@@ -36,10 +36,10 @@ activation_threshold_SAMPs  = param_set_use$activation_threshold_SAMPs
 activation_threshold_SAMPs  = 2*activation_threshold_SAMPs
 
 # Engulfment activities
-activity_engulf_M0_baseline = param_set_use$activity_engulf_M0_baseline
-activity_engulf_M1_baseline = param_set_use$activity_engulf_M1_baseline
+activity_engulf_M0_baseline = 0*param_set_use$activity_engulf_M0_baseline
+activity_engulf_M1_baseline = 0*param_set_use$activity_engulf_M1_baseline
 # activity_engulf_M2_baseline = m2_on*param_set_use$activity_engulf_M2_baseline #WRONG
-activity_engulf_M2_baseline = param_set_use$activity_engulf_M2_baseline
+activity_engulf_M2_baseline = 0*param_set_use$activity_engulf_M2_baseline
 
 # ROS production activities
 activity_ROS_M0_baseline = 0
@@ -106,21 +106,70 @@ decay_rate_treg = 0.0 # No natural decay - conserved pool
 chi_macro = 5
 chi_treg  = 5
 
-# Max density values (normalized to 1.0)
-max_density_microbe = 1.0
-max_density_macro = 1.0
-max_density_treg = 1.0
-
 active_age_limit = 1 # OVERWRITE FOR DIFFUSION MODEL!
 
-density_M0_0 = 1
-density_treg_0 = 1
 
-extinction_limit = 1e-6 # 1e-3 is too big I think
+# ##### MIGHT WORK? - SEEMS LIKE IT DOES!
+# max_density_macro = .8 #was 1
+# max_density_treg  = .8 #was 1
+# density_M0_0      = .8 #was 1
+# density_treg_0    = .8 #was 1
+# rate_of_activation   = 0.05
+# rate_of_deactivation = 0.05
 
-rate_of_activation   = 0.05
-rate_of_deactivation = 0.05
+# ##### MIGHT WORK?
+# #### lowering activation rate can be good for slower dynamics
+# #### having even a lower rate_of_deactivation means active_age_limit will be difference in exp(-t)
+max_density_macro = 1 #was 1
+max_density_treg  = 1 #was 1
+density_M0_0      = 1 #was 1
+density_treg_0    = 1 #was 1
+rate_of_activation   = 0.005
+rate_of_deactivation = 0.005
+
+extinction_limit_bact   = 1e-3
+extinction_limit_lymp   = 1e-6
+extinction_limit_injury = 1e-6
+extinction_limit_chemo  = 1e-6
+
+n_chemotaxis_smooth   = 2 # 0 is no smoothing for the chemotaxis fields!
+
+## attempt #2 => THIS WORKS MUCH BETTER! (10:35)
+r_pat     = 0.1*rate_leak_pathogen_injury
+pat_lumen = 10 #5 worked - but really how do I decide?
+decay_rate_mult = 0 # for bacteria to decay naturally? - but honestly this is not what you want because viktor was even talking about them replicating?
+pat_lumen_max   = pat_lumen
+rpat_lp_on      = 0 # pathogen replication in the lamina propria on?
+pat_lp_max      = 1 # per tile? - only used for pathogen replication in the LP, if rpat_lp_on=0, this parameter doesn't matter
+delay_response  = 0 # ALWAYS ZERO!
+p_leak_constant = 0.5*(1/(250)) # cannot be above 1/250 because the max of sum of epithelium$level_injury is 25x10!
 
 
-n_chemotaxis_smooth = 2 # 0 is no smoothing for the chemotaxis fields!
+# Max density values (normalized to 1.0)
+max_density_microbe = Inf
+
+rate_injury_basolateral = 5 # old c_in_log # TO MAKE PATHOGENS CONSTANTLY INJUR THE EPITHELIUM!
+rate_injury_apical      = 0.1
+amp_kill_rate           = 0.0
+
+# ## attempt #3 => THIS also WORKS but still high ROS lower pathogen exists - but isn't that the point?
+# r_pat     = 1+0.1*rate_leak_pathogen_injury
+# pat_lumen = 1
+# pat_lumen_max = pat_lumen
+
+
+
+#### FOR INFECTION LOAD --- !!! OLD !!!
+
+# kind of worked before but not really driving it to extinction
+# alpha_inf = 0.25
+# rate_inf  = 0.002
+
+alpha_inf = 0.05
+rate_inf  = 0.001
+
+# ## kind of works, but when rate_leak_pathogen_injury is too high, depletes too quickly, resolves again paradoxically
+# r_pat     = 0.5
+# pat_lumen = 1
+# pat_lumen_max = pat_lumen
 
