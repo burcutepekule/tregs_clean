@@ -17,17 +17,17 @@ pathogens_diffused_longitudinal[t, 1] = sum(pathogen_source)
 # density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe,max_density_microbe, reflect_top = FALSE)
 
 ## maybe don't lose microbes due to diffusion, so reflect top TRUE? maybe also need reflect SIDES?
-density_pathogen  = diffuse_matrix_cpp(density_pathogen, diffusion_speed_microbe,max_density_microbe, reflect_top = TRUE)
-density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe,max_density_microbe, reflect_top = TRUE)
+density_pathogen  = diffuse_matrix_cpp(density_pathogen, diffusion_speed_microbe, max_density_microbe, reflect_top = TRUE, reflect_sides = TRUE)
+density_commensal = diffuse_matrix_cpp(density_commensal, diffusion_speed_microbe, max_density_microbe, reflect_top = TRUE, reflect_sides = TRUE)
 
 # pathogens multiply
 density_pathogen  = density_pathogen+rpat_lp_on*density_pathogen*r_pat*(1-density_pathogen/pat_lp_max) # 
 
 # Chemokines / Cytokines / Signals (same as before)
-DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top = FALSE)
-SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs, reflect_top = FALSE)
-PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, reflect_top = FALSE)
-ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top = FALSE)
+DAMPs = diffuse_matrix_cpp(DAMPs, diffusion_speed_DAMPs, max_cell_value_DAMPs, reflect_top = TRUE, reflect_sides = TRUE)
+SAMPs = diffuse_matrix_cpp(SAMPs, diffusion_speed_SAMPs, max_cell_value_SAMPs, reflect_top = TRUE, reflect_sides = TRUE)
+PAMPs = diffuse_matrix_cpp(PAMPs, diffusion_speed_PAMPs, max_cell_value_PAMPs, reflect_top = TRUE, reflect_sides = TRUE)
+ROS   = diffuse_matrix_cpp(ROS, diffusion_speed_ROS, max_cell_value_ROS, reflect_top = TRUE, reflect_sides = TRUE)
 
 # Macrophage pools: chemotax toward danger signals (DAMPs + PAMPs)
 danger_signal_grid = DAMPs + PAMPs
@@ -48,15 +48,15 @@ density_M1   = diffuse_matrix_biased_cpp(density_M1, chemotaxis_field_macro, dif
 density_M2   = diffuse_matrix_biased_cpp(density_M2, chemotaxis_field_macro, diffusion_speed_macro, chi_macro, max_density_macro, reflect_top = TRUE)
 
 if(randomize_tregs==1){
-  density_treg_active = diffuse_matrix_cpp(density_treg_active, diffusion_speed_treg, max_density_treg, reflect_top = TRUE)
+  density_treg_active = diffuse_matrix_cpp(density_treg_active, diffusion_speed_treg, max_density_treg, reflect_top = TRUE, reflect_sides = TRUE)
 }else{
   # Treg pools: chemotax toward DAMPs (also smoothed)
   chemotaxis_field_treg = DAMPs
   if(n_chemotaxis_smooth>0){
     for (s in seq_len(n_chemotaxis_smooth)) {
-      chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12, max(chemotaxis_field_treg) + 1e-10, reflect_top = TRUE)}
+      chemotaxis_field_treg = diffuse_matrix_cpp(chemotaxis_field_treg, 0.12, max(chemotaxis_field_treg) + 1e-10, reflect_top = TRUE, reflect_sides = TRUE)}
   }
-  density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs, diffusion_speed_treg, chi_treg, max_density_treg, reflect_top = TRUE)
+  density_treg_active = diffuse_matrix_biased_cpp(density_treg_active, DAMPs, diffusion_speed_treg, chi_treg, max_density_treg, reflect_top = TRUE, reflect_sides = TRUE)
 }
 
 # ============================================================================
