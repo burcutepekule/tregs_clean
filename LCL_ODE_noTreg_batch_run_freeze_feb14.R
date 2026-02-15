@@ -36,7 +36,7 @@ for (r_ros_in in ros_vals){
       r_L_P     = r_L_P_in,    # P^L logistic growth rate
       K_L_P     = 100,    # P^L carrying capacity
       K_L_C     = 10,    # C^L carrying capacity
-      
+
       # AMP killing
       tau_A     = 1.2,    # AMP killing parameter
       
@@ -47,7 +47,7 @@ for (r_ros_in in ros_vals){
       # ROS killing of microbes / epithelium
       r_ros_M = 0.01, # microbes
       r_ros_E = 0.001, # epithelium
-      
+        
       # Engulfment
       alpha_0   = 0,      # engulfment rate by M_0 - assume 0 
       alpha_2   = 0,      # engulfment rate by M_2 - assume 0 
@@ -56,7 +56,7 @@ for (r_ros_in in ros_vals){
       # Epithelial damage
       tau_P_A   = 0,  # apical damage rate from P^L
       tau_P_B   = 0.15, # basolateral damage rate from P^{LP}
-      
+
       # Danger signals
       beta_D    = 0.01, # DAMP production from epithelial damage
       beta_M    = 0.001, # DAMP production from microbes touching basolateral side
@@ -138,47 +138,31 @@ for (r_ros_in in ros_vals){
   }
 }
 
-variables_2_plot = c('E','PLP','PL','D','R','M_1','M_0')
+variables_2_plot = c('E')
+p_ind = 1
+variables = variables_2_plot[p_ind][[1]]
 
-path_img = './ode_out'
-dir.create(path_img)
+data_long = out_df_all %>%
+  dplyr::select(time, ros_level, pat_level, all_of(variables)) %>%
+  pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
 
-for (p_ind  in 1:length(variables_2_plot)){
-  variables = variables_2_plot[p_ind][[1]]
-  variables_name  = paste(variables, collapse = "_")
-  
-  data_long = out_df_all %>%
-    dplyr::select(time, ros_level, pat_level, all_of(variables)) %>%
-    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value")
-  
-  p=ggplot(data_long, aes(x = time, y = value))+
-    # Lines with agent colors
-    geom_line() +
-    facet_grid(pat_level ~ ros_level, labeller = label_both) +
-    theme_minimal() +
-    # labs(title = title_opt, x = "Time", y = "Count")
-    labs(title = "", x = "Time", y = "Count")+
-    # ylim(0, 100) + 
-    # Increase axis text size
-    theme(
-      axis.text.x = element_text(size = 12),
-      axis.text.y = element_text(size = 12),
-      axis.title.x = element_text(size = 14),
-      axis.title.y = element_text(size = 14),
-      strip.text.x = element_text(size = 10),  # top facet labels (ros_level)
-      strip.text.y = element_text(size = 10),   # side facet labels (pat_level)
-      legend.text = element_text(size = 14),   # legend item labels
-      legend.title = element_text(size = 16)   # legend title
-    )
-  
-  ggsave(
-    filename = paste0(path_img,"/ode_",variables_name,".png"),
-    plot = p,
-    width = 18,
-    height = 10,
-    # width = 12,
-    # height = 6,
-    dpi = 300,
-    bg='white'
+ggplot(data_long, aes(x = time, y = value))+
+  # Lines with agent colors
+  geom_line() +
+  facet_grid(pat_level ~ ros_level, labeller = label_both) +
+  theme_minimal() +
+  # labs(title = title_opt, x = "Time", y = "Count")
+  labs(title = "", x = "Time", y = "Count")+
+  # ylim(0, 100) + 
+  # Increase axis text size
+  theme(
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    strip.text.x = element_text(size = 10),  # top facet labels (ros_level)
+    strip.text.y = element_text(size = 10),   # side facet labels (pat_level)
+    legend.text = element_text(size = 14),   # legend item labels
+    legend.title = element_text(size = 16)   # legend title
   )
-}
+
