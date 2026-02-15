@@ -12,10 +12,10 @@ library(data.table)
 source('./MISC/ODE_SYSTEM_noTreg.R')
 
 # ros_vals   = 1e-2*seq(0,1,0.2)
-ros_vals   = c(0, 0.01, 0.02, 0.05, 0.08, 0.1, 0.25, 0.5, 0.8)
-pat_vals   = c(0.2, 0.26, 0.265, 0.27, 0.28, 0.29, 0.3, 0.35)
-t_max      = 100000
-tstep      = 10
+ros_vals   = c(0, 1, 2, 5, 8, 10, 25, 50, 80)
+pat_vals   = c(20, 26, 26.5, 27, 28, 29, 30, 35)
+t_max      = 1000
+tstep      = 0.1
 out_df_all = c()
 
 for (r_ros_in in ros_vals){
@@ -36,50 +36,50 @@ for (r_ros_in in ros_vals){
       r_L_P     = r_L_P_in,    # P^L logistic growth rate
       K_L_P     = 100,    # P^L carrying capacity
       K_L_C     = 10,    # C^L carrying capacity
-      
+
       # AMP killing
-      tau_A     = 1.2,    # AMP killing parameter
-      
+      tau_A     = 120,    # AMP killing parameter
+
       # Barrier breach
-      gamma_B_P = 0.001,    # barrier breach rate, pathogens
-      gamma_B_C = 0.0005,   # barrier breach rate, commensals
-      
+      gamma_B_P = 0.1,    # barrier breach rate, pathogens
+      gamma_B_C = 0.05,   # barrier breach rate, commensals
+
       # ROS killing of microbes / epithelium
-      r_ros_M = 0.01, # microbes
-      r_ros_E = 0.001, # epithelium
-      
+      r_ros_M = 1, # microbes
+      r_ros_E = 0.1, # epithelium
+
       # Engulfment
-      alpha_0   = 0,      # engulfment rate by M_0 - assume 0 
-      alpha_2   = 0,      # engulfment rate by M_2 - assume 0 
-      alpha_1   = 0.0001,    # engulfment rate by M_1
-      
+      alpha_0   = 0,      # engulfment rate by M_0 - assume 0
+      alpha_2   = 0,      # engulfment rate by M_2 - assume 0
+      alpha_1   = 0.01,    # engulfment rate by M_1
+
       # Epithelial damage
       tau_P_A   = 0,  # apical damage rate from P^L
-      tau_P_B   = 0.15, # basolateral damage rate from P^{LP}
-      
+      tau_P_B   = 15, # basolateral damage rate from P^{LP}
+
       # Danger signals
-      beta_D    = 0.01, # DAMP production from epithelial damage
-      beta_M    = 0.001, # DAMP production from microbes touching basolateral side
-      beta_A    = 0.001, # PAMP production from pathogens in LP
-      tau_D     = 0.002, # danger signal decay rate
-      
+      beta_D    = 1, # DAMP production from epithelial damage
+      beta_M    = 0.1, # DAMP production from microbes touching basolateral side
+      beta_A    = 0.1, # PAMP production from pathogens in LP
+      tau_D     = 0.2, # danger signal decay rate
+
       # ROS dynamics
       beta_1    = r_ros_in, # ROS production by M_1
-      tau_R     = 0.01,   # ROS decay rate
-      
+      tau_R     = 1,   # ROS decay rate
+
       # Macrophage dynamics
       theta_1   = 50,    # M1 activation threshold for D
       c_1       = 0.1,  # M1 activation Hill coefficient
-      tau_1_a   = 0.1,   # M1 activation rate
-      tau_1_d   = 0.1,   # M1 deactivation rate
-      
+      tau_1_a   = 10,   # M1 activation rate
+      tau_1_d   = 10,   # M1 deactivation rate
+
       # Maximum epithelial damage possible
-      E_max   = 100, # max epithelial damage 
+      E_max   = 100, # max epithelial damage
       M_max   = 100, # max number of macrophages
-      rec_rate= 0.1,
-      layoff_rate = 0.01,
-      
-      kappa_E     = 0.01 # recovery rate of epithelium
+      rec_rate= 10,
+      layoff_rate = 1,
+
+      kappa_E     = 1 # recovery rate of epithelium
     )
     
     # --- Initial conditions ---
